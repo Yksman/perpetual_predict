@@ -5,6 +5,12 @@ from perpetual_predict.analyzers.technical.momentum import (
     calculate_rsi,
     calculate_stoch_rsi,
 )
+from perpetual_predict.analyzers.technical.support_resistance import (
+    add_support_resistance_indicators,
+    calculate_nearest_levels,
+    find_pivot_points,
+    find_support_resistance_levels,
+)
 from perpetual_predict.analyzers.technical.trend import (
     add_trend_indicators,
     calculate_adx,
@@ -25,6 +31,7 @@ from perpetual_predict.analyzers.technical.volume import (
 
 __all__ = [
     "add_momentum_indicators",
+    "add_support_resistance_indicators",
     "add_trend_indicators",
     "add_volatility_indicators",
     "add_volume_indicators",
@@ -33,9 +40,12 @@ __all__ = [
     "calculate_bollinger_bands",
     "calculate_ema",
     "calculate_macd",
+    "calculate_nearest_levels",
     "calculate_obv",
     "calculate_rsi",
     "calculate_sma",
     "calculate_stoch_rsi",
     "calculate_vwap",
+    "find_pivot_points",
+    "find_support_resistance_levels",
 ]
