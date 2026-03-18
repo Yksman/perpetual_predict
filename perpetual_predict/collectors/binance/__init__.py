@@ -6,6 +6,7 @@ from perpetual_predict.collectors.binance.market_data import (
     LongShortRatioCollector,
     OHLCVCollector,
 )
+from perpetual_predict.collectors.binance.open_interest import OpenInterestCollector
 
 __all__ = [
     "BinanceAPIError",
@@ -13,4 +14,5 @@ __all__ = [
     "FundingRateCollector",
     "LongShortRatioCollector",
     "OHLCVCollector",
+    "OpenInterestCollector",
 ]
