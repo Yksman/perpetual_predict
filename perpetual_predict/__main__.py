@@ -1,26 +1,37 @@
 """CLI entry point for perpetual_predict."""
 
+import argparse
 import sys
+
+from perpetual_predict.cli import collect, report
 
 
 def main() -> int:
     """Main entry point for CLI commands."""
-    if len(sys.argv) < 2:
-        print("Usage: python -m perpetual_predict <command>")
-        print("Commands: collect, report")
+    parser = argparse.ArgumentParser(
+        prog="perpetual_predict",
+        description="BTCUSDT.P Futures Analysis System",
+    )
+
+    subparsers = parser.add_subparsers(
+        title="commands",
+        dest="command",
+        help="Available commands",
+    )
+
+    # Setup subcommand parsers
+    collect.setup_parser(subparsers)
+    report.setup_parser(subparsers)
+
+    # Parse arguments
+    args = parser.parse_args()
+
+    if args.command is None:
+        parser.print_help()
         return 1
 
-    command = sys.argv[1]
-
-    if command == "collect":
-        print("Data collection not yet implemented")
-        return 0
-    elif command == "report":
-        print("Report generation not yet implemented")
-        return 0
-    else:
-        print(f"Unknown command: {command}")
-        return 1
+    # Run the command
+    return args.func(args)
 
 
 if __name__ == "__main__":
