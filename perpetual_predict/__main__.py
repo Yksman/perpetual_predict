@@ -3,7 +3,7 @@
 import argparse
 import sys
 
-from perpetual_predict.cli import collect, report
+from perpetual_predict.cli import collect, daemon, report
 
 
 def main() -> int:
@@ -22,6 +22,7 @@ def main() -> int:
     # Setup subcommand parsers
     collect.setup_parser(subparsers)
     report.setup_parser(subparsers)
+    daemon.setup_parser(subparsers)
 
     # Parse arguments
     args = parser.parse_args()
