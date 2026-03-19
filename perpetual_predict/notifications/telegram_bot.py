@@ -198,6 +198,60 @@ class TelegramBot:
             logger.error(f"Telegram request failed: {e}")
             return None
 
+    async def get_updates(
+        self,
+        offset: int | None = None,
+        timeout: int = 30,
+    ) -> list[dict[str, Any]]:
+        """Get pending updates (messages) from Telegram.
+
+        Args:
+            offset: Update offset for long polling.
+            timeout: Long polling timeout in seconds.
+
+        Returns:
+            List of update objects.
+        """
+        if not self.is_configured:
+            return []
+
+        params: dict[str, Any] = {"timeout": timeout}
+        if offset:
+            params["offset"] = offset
+
+        try:
+            url = self._get_api_url("getUpdates")
+            async with self.session.get(url, params=params) as response:
+                data = await response.json()
+                return data.get("result", []) if data.get("ok") else []
+
+        except aiohttp.ClientError as e:
+            logger.error(f"Telegram request failed: {e}")
+            return []
+
+    def parse_command(self, message: dict[str, Any]) -> tuple[str | None, str | None]:
+        """Parse a command from a message.
+
+        Args:
+            message: Telegram message object.
+
+        Returns:
+            Tuple of (command, arguments) or (None, None).
+        """
+        text = message.get("text", "")
+        if not text.startswith("/"):
+            return None, None
+
+        parts = text.split(maxsplit=1)
+        command = parts[0][1:]  # Remove leading "/"
+
+        # Handle commands with @botname suffix
+        if "@" in command:
+            command = command.split("@")[0]
+
+        args = parts[1] if len(parts) > 1 else None
+        return command, args
+
     async def close(self) -> None:
         """Close HTTP session."""
         if self._session and not self._session.closed:
