@@ -15,6 +15,7 @@ from perpetual_predict.storage.models import (
     Liquidation,
     LongShortRatio,
     OpenInterest,
+    WhaleTransaction,
 )
 
 # SQL table creation statements
@@ -100,6 +101,19 @@ CREATE TABLE IF NOT EXISTS liquidations (
 )
 """
 
+CREATE_WHALE_TRANSACTIONS_TABLE = """
+CREATE TABLE IF NOT EXISTS whale_transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tx_hash TEXT UNIQUE NOT NULL,
+    amount_usd REAL NOT NULL,
+    from_owner TEXT,
+    to_owner TEXT,
+    transaction_type TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
 # Index creation for performance
 CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_candles_symbol_time ON candles(symbol, timeframe, open_time)",
@@ -108,6 +122,7 @@ CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_lsr_symbol_time ON long_short_ratio(symbol, timestamp)",
     "CREATE INDEX IF NOT EXISTS idx_fg_time ON fear_greed_index(timestamp)",
     "CREATE INDEX IF NOT EXISTS idx_liquidations_symbol_time ON liquidations(symbol, timestamp)",
+    "CREATE INDEX IF NOT EXISTS idx_whale_tx_time ON whale_transactions(timestamp)",
 ]
 
 
@@ -140,6 +155,7 @@ class Database:
         await self._connection.execute(CREATE_LONG_SHORT_RATIO_TABLE)
         await self._connection.execute(CREATE_FEAR_GREED_TABLE)
         await self._connection.execute(CREATE_LIQUIDATIONS_TABLE)
+        await self._connection.execute(CREATE_WHALE_TRANSACTIONS_TABLE)
 
         # Create indexes
         for index_sql in CREATE_INDEXES:
@@ -550,6 +566,75 @@ class Database:
         async with self.connection.execute(sql, params) as cursor:
             rows = await cursor.fetchall()
             return [Liquidation.from_dict(dict(row)) for row in rows]
+
+    # Whale transaction operations
+    async def insert_whale_transaction(self, tx: WhaleTransaction) -> None:
+        """Insert a whale transaction record."""
+        sql = """
+        INSERT OR REPLACE INTO whale_transactions
+        (tx_hash, amount_usd, from_owner, to_owner, transaction_type, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """
+        await self.connection.execute(
+            sql,
+            (
+                tx.tx_hash,
+                tx.amount_usd,
+                tx.from_owner,
+                tx.to_owner,
+                tx.transaction_type,
+                tx.timestamp.isoformat(),
+            ),
+        )
+        await self.connection.commit()
+
+    async def insert_whale_transactions(self, txs: list[WhaleTransaction]) -> None:
+        """Insert multiple whale transaction records."""
+        sql = """
+        INSERT OR REPLACE INTO whale_transactions
+        (tx_hash, amount_usd, from_owner, to_owner, transaction_type, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """
+        data = [
+            (
+                tx.tx_hash,
+                tx.amount_usd,
+                tx.from_owner,
+                tx.to_owner,
+                tx.transaction_type,
+                tx.timestamp.isoformat(),
+            )
+            for tx in txs
+        ]
+        await self.connection.executemany(sql, data)
+        await self.connection.commit()
+
+    async def get_whale_transactions(
+        self,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        limit: int | None = None,
+    ) -> list[WhaleTransaction]:
+        """Get whale transaction records."""
+        sql = "SELECT * FROM whale_transactions WHERE 1=1"
+        params: list[Any] = []
+
+        if start_time:
+            sql += " AND timestamp >= ?"
+            params.append(start_time.isoformat())
+        if end_time:
+            sql += " AND timestamp <= ?"
+            params.append(end_time.isoformat())
+
+        sql += " ORDER BY timestamp DESC"
+
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+            return [WhaleTransaction.from_dict(dict(row)) for row in rows]
 
 
 @asynccontextmanager

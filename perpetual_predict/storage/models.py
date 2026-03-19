@@ -207,3 +207,38 @@ class Liquidation:
             original_qty=data["original_qty"],
             timestamp=datetime.fromisoformat(data["timestamp"]),
         )
+
+
+@dataclass
+class WhaleTransaction:
+    """Large cryptocurrency transaction data from Whale Alert."""
+
+    tx_hash: str
+    amount_usd: float
+    from_owner: str | None
+    to_owner: str | None
+    transaction_type: str  # e.g., "transfer", "mint", "burn"
+    timestamp: datetime
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for database storage."""
+        return {
+            "tx_hash": self.tx_hash,
+            "amount_usd": self.amount_usd,
+            "from_owner": self.from_owner,
+            "to_owner": self.to_owner,
+            "transaction_type": self.transaction_type,
+            "timestamp": self.timestamp.isoformat(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "WhaleTransaction":
+        """Create from dictionary (database row)."""
+        return cls(
+            tx_hash=data["tx_hash"],
+            amount_usd=data["amount_usd"],
+            from_owner=data.get("from_owner"),
+            to_owner=data.get("to_owner"),
+            transaction_type=data["transaction_type"],
+            timestamp=datetime.fromisoformat(data["timestamp"]),
+        )

@@ -67,6 +67,15 @@ class WebSocketConfig:
 
 
 @dataclass
+class WhaleAlertConfig:
+    """Whale Alert API configuration."""
+
+    api_key: str = ""
+    base_url: str = "https://api.whale-alert.io/v1"
+    min_value_usd: int = 1_000_000
+
+
+@dataclass
 class Settings:
     """Application settings container."""
 
@@ -75,6 +84,7 @@ class Settings:
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     trading: TradingConfig = field(default_factory=TradingConfig)
     websocket: WebSocketConfig = field(default_factory=WebSocketConfig)
+    whale_alert: WhaleAlertConfig = field(default_factory=WhaleAlertConfig)
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = None) -> "Settings":
@@ -116,6 +126,10 @@ class Settings:
                 max_reconnect_attempts=int(os.getenv("WS_MAX_RECONNECT_ATTEMPTS", "10")),
                 ping_interval=float(os.getenv("WS_PING_INTERVAL", "30.0")),
                 ping_timeout=float(os.getenv("WS_PING_TIMEOUT", "10.0")),
+            ),
+            whale_alert=WhaleAlertConfig(
+                api_key=os.getenv("WHALE_ALERT_API_KEY", ""),
+                min_value_usd=int(os.getenv("WHALE_ALERT_MIN_VALUE", "1000000")),
             ),
         )
 
