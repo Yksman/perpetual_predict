@@ -271,3 +271,36 @@ class NewsItem:
             sentiment=data.get("sentiment"),
             published_at=datetime.fromisoformat(data["published_at"]),
         )
+
+
+@dataclass
+class SchedulerRun:
+    """Scheduler job execution record."""
+
+    job_name: str
+    status: str  # "running", "success", "failed"
+    start_time: datetime
+    end_time: datetime | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for database storage."""
+        return {
+            "job_name": self.job_name,
+            "status": self.status,
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat() if self.end_time else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "SchedulerRun":
+        """Create from dictionary (database row)."""
+        end_time = None
+        if data.get("end_time"):
+            end_time = datetime.fromisoformat(data["end_time"])
+
+        return cls(
+            job_name=data["job_name"],
+            status=data["status"],
+            start_time=datetime.fromisoformat(data["start_time"]),
+            end_time=end_time,
+        )

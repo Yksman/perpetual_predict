@@ -85,6 +85,15 @@ class CryptoPanicConfig:
 
 
 @dataclass
+class SchedulerConfig:
+    """Scheduler configuration."""
+
+    collection_interval_hours: int = 4
+    report_interval_hours: int = 4
+    retention_days: int = 30  # Data retention period
+
+
+@dataclass
 class Settings:
     """Application settings container."""
 
@@ -95,6 +104,7 @@ class Settings:
     websocket: WebSocketConfig = field(default_factory=WebSocketConfig)
     whale_alert: WhaleAlertConfig = field(default_factory=WhaleAlertConfig)
     cryptopanic: CryptoPanicConfig = field(default_factory=CryptoPanicConfig)
+    scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = None) -> "Settings":
@@ -144,6 +154,13 @@ class Settings:
             cryptopanic=CryptoPanicConfig(
                 api_key=os.getenv("CRYPTOPANIC_API_KEY", ""),
                 filter_currencies=os.getenv("CRYPTOPANIC_CURRENCIES", "BTC"),
+            ),
+            scheduler=SchedulerConfig(
+                collection_interval_hours=int(
+                    os.getenv("SCHEDULER_COLLECTION_INTERVAL", "4")
+                ),
+                report_interval_hours=int(os.getenv("SCHEDULER_REPORT_INTERVAL", "4")),
+                retention_days=int(os.getenv("SCHEDULER_RETENTION_DAYS", "30")),
             ),
         )
 

@@ -16,6 +16,7 @@ from perpetual_predict.storage.models import (
     LongShortRatio,
     NewsItem,
     OpenInterest,
+    SchedulerRun,
     WhaleTransaction,
 )
 
@@ -126,6 +127,17 @@ CREATE TABLE IF NOT EXISTS news_items (
 )
 """
 
+CREATE_SCHEDULER_RUNS_TABLE = """
+CREATE TABLE IF NOT EXISTS scheduler_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_name TEXT NOT NULL,
+    status TEXT NOT NULL,
+    start_time TEXT NOT NULL,
+    end_time TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
 # Index creation for performance
 CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_candles_symbol_time ON candles(symbol, timeframe, open_time)",
@@ -136,6 +148,7 @@ CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_liquidations_symbol_time ON liquidations(symbol, timestamp)",
     "CREATE INDEX IF NOT EXISTS idx_whale_tx_time ON whale_transactions(timestamp)",
     "CREATE INDEX IF NOT EXISTS idx_news_published ON news_items(published_at)",
+    "CREATE INDEX IF NOT EXISTS idx_scheduler_runs_job ON scheduler_runs(job_name, start_time)",
 ]
 
 
@@ -170,6 +183,7 @@ class Database:
         await self._connection.execute(CREATE_LIQUIDATIONS_TABLE)
         await self._connection.execute(CREATE_WHALE_TRANSACTIONS_TABLE)
         await self._connection.execute(CREATE_NEWS_ITEMS_TABLE)
+        await self._connection.execute(CREATE_SCHEDULER_RUNS_TABLE)
 
         # Create indexes
         for index_sql in CREATE_INDEXES:
@@ -713,6 +727,57 @@ class Database:
         async with self.connection.execute(sql, params) as cursor:
             rows = await cursor.fetchall()
             return [NewsItem.from_dict(dict(row)) for row in rows]
+
+    # Scheduler run operations
+    async def insert_scheduler_run(self, run: SchedulerRun) -> int:
+        """Insert a scheduler run record and return its ID."""
+        sql = """
+        INSERT INTO scheduler_runs
+        (job_name, status, start_time, end_time)
+        VALUES (?, ?, ?, ?)
+        """
+        cursor = await self.connection.execute(
+            sql,
+            (
+                run.job_name,
+                run.status,
+                run.start_time.isoformat(),
+                run.end_time.isoformat() if run.end_time else None,
+            ),
+        )
+        await self.connection.commit()
+        return cursor.lastrowid or 0
+
+    async def update_scheduler_run(
+        self, run_id: int, status: str, end_time: datetime
+    ) -> None:
+        """Update a scheduler run status and end time."""
+        sql = "UPDATE scheduler_runs SET status = ?, end_time = ? WHERE id = ?"
+        await self.connection.execute(sql, (status, end_time.isoformat(), run_id))
+        await self.connection.commit()
+
+    async def get_scheduler_runs(
+        self,
+        job_name: str | None = None,
+        limit: int | None = None,
+    ) -> list[SchedulerRun]:
+        """Get scheduler run records."""
+        sql = "SELECT * FROM scheduler_runs WHERE 1=1"
+        params: list[Any] = []
+
+        if job_name:
+            sql += " AND job_name = ?"
+            params.append(job_name)
+
+        sql += " ORDER BY start_time DESC"
+
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+            return [SchedulerRun.from_dict(dict(row)) for row in rows]
 
 
 @asynccontextmanager
