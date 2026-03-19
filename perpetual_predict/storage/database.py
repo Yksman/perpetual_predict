@@ -14,6 +14,7 @@ from perpetual_predict.storage.models import (
     FundingRate,
     Liquidation,
     LongShortRatio,
+    NewsItem,
     OpenInterest,
     WhaleTransaction,
 )
@@ -114,6 +115,17 @@ CREATE TABLE IF NOT EXISTS whale_transactions (
 )
 """
 
+CREATE_NEWS_ITEMS_TABLE = """
+CREATE TABLE IF NOT EXISTS news_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    url TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    sentiment TEXT,
+    published_at TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
 # Index creation for performance
 CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_candles_symbol_time ON candles(symbol, timeframe, open_time)",
@@ -123,6 +135,7 @@ CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_fg_time ON fear_greed_index(timestamp)",
     "CREATE INDEX IF NOT EXISTS idx_liquidations_symbol_time ON liquidations(symbol, timestamp)",
     "CREATE INDEX IF NOT EXISTS idx_whale_tx_time ON whale_transactions(timestamp)",
+    "CREATE INDEX IF NOT EXISTS idx_news_published ON news_items(published_at)",
 ]
 
 
@@ -156,6 +169,7 @@ class Database:
         await self._connection.execute(CREATE_FEAR_GREED_TABLE)
         await self._connection.execute(CREATE_LIQUIDATIONS_TABLE)
         await self._connection.execute(CREATE_WHALE_TRANSACTIONS_TABLE)
+        await self._connection.execute(CREATE_NEWS_ITEMS_TABLE)
 
         # Create indexes
         for index_sql in CREATE_INDEXES:
@@ -635,6 +649,70 @@ class Database:
         async with self.connection.execute(sql, params) as cursor:
             rows = await cursor.fetchall()
             return [WhaleTransaction.from_dict(dict(row)) for row in rows]
+
+    # News item operations
+    async def insert_news_item(self, item: NewsItem) -> None:
+        """Insert a news item record."""
+        sql = """
+        INSERT OR REPLACE INTO news_items
+        (url, title, sentiment, published_at)
+        VALUES (?, ?, ?, ?)
+        """
+        await self.connection.execute(
+            sql,
+            (
+                item.url,
+                item.title,
+                item.sentiment,
+                item.published_at.isoformat(),
+            ),
+        )
+        await self.connection.commit()
+
+    async def insert_news_items(self, items: list[NewsItem]) -> None:
+        """Insert multiple news item records."""
+        sql = """
+        INSERT OR REPLACE INTO news_items
+        (url, title, sentiment, published_at)
+        VALUES (?, ?, ?, ?)
+        """
+        data = [
+            (item.url, item.title, item.sentiment, item.published_at.isoformat())
+            for item in items
+        ]
+        await self.connection.executemany(sql, data)
+        await self.connection.commit()
+
+    async def get_news_items(
+        self,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        sentiment: str | None = None,
+        limit: int | None = None,
+    ) -> list[NewsItem]:
+        """Get news item records."""
+        sql = "SELECT * FROM news_items WHERE 1=1"
+        params: list[Any] = []
+
+        if start_time:
+            sql += " AND published_at >= ?"
+            params.append(start_time.isoformat())
+        if end_time:
+            sql += " AND published_at <= ?"
+            params.append(end_time.isoformat())
+        if sentiment:
+            sql += " AND sentiment = ?"
+            params.append(sentiment)
+
+        sql += " ORDER BY published_at DESC"
+
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+            return [NewsItem.from_dict(dict(row)) for row in rows]
 
 
 @asynccontextmanager

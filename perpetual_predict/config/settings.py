@@ -76,6 +76,15 @@ class WhaleAlertConfig:
 
 
 @dataclass
+class CryptoPanicConfig:
+    """CryptoPanic API configuration."""
+
+    api_key: str = ""
+    base_url: str = "https://cryptopanic.com/api/v1"
+    filter_currencies: str = "BTC"  # Comma-separated currency codes
+
+
+@dataclass
 class Settings:
     """Application settings container."""
 
@@ -85,6 +94,7 @@ class Settings:
     trading: TradingConfig = field(default_factory=TradingConfig)
     websocket: WebSocketConfig = field(default_factory=WebSocketConfig)
     whale_alert: WhaleAlertConfig = field(default_factory=WhaleAlertConfig)
+    cryptopanic: CryptoPanicConfig = field(default_factory=CryptoPanicConfig)
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = None) -> "Settings":
@@ -130,6 +140,10 @@ class Settings:
             whale_alert=WhaleAlertConfig(
                 api_key=os.getenv("WHALE_ALERT_API_KEY", ""),
                 min_value_usd=int(os.getenv("WHALE_ALERT_MIN_VALUE", "1000000")),
+            ),
+            cryptopanic=CryptoPanicConfig(
+                api_key=os.getenv("CRYPTOPANIC_API_KEY", ""),
+                filter_currencies=os.getenv("CRYPTOPANIC_CURRENCIES", "BTC"),
             ),
         )
 

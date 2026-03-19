@@ -242,3 +242,32 @@ class WhaleTransaction:
             transaction_type=data["transaction_type"],
             timestamp=datetime.fromisoformat(data["timestamp"]),
         )
+
+
+@dataclass
+class NewsItem:
+    """Cryptocurrency news item from CryptoPanic."""
+
+    url: str
+    title: str
+    sentiment: str | None  # "bullish", "bearish", "neutral", or None
+    published_at: datetime
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for database storage."""
+        return {
+            "url": self.url,
+            "title": self.title,
+            "sentiment": self.sentiment,
+            "published_at": self.published_at.isoformat(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "NewsItem":
+        """Create from dictionary (database row)."""
+        return cls(
+            url=data["url"],
+            title=data["title"],
+            sentiment=data.get("sentiment"),
+            published_at=datetime.fromisoformat(data["published_at"]),
+        )
