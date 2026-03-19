@@ -311,3 +311,34 @@ class BinanceClient:
             Mark price and funding rate data.
         """
         return await self.get("/fapi/v1/premiumIndex", {"symbol": symbol})
+
+    async def get_force_orders(
+        self,
+        symbol: str | None = None,
+        start_time: int | None = None,
+        end_time: int | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, Any]]:
+        """Get liquidation (force order) history.
+
+        Args:
+            symbol: Trading pair symbol (e.g., "BTCUSDT"). If None, returns all.
+            start_time: Start time in milliseconds.
+            end_time: End time in milliseconds.
+            limit: Number of records to return (max 1000).
+
+        Returns:
+            List of liquidation order records.
+        """
+        params: dict[str, Any] = {
+            "limit": min(limit, 1000),
+        }
+
+        if symbol:
+            params["symbol"] = symbol
+        if start_time:
+            params["startTime"] = start_time
+        if end_time:
+            params["endTime"] = end_time
+
+        return await self.get("/fapi/v1/allForceOrders", params)

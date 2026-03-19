@@ -12,6 +12,7 @@ from perpetual_predict.storage.models import (
     Candle,
     FearGreedIndex,
     FundingRate,
+    Liquidation,
     LongShortRatio,
     OpenInterest,
 )
@@ -86,6 +87,19 @@ CREATE TABLE IF NOT EXISTS fear_greed_index (
 )
 """
 
+CREATE_LIQUIDATIONS_TABLE = """
+CREATE TABLE IF NOT EXISTS liquidations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT NOT NULL,
+    side TEXT NOT NULL,
+    price REAL NOT NULL,
+    original_qty REAL NOT NULL,
+    timestamp TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(symbol, timestamp, price)
+)
+"""
+
 # Index creation for performance
 CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_candles_symbol_time ON candles(symbol, timeframe, open_time)",
@@ -93,6 +107,7 @@ CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_oi_symbol_time ON open_interest(symbol, timestamp)",
     "CREATE INDEX IF NOT EXISTS idx_lsr_symbol_time ON long_short_ratio(symbol, timestamp)",
     "CREATE INDEX IF NOT EXISTS idx_fg_time ON fear_greed_index(timestamp)",
+    "CREATE INDEX IF NOT EXISTS idx_liquidations_symbol_time ON liquidations(symbol, timestamp)",
 ]
 
 
@@ -124,6 +139,7 @@ class Database:
         await self._connection.execute(CREATE_OPEN_INTEREST_TABLE)
         await self._connection.execute(CREATE_LONG_SHORT_RATIO_TABLE)
         await self._connection.execute(CREATE_FEAR_GREED_TABLE)
+        await self._connection.execute(CREATE_LIQUIDATIONS_TABLE)
 
         # Create indexes
         for index_sql in CREATE_INDEXES:
@@ -472,6 +488,68 @@ class Database:
         async with self.connection.execute(sql, params) as cursor:
             rows = await cursor.fetchall()
             return [FearGreedIndex.from_dict(dict(row)) for row in rows]
+
+    # Liquidation operations
+    async def insert_liquidation(self, liq: Liquidation) -> None:
+        """Insert a liquidation record."""
+        sql = """
+        INSERT OR REPLACE INTO liquidations
+        (symbol, side, price, original_qty, timestamp)
+        VALUES (?, ?, ?, ?, ?)
+        """
+        await self.connection.execute(
+            sql,
+            (
+                liq.symbol,
+                liq.side,
+                liq.price,
+                liq.original_qty,
+                liq.timestamp.isoformat(),
+            ),
+        )
+        await self.connection.commit()
+
+    async def insert_liquidations(self, liqs: list[Liquidation]) -> None:
+        """Insert multiple liquidation records."""
+        sql = """
+        INSERT OR REPLACE INTO liquidations
+        (symbol, side, price, original_qty, timestamp)
+        VALUES (?, ?, ?, ?, ?)
+        """
+        data = [
+            (liq.symbol, liq.side, liq.price, liq.original_qty, liq.timestamp.isoformat())
+            for liq in liqs
+        ]
+        await self.connection.executemany(sql, data)
+        await self.connection.commit()
+
+    async def get_liquidations(
+        self,
+        symbol: str,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        limit: int | None = None,
+    ) -> list[Liquidation]:
+        """Get liquidation records for a symbol."""
+        sql = "SELECT * FROM liquidations WHERE symbol = ?"
+        params: list[Any] = [symbol]
+
+        if start_time:
+            sql += " AND timestamp >= ?"
+            params.append(start_time.isoformat())
+        if end_time:
+            sql += " AND timestamp <= ?"
+            params.append(end_time.isoformat())
+
+        sql += " ORDER BY timestamp DESC"
+
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+            return [Liquidation.from_dict(dict(row)) for row in rows]
 
 
 @asynccontextmanager

@@ -175,3 +175,35 @@ class FearGreedIndex:
             value=data["value"],
             classification=data["classification"],
         )
+
+
+@dataclass
+class Liquidation:
+    """Liquidation event data."""
+
+    symbol: str
+    side: str  # "BUY" or "SELL"
+    price: float
+    original_qty: float
+    timestamp: datetime
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for database storage."""
+        return {
+            "symbol": self.symbol,
+            "side": self.side,
+            "price": self.price,
+            "original_qty": self.original_qty,
+            "timestamp": self.timestamp.isoformat(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Liquidation":
+        """Create from dictionary (database row)."""
+        return cls(
+            symbol=data["symbol"],
+            side=data["side"],
+            price=data["price"],
+            original_qty=data["original_qty"],
+            timestamp=datetime.fromisoformat(data["timestamp"]),
+        )
