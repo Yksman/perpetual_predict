@@ -94,6 +94,16 @@ class SchedulerConfig:
 
 
 @dataclass
+class TelegramConfig:
+    """Telegram Bot configuration."""
+
+    bot_token: str = ""
+    chat_id: str = ""
+    enabled: bool = False
+    api_url: str = "https://api.telegram.org"
+
+
+@dataclass
 class Settings:
     """Application settings container."""
 
@@ -105,6 +115,7 @@ class Settings:
     whale_alert: WhaleAlertConfig = field(default_factory=WhaleAlertConfig)
     cryptopanic: CryptoPanicConfig = field(default_factory=CryptoPanicConfig)
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
+    telegram: TelegramConfig = field(default_factory=TelegramConfig)
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = None) -> "Settings":
@@ -161,6 +172,11 @@ class Settings:
                 ),
                 report_interval_hours=int(os.getenv("SCHEDULER_REPORT_INTERVAL", "4")),
                 retention_days=int(os.getenv("SCHEDULER_RETENTION_DAYS", "30")),
+            ),
+            telegram=TelegramConfig(
+                bot_token=os.getenv("TELEGRAM_BOT_TOKEN", ""),
+                chat_id=os.getenv("TELEGRAM_CHAT_ID", ""),
+                enabled=os.getenv("TELEGRAM_ENABLED", "false").lower() == "true",
             ),
         )
 
