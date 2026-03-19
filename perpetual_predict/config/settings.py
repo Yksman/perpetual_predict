@@ -56,6 +56,17 @@ class TradingConfig:
 
 
 @dataclass
+class WebSocketConfig:
+    """WebSocket connection configuration."""
+
+    binance_ws_url: str = "wss://fstream.binance.com/ws"
+    reconnect_delay: float = 5.0
+    max_reconnect_attempts: int = 10
+    ping_interval: float = 30.0
+    ping_timeout: float = 10.0
+
+
+@dataclass
 class Settings:
     """Application settings container."""
 
@@ -63,6 +74,7 @@ class Settings:
     database: DatabaseConfig = field(default_factory=DatabaseConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     trading: TradingConfig = field(default_factory=TradingConfig)
+    websocket: WebSocketConfig = field(default_factory=WebSocketConfig)
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = None) -> "Settings":
@@ -95,6 +107,15 @@ class Settings:
             trading=TradingConfig(
                 symbol=os.getenv("SYMBOL", "BTCUSDT"),
                 timeframe=os.getenv("TIMEFRAME", "4h"),
+            ),
+            websocket=WebSocketConfig(
+                binance_ws_url=os.getenv(
+                    "BINANCE_WS_URL", "wss://fstream.binance.com/ws"
+                ),
+                reconnect_delay=float(os.getenv("WS_RECONNECT_DELAY", "5.0")),
+                max_reconnect_attempts=int(os.getenv("WS_MAX_RECONNECT_ATTEMPTS", "10")),
+                ping_interval=float(os.getenv("WS_PING_INTERVAL", "30.0")),
+                ping_timeout=float(os.getenv("WS_PING_TIMEOUT", "10.0")),
             ),
         )
 
