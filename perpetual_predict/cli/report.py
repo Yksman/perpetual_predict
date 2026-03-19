@@ -142,9 +142,9 @@ async def generate_report(
         oi_change_24h = 0.0
         oi_records = await db.get_open_interests(symbol=symbol, limit=7)
         if oi_records:
-            open_interest = oi_records[-1].sum_open_interest
+            open_interest = oi_records[-1].open_interest_value
             if len(oi_records) >= 2:
-                old_oi = oi_records[0].sum_open_interest
+                old_oi = oi_records[0].open_interest_value
                 if old_oi > 0:
                     oi_change_24h = ((open_interest - old_oi) / old_oi) * 100
 
@@ -157,7 +157,7 @@ async def generate_report(
         # Get Fear & Greed Index
         fear_greed_value = 50
         fear_greed_classification = "Neutral"
-        fgi_records = await db.get_fear_greed_records(limit=1)
+        fgi_records = await db.get_fear_greeds(limit=1)
         if fgi_records:
             fear_greed_value = fgi_records[-1].value
             fear_greed_classification = fgi_records[-1].classification

@@ -45,7 +45,7 @@ async def collect_data(
     client = BinanceClient(
         api_key=settings.binance.api_key,
         api_secret=settings.binance.api_secret,
-        testnet=settings.binance.testnet,
+        use_testnet=settings.binance.use_testnet,
     )
 
     try:
