@@ -56,6 +56,64 @@ class TradingConfig:
 
 
 @dataclass
+class WebSocketConfig:
+    """WebSocket connection configuration."""
+
+    binance_ws_url: str = "wss://fstream.binance.com/ws"
+    reconnect_delay: float = 5.0
+    max_reconnect_attempts: int = 10
+    ping_interval: float = 30.0
+    ping_timeout: float = 10.0
+
+
+@dataclass
+class WhaleAlertConfig:
+    """Whale Alert API configuration."""
+
+    api_key: str = ""
+    base_url: str = "https://api.whale-alert.io/v1"
+    min_value_usd: int = 1_000_000
+
+
+@dataclass
+class CryptoPanicConfig:
+    """CryptoPanic API configuration."""
+
+    api_key: str = ""
+    base_url: str = "https://cryptopanic.com/api/v1"
+    filter_currencies: str = "BTC"  # Comma-separated currency codes
+
+
+@dataclass
+class SchedulerConfig:
+    """Scheduler configuration."""
+
+    collection_interval_hours: int = 4
+    report_interval_hours: int = 4
+    retention_days: int = 30  # Data retention period
+
+
+@dataclass
+class TelegramConfig:
+    """Telegram Bot configuration."""
+
+    bot_token: str = ""
+    chat_id: str = ""
+    enabled: bool = False
+    api_url: str = "https://api.telegram.org"
+
+
+@dataclass
+class DiscordConfig:
+    """Discord Webhook configuration."""
+
+    webhook_url: str = ""
+    username: str = "Perpetual Predict"
+    avatar_url: str = ""
+    enabled: bool = False
+
+
+@dataclass
 class Settings:
     """Application settings container."""
 
@@ -63,6 +121,12 @@ class Settings:
     database: DatabaseConfig = field(default_factory=DatabaseConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     trading: TradingConfig = field(default_factory=TradingConfig)
+    websocket: WebSocketConfig = field(default_factory=WebSocketConfig)
+    whale_alert: WhaleAlertConfig = field(default_factory=WhaleAlertConfig)
+    cryptopanic: CryptoPanicConfig = field(default_factory=CryptoPanicConfig)
+    scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
+    telegram: TelegramConfig = field(default_factory=TelegramConfig)
+    discord: DiscordConfig = field(default_factory=DiscordConfig)
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = None) -> "Settings":
@@ -95,6 +159,41 @@ class Settings:
             trading=TradingConfig(
                 symbol=os.getenv("SYMBOL", "BTCUSDT"),
                 timeframe=os.getenv("TIMEFRAME", "4h"),
+            ),
+            websocket=WebSocketConfig(
+                binance_ws_url=os.getenv(
+                    "BINANCE_WS_URL", "wss://fstream.binance.com/ws"
+                ),
+                reconnect_delay=float(os.getenv("WS_RECONNECT_DELAY", "5.0")),
+                max_reconnect_attempts=int(os.getenv("WS_MAX_RECONNECT_ATTEMPTS", "10")),
+                ping_interval=float(os.getenv("WS_PING_INTERVAL", "30.0")),
+                ping_timeout=float(os.getenv("WS_PING_TIMEOUT", "10.0")),
+            ),
+            whale_alert=WhaleAlertConfig(
+                api_key=os.getenv("WHALE_ALERT_API_KEY", ""),
+                min_value_usd=int(os.getenv("WHALE_ALERT_MIN_VALUE", "1000000")),
+            ),
+            cryptopanic=CryptoPanicConfig(
+                api_key=os.getenv("CRYPTOPANIC_API_KEY", ""),
+                filter_currencies=os.getenv("CRYPTOPANIC_CURRENCIES", "BTC"),
+            ),
+            scheduler=SchedulerConfig(
+                collection_interval_hours=int(
+                    os.getenv("SCHEDULER_COLLECTION_INTERVAL", "4")
+                ),
+                report_interval_hours=int(os.getenv("SCHEDULER_REPORT_INTERVAL", "4")),
+                retention_days=int(os.getenv("SCHEDULER_RETENTION_DAYS", "30")),
+            ),
+            telegram=TelegramConfig(
+                bot_token=os.getenv("TELEGRAM_BOT_TOKEN", ""),
+                chat_id=os.getenv("TELEGRAM_CHAT_ID", ""),
+                enabled=os.getenv("TELEGRAM_ENABLED", "false").lower() == "true",
+            ),
+            discord=DiscordConfig(
+                webhook_url=os.getenv("DISCORD_WEBHOOK_URL", ""),
+                username=os.getenv("DISCORD_USERNAME", "Perpetual Predict"),
+                avatar_url=os.getenv("DISCORD_AVATAR_URL", ""),
+                enabled=os.getenv("DISCORD_ENABLED", "false").lower() == "true",
             ),
         )
 
