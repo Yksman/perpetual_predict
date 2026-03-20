@@ -104,6 +104,16 @@ class TelegramConfig:
 
 
 @dataclass
+class DiscordConfig:
+    """Discord Webhook configuration."""
+
+    webhook_url: str = ""
+    username: str = "Perpetual Predict"
+    avatar_url: str = ""
+    enabled: bool = False
+
+
+@dataclass
 class Settings:
     """Application settings container."""
 
@@ -116,6 +126,7 @@ class Settings:
     cryptopanic: CryptoPanicConfig = field(default_factory=CryptoPanicConfig)
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     telegram: TelegramConfig = field(default_factory=TelegramConfig)
+    discord: DiscordConfig = field(default_factory=DiscordConfig)
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = None) -> "Settings":
@@ -177,6 +188,12 @@ class Settings:
                 bot_token=os.getenv("TELEGRAM_BOT_TOKEN", ""),
                 chat_id=os.getenv("TELEGRAM_CHAT_ID", ""),
                 enabled=os.getenv("TELEGRAM_ENABLED", "false").lower() == "true",
+            ),
+            discord=DiscordConfig(
+                webhook_url=os.getenv("DISCORD_WEBHOOK_URL", ""),
+                username=os.getenv("DISCORD_USERNAME", "Perpetual Predict"),
+                avatar_url=os.getenv("DISCORD_AVATAR_URL", ""),
+                enabled=os.getenv("DISCORD_ENABLED", "false").lower() == "true",
             ),
         )
 
