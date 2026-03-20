@@ -1,0 +1,53 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv
+ENV
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov
+.tox
+
+# Build
+*.egg-info
+dist
+build
+
+# Project specific
+data/*.db
+logs/
+*.log
+.env
+.env.*
+
+# Documentation (keep README.md for build)
+*.md
+!README.md
+
+# Tests (not needed in production)
+tests/
+
+# CI/CD
+.github/
+.claude/
+.ralph/
+
+# Misc
+.DS_Store
+Thumbs.db

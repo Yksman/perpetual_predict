@@ -11,7 +11,9 @@ on:
 
 jobs:
   collect:
-    runs-on: ubuntu-latest
+    # Use self-hosted runner (required for Binance API access from allowed regions)
+    # To set up: Repository Settings > Actions > Runners > New self-hosted runner
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repository
@@ -25,15 +27,6 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
 
-      - name: Restore database from previous run
-        uses: dawidd6/action-download-artifact@v6
-        with:
-          name: perpetual-predict-db
-          path: data/
-          if_no_artifact_found: ignore
-          workflow_conclusion: success
-          search_artifacts: true
-
       - name: Create data directory
         run: mkdir -p data logs
 
@@ -41,15 +34,10 @@ jobs:
         run: uv sync
 
       - name: Run data collection
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_ENABLED: "true"
         run: uv run python -m perpetual_predict daemon --run-once
-
-      - name: Upload database artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: perpetual-predict-db
-          path: data/perpetual_predict.db
-          retention-days: 90
-          overwrite: true
 
       - name: Upload health status
         uses: actions/upload-artifact@v4

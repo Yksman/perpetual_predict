@@ -16,6 +16,11 @@ from perpetual_predict.notifications.discord_webhook import (
     DiscordWebhook,
     EmbedColors,
 )
+from perpetual_predict.notifications.scheduler_alerts import (
+    send_collection_completed,
+    send_collection_failed,
+    send_collection_started,
+)
 from perpetual_predict.notifications.telegram_bot import TelegramBot
 
 __all__ = [
@@ -34,4 +39,8 @@ __all__ = [
     "send_discord_sr_alert",
     "send_discord_status",
     "send_discord_report",
+    # Scheduler alerts
+    "send_collection_started",
+    "send_collection_completed",
+    "send_collection_failed",
 ]
