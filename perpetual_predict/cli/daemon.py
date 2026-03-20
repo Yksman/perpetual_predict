@@ -24,7 +24,7 @@ def run_daemon(args: argparse.Namespace) -> int:
         scheduler = DataCollectionScheduler()
 
         if args.run_once:
-            # Run a single collection and exit (for GitHub Actions)
+            # Run a single collection and exit (for Cloud Run Jobs)
             logger.info("Running in single-execution mode...")
             results = asyncio.run(scheduler.run_once())
 
@@ -66,6 +66,6 @@ def setup_parser(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument(
         "--run-once",
         action="store_true",
-        help="Run a single collection and exit (useful for cron/GitHub Actions)",
+        help="Run a single collection and exit (useful for Cloud Run Jobs)",
     )
     parser.set_defaults(func=run_daemon)

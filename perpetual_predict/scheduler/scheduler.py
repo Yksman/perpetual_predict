@@ -56,7 +56,7 @@ class DataCollectionScheduler:
     async def run_once(self) -> dict[str, int]:
         """Run a single collection and exit.
 
-        This mode is designed for GitHub Actions and cron jobs.
+        This mode is designed for Cloud Run Jobs and cron schedulers.
 
         Returns:
             Dictionary with counts of collected records.
