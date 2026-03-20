@@ -88,6 +88,11 @@ class CryptoPanicConfig:
 class SchedulerConfig:
     """Scheduler configuration."""
 
+    enabled: bool = True
+    cron_hour: str = "0,4,8,12,16,20"  # 4H candle close times
+    cron_minute: str = "1"  # 1 minute after candle close
+    job_max_retries: int = 3
+    health_file_path: str = "data/scheduler_status.json"
     collection_interval_hours: int = 4
     report_interval_hours: int = 4
     retention_days: int = 30  # Data retention period
@@ -178,6 +183,13 @@ class Settings:
                 filter_currencies=os.getenv("CRYPTOPANIC_CURRENCIES", "BTC"),
             ),
             scheduler=SchedulerConfig(
+                enabled=os.getenv("SCHEDULER_ENABLED", "true").lower() == "true",
+                cron_hour=os.getenv("SCHEDULER_CRON_HOUR", "0,4,8,12,16,20"),
+                cron_minute=os.getenv("SCHEDULER_CRON_MINUTE", "1"),
+                job_max_retries=int(os.getenv("SCHEDULER_JOB_MAX_RETRIES", "3")),
+                health_file_path=os.getenv(
+                    "SCHEDULER_HEALTH_FILE", "data/scheduler_status.json"
+                ),
                 collection_interval_hours=int(
                     os.getenv("SCHEDULER_COLLECTION_INTERVAL", "4")
                 ),

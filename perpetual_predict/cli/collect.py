@@ -75,22 +75,22 @@ async def collect_data(
             logger.info(f"Collected {len(funding_rates)} funding rates")
 
             # Collect open interest
+            # Note: OI History API doesn't support startTime well, use limit instead
             logger.info(f"Collecting open interest for {symbol}...")
             oi_collector = OpenInterestCollector(client=client, symbol=symbol)
-            open_interests = await oi_collector.collect(
-                start_time=start_time, end_time=end_time
-            )
+            oi_limit = min(days * 6, 500)  # 6 candles per day for 4H, max 500
+            open_interests = await oi_collector.collect(limit=oi_limit)
             for oi in open_interests:
                 await db.insert_open_interest(oi)
             results["open_interests"] = len(open_interests)
             logger.info(f"Collected {len(open_interests)} open interest records")
 
             # Collect long/short ratio
+            # Note: Long/Short API doesn't support startTime well, use limit instead
             logger.info(f"Collecting long/short ratio for {symbol}...")
             ls_collector = LongShortRatioCollector(client=client, symbol=symbol)
-            ratios = await ls_collector.collect(
-                start_time=start_time, end_time=end_time
-            )
+            ls_limit = min(days * 6, 500)  # 6 candles per day for 4H, max 500
+            ratios = await ls_collector.collect(limit=ls_limit)
             for ratio in ratios:
                 await db.insert_long_short_ratio(ratio)
             results["long_short_ratios"] = len(ratios)
