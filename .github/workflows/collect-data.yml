@@ -1,0 +1,61 @@
+name: Scheduled Data Collection
+
+on:
+  schedule:
+    # Run every 4 hours at 1 minute past (after 4H candle close)
+    # 00:01, 04:01, 08:01, 12:01, 16:01, 20:01 UTC
+    - cron: '1 0,4,8,12,16,20 * * *'
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Restore database from previous run
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: perpetual-predict-db
+          path: data/
+          if_no_artifact_found: ignore
+          workflow_conclusion: success
+          search_artifacts: true
+
+      - name: Create data directory
+        run: mkdir -p data logs
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run data collection
+        run: uv run python -m perpetual_predict daemon --run-once
+
+      - name: Upload database artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: perpetual-predict-db
+          path: data/perpetual_predict.db
+          retention-days: 90
+          overwrite: true
+
+      - name: Upload health status
+        uses: actions/upload-artifact@v4
+        with:
+          name: scheduler-health-status
+          path: data/scheduler_status.json
+          retention-days: 7
+          overwrite: true
+        if: always()

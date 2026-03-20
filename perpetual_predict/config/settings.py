@@ -56,6 +56,17 @@ class TradingConfig:
 
 
 @dataclass
+class SchedulerConfig:
+    """Scheduler configuration."""
+
+    enabled: bool = True
+    cron_hour: str = "0,4,8,12,16,20"  # 4H candle close times
+    cron_minute: str = "1"  # 1 minute after candle close
+    job_max_retries: int = 3
+    health_file_path: str = "data/scheduler_status.json"
+
+
+@dataclass
 class Settings:
     """Application settings container."""
 
@@ -63,6 +74,7 @@ class Settings:
     database: DatabaseConfig = field(default_factory=DatabaseConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     trading: TradingConfig = field(default_factory=TradingConfig)
+    scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = None) -> "Settings":
@@ -95,6 +107,15 @@ class Settings:
             trading=TradingConfig(
                 symbol=os.getenv("SYMBOL", "BTCUSDT"),
                 timeframe=os.getenv("TIMEFRAME", "4h"),
+            ),
+            scheduler=SchedulerConfig(
+                enabled=os.getenv("SCHEDULER_ENABLED", "true").lower() == "true",
+                cron_hour=os.getenv("SCHEDULER_CRON_HOUR", "0,4,8,12,16,20"),
+                cron_minute=os.getenv("SCHEDULER_CRON_MINUTE", "1"),
+                job_max_retries=int(os.getenv("SCHEDULER_JOB_MAX_RETRIES", "3")),
+                health_file_path=os.getenv(
+                    "SCHEDULER_HEALTH_FILE", "data/scheduler_status.json"
+                ),
             ),
         )
 
