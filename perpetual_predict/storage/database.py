@@ -12,12 +12,8 @@ from perpetual_predict.storage.models import (
     Candle,
     FearGreedIndex,
     FundingRate,
-    Liquidation,
     LongShortRatio,
-    NewsItem,
     OpenInterest,
-    SchedulerRun,
-    WhaleTransaction,
 )
 
 # SQL table creation statements
@@ -90,54 +86,6 @@ CREATE TABLE IF NOT EXISTS fear_greed_index (
 )
 """
 
-CREATE_LIQUIDATIONS_TABLE = """
-CREATE TABLE IF NOT EXISTS liquidations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    symbol TEXT NOT NULL,
-    side TEXT NOT NULL,
-    price REAL NOT NULL,
-    original_qty REAL NOT NULL,
-    timestamp TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(symbol, timestamp, price)
-)
-"""
-
-CREATE_WHALE_TRANSACTIONS_TABLE = """
-CREATE TABLE IF NOT EXISTS whale_transactions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tx_hash TEXT UNIQUE NOT NULL,
-    amount_usd REAL NOT NULL,
-    from_owner TEXT,
-    to_owner TEXT,
-    transaction_type TEXT NOT NULL,
-    timestamp TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-)
-"""
-
-CREATE_NEWS_ITEMS_TABLE = """
-CREATE TABLE IF NOT EXISTS news_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    url TEXT UNIQUE NOT NULL,
-    title TEXT NOT NULL,
-    sentiment TEXT,
-    published_at TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-)
-"""
-
-CREATE_SCHEDULER_RUNS_TABLE = """
-CREATE TABLE IF NOT EXISTS scheduler_runs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    job_name TEXT NOT NULL,
-    status TEXT NOT NULL,
-    start_time TEXT NOT NULL,
-    end_time TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-)
-"""
-
 # Index creation for performance
 CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_candles_symbol_time ON candles(symbol, timeframe, open_time)",
@@ -145,10 +93,6 @@ CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_oi_symbol_time ON open_interest(symbol, timestamp)",
     "CREATE INDEX IF NOT EXISTS idx_lsr_symbol_time ON long_short_ratio(symbol, timestamp)",
     "CREATE INDEX IF NOT EXISTS idx_fg_time ON fear_greed_index(timestamp)",
-    "CREATE INDEX IF NOT EXISTS idx_liquidations_symbol_time ON liquidations(symbol, timestamp)",
-    "CREATE INDEX IF NOT EXISTS idx_whale_tx_time ON whale_transactions(timestamp)",
-    "CREATE INDEX IF NOT EXISTS idx_news_published ON news_items(published_at)",
-    "CREATE INDEX IF NOT EXISTS idx_scheduler_runs_job ON scheduler_runs(job_name, start_time)",
 ]
 
 
@@ -180,10 +124,6 @@ class Database:
         await self._connection.execute(CREATE_OPEN_INTEREST_TABLE)
         await self._connection.execute(CREATE_LONG_SHORT_RATIO_TABLE)
         await self._connection.execute(CREATE_FEAR_GREED_TABLE)
-        await self._connection.execute(CREATE_LIQUIDATIONS_TABLE)
-        await self._connection.execute(CREATE_WHALE_TRANSACTIONS_TABLE)
-        await self._connection.execute(CREATE_NEWS_ITEMS_TABLE)
-        await self._connection.execute(CREATE_SCHEDULER_RUNS_TABLE)
 
         # Create indexes
         for index_sql in CREATE_INDEXES:
@@ -532,252 +472,6 @@ class Database:
         async with self.connection.execute(sql, params) as cursor:
             rows = await cursor.fetchall()
             return [FearGreedIndex.from_dict(dict(row)) for row in rows]
-
-    # Liquidation operations
-    async def insert_liquidation(self, liq: Liquidation) -> None:
-        """Insert a liquidation record."""
-        sql = """
-        INSERT OR REPLACE INTO liquidations
-        (symbol, side, price, original_qty, timestamp)
-        VALUES (?, ?, ?, ?, ?)
-        """
-        await self.connection.execute(
-            sql,
-            (
-                liq.symbol,
-                liq.side,
-                liq.price,
-                liq.original_qty,
-                liq.timestamp.isoformat(),
-            ),
-        )
-        await self.connection.commit()
-
-    async def insert_liquidations(self, liqs: list[Liquidation]) -> None:
-        """Insert multiple liquidation records."""
-        sql = """
-        INSERT OR REPLACE INTO liquidations
-        (symbol, side, price, original_qty, timestamp)
-        VALUES (?, ?, ?, ?, ?)
-        """
-        data = [
-            (liq.symbol, liq.side, liq.price, liq.original_qty, liq.timestamp.isoformat())
-            for liq in liqs
-        ]
-        await self.connection.executemany(sql, data)
-        await self.connection.commit()
-
-    async def get_liquidations(
-        self,
-        symbol: str,
-        start_time: datetime | None = None,
-        end_time: datetime | None = None,
-        limit: int | None = None,
-    ) -> list[Liquidation]:
-        """Get liquidation records for a symbol."""
-        sql = "SELECT * FROM liquidations WHERE symbol = ?"
-        params: list[Any] = [symbol]
-
-        if start_time:
-            sql += " AND timestamp >= ?"
-            params.append(start_time.isoformat())
-        if end_time:
-            sql += " AND timestamp <= ?"
-            params.append(end_time.isoformat())
-
-        sql += " ORDER BY timestamp DESC"
-
-        if limit:
-            sql += " LIMIT ?"
-            params.append(limit)
-
-        async with self.connection.execute(sql, params) as cursor:
-            rows = await cursor.fetchall()
-            return [Liquidation.from_dict(dict(row)) for row in rows]
-
-    # Whale transaction operations
-    async def insert_whale_transaction(self, tx: WhaleTransaction) -> None:
-        """Insert a whale transaction record."""
-        sql = """
-        INSERT OR REPLACE INTO whale_transactions
-        (tx_hash, amount_usd, from_owner, to_owner, transaction_type, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """
-        await self.connection.execute(
-            sql,
-            (
-                tx.tx_hash,
-                tx.amount_usd,
-                tx.from_owner,
-                tx.to_owner,
-                tx.transaction_type,
-                tx.timestamp.isoformat(),
-            ),
-        )
-        await self.connection.commit()
-
-    async def insert_whale_transactions(self, txs: list[WhaleTransaction]) -> None:
-        """Insert multiple whale transaction records."""
-        sql = """
-        INSERT OR REPLACE INTO whale_transactions
-        (tx_hash, amount_usd, from_owner, to_owner, transaction_type, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """
-        data = [
-            (
-                tx.tx_hash,
-                tx.amount_usd,
-                tx.from_owner,
-                tx.to_owner,
-                tx.transaction_type,
-                tx.timestamp.isoformat(),
-            )
-            for tx in txs
-        ]
-        await self.connection.executemany(sql, data)
-        await self.connection.commit()
-
-    async def get_whale_transactions(
-        self,
-        start_time: datetime | None = None,
-        end_time: datetime | None = None,
-        limit: int | None = None,
-    ) -> list[WhaleTransaction]:
-        """Get whale transaction records."""
-        sql = "SELECT * FROM whale_transactions WHERE 1=1"
-        params: list[Any] = []
-
-        if start_time:
-            sql += " AND timestamp >= ?"
-            params.append(start_time.isoformat())
-        if end_time:
-            sql += " AND timestamp <= ?"
-            params.append(end_time.isoformat())
-
-        sql += " ORDER BY timestamp DESC"
-
-        if limit:
-            sql += " LIMIT ?"
-            params.append(limit)
-
-        async with self.connection.execute(sql, params) as cursor:
-            rows = await cursor.fetchall()
-            return [WhaleTransaction.from_dict(dict(row)) for row in rows]
-
-    # News item operations
-    async def insert_news_item(self, item: NewsItem) -> None:
-        """Insert a news item record."""
-        sql = """
-        INSERT OR REPLACE INTO news_items
-        (url, title, sentiment, published_at)
-        VALUES (?, ?, ?, ?)
-        """
-        await self.connection.execute(
-            sql,
-            (
-                item.url,
-                item.title,
-                item.sentiment,
-                item.published_at.isoformat(),
-            ),
-        )
-        await self.connection.commit()
-
-    async def insert_news_items(self, items: list[NewsItem]) -> None:
-        """Insert multiple news item records."""
-        sql = """
-        INSERT OR REPLACE INTO news_items
-        (url, title, sentiment, published_at)
-        VALUES (?, ?, ?, ?)
-        """
-        data = [
-            (item.url, item.title, item.sentiment, item.published_at.isoformat())
-            for item in items
-        ]
-        await self.connection.executemany(sql, data)
-        await self.connection.commit()
-
-    async def get_news_items(
-        self,
-        start_time: datetime | None = None,
-        end_time: datetime | None = None,
-        sentiment: str | None = None,
-        limit: int | None = None,
-    ) -> list[NewsItem]:
-        """Get news item records."""
-        sql = "SELECT * FROM news_items WHERE 1=1"
-        params: list[Any] = []
-
-        if start_time:
-            sql += " AND published_at >= ?"
-            params.append(start_time.isoformat())
-        if end_time:
-            sql += " AND published_at <= ?"
-            params.append(end_time.isoformat())
-        if sentiment:
-            sql += " AND sentiment = ?"
-            params.append(sentiment)
-
-        sql += " ORDER BY published_at DESC"
-
-        if limit:
-            sql += " LIMIT ?"
-            params.append(limit)
-
-        async with self.connection.execute(sql, params) as cursor:
-            rows = await cursor.fetchall()
-            return [NewsItem.from_dict(dict(row)) for row in rows]
-
-    # Scheduler run operations
-    async def insert_scheduler_run(self, run: SchedulerRun) -> int:
-        """Insert a scheduler run record and return its ID."""
-        sql = """
-        INSERT INTO scheduler_runs
-        (job_name, status, start_time, end_time)
-        VALUES (?, ?, ?, ?)
-        """
-        cursor = await self.connection.execute(
-            sql,
-            (
-                run.job_name,
-                run.status,
-                run.start_time.isoformat(),
-                run.end_time.isoformat() if run.end_time else None,
-            ),
-        )
-        await self.connection.commit()
-        return cursor.lastrowid or 0
-
-    async def update_scheduler_run(
-        self, run_id: int, status: str, end_time: datetime
-    ) -> None:
-        """Update a scheduler run status and end time."""
-        sql = "UPDATE scheduler_runs SET status = ?, end_time = ? WHERE id = ?"
-        await self.connection.execute(sql, (status, end_time.isoformat(), run_id))
-        await self.connection.commit()
-
-    async def get_scheduler_runs(
-        self,
-        job_name: str | None = None,
-        limit: int | None = None,
-    ) -> list[SchedulerRun]:
-        """Get scheduler run records."""
-        sql = "SELECT * FROM scheduler_runs WHERE 1=1"
-        params: list[Any] = []
-
-        if job_name:
-            sql += " AND job_name = ?"
-            params.append(job_name)
-
-        sql += " ORDER BY start_time DESC"
-
-        if limit:
-            sql += " LIMIT ?"
-            params.append(limit)
-
-        async with self.connection.execute(sql, params) as cursor:
-            rows = await cursor.fetchall()
-            return [SchedulerRun.from_dict(dict(row)) for row in rows]
 
 
 @asynccontextmanager

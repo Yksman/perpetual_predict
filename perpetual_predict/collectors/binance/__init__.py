@@ -2,7 +2,6 @@
 
 from perpetual_predict.collectors.binance.client import BinanceAPIError, BinanceClient
 from perpetual_predict.collectors.binance.funding import FundingRateCollector
-from perpetual_predict.collectors.binance.liquidation import LiquidationCollector
 from perpetual_predict.collectors.binance.market_data import (
     LongShortRatioCollector,
     OHLCVCollector,
@@ -13,7 +12,6 @@ __all__ = [
     "BinanceAPIError",
     "BinanceClient",
     "FundingRateCollector",
-    "LiquidationCollector",
     "LongShortRatioCollector",
     "OHLCVCollector",
     "OpenInterestCollector",
