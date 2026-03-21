@@ -1,12 +1,15 @@
 """Scheduler job definitions."""
 
 import time
-from datetime import datetime, timezone
+import uuid
+from datetime import datetime, timedelta, timezone
 
 from perpetual_predict.cli.collect import collect_data
 from perpetual_predict.config import get_settings
 from perpetual_predict.notifications.discord_webhook import DiscordWebhook
 from perpetual_predict.scheduler.health import HealthStatus
+from perpetual_predict.storage.database import get_database
+from perpetual_predict.storage.models import Prediction
 from perpetual_predict.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -134,5 +137,289 @@ async def collection_job(health_status: HealthStatus) -> dict[str, int]:
         raise
     finally:
         # Clean up webhook session
+        if webhook:
+            await webhook.close()
+
+
+def _calculate_target_candle_times(
+    timeframe: str,
+) -> tuple[datetime, datetime]:
+    """Calculate the target candle open and close times for prediction.
+
+    For 4H timeframe, candles open at 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC.
+
+    Args:
+        timeframe: Trading timeframe (e.g., "4h").
+
+    Returns:
+        Tuple of (target_candle_open, target_candle_close).
+    """
+    now = datetime.now(timezone.utc)
+
+    if timeframe.lower() == "4h":
+        hours_per_candle = 4
+    elif timeframe.lower() == "1h":
+        hours_per_candle = 1
+    else:
+        # Default to 4H
+        hours_per_candle = 4
+
+    # Find the current candle's open time
+    current_hour = now.hour
+    candle_start_hour = (current_hour // hours_per_candle) * hours_per_candle
+    current_candle_open = now.replace(
+        hour=candle_start_hour, minute=0, second=0, microsecond=0
+    )
+
+    # The target candle is the NEXT candle
+    target_candle_open = current_candle_open + timedelta(hours=hours_per_candle)
+    target_candle_close = target_candle_open + timedelta(hours=hours_per_candle)
+
+    return target_candle_open, target_candle_close
+
+
+async def evaluation_job(health_status: HealthStatus) -> list[dict]:
+    """Scheduled job to evaluate pending predictions.
+
+    Checks all predictions whose target candles have closed and
+    compares predicted vs actual direction.
+
+    Args:
+        health_status: Health status tracker to update.
+
+    Returns:
+        List of evaluation results.
+    """
+    job_name = "evaluation"
+    settings = get_settings()
+    symbol = settings.trading.symbol
+    timeframe = settings.trading.timeframe
+
+    logger.info(
+        f"Starting prediction evaluation at {datetime.now(timezone.utc).isoformat()}"
+    )
+    health_status.update_job_started(job_name)
+
+    try:
+        from perpetual_predict.llm.evaluation.evaluator import PredictionEvaluator
+
+        async with get_database() as db:
+            evaluator = PredictionEvaluator(db, symbol, timeframe)
+            results = await evaluator.evaluate_pending_predictions()
+
+        health_status.update_job_completed(
+            job_name,
+            success=True,
+            details={"evaluated_count": len(results)},
+        )
+        logger.info(f"Evaluation completed: {len(results)} predictions evaluated")
+
+        return results
+
+    except Exception as e:
+        error_msg = str(e)
+        health_status.update_job_completed(job_name, success=False, error=error_msg)
+        logger.error(f"Evaluation failed: {e}")
+        raise
+
+
+async def prediction_job(health_status: HealthStatus) -> Prediction | None:
+    """Scheduled job to generate LLM prediction for next candle.
+
+    Builds market context from collected data and runs Claude Code
+    headless agent to predict the direction of the next candle.
+
+    Args:
+        health_status: Health status tracker to update.
+
+    Returns:
+        Prediction object or None if prediction failed.
+    """
+    job_name = "prediction"
+    settings = get_settings()
+    symbol = settings.trading.symbol
+    timeframe = settings.trading.timeframe
+
+    logger.info(
+        f"Starting prediction generation at {datetime.now(timezone.utc).isoformat()}"
+    )
+    health_status.update_job_started(job_name)
+
+    try:
+        from perpetual_predict.llm.agent.runner import run_prediction_agent
+        from perpetual_predict.llm.context.builder import MarketContextBuilder
+
+        # Calculate target candle times
+        target_open, target_close = _calculate_target_candle_times(timeframe)
+
+        # Build market context
+        async with get_database() as db:
+            context_builder = MarketContextBuilder(db, symbol, timeframe)
+            market_context = await context_builder.build()
+
+        # Format context as prompt
+        prompt = market_context.format_prompt()
+        logger.debug(f"Market context prompt:\n{prompt[:500]}...")
+
+        # Run Claude Code prediction agent
+        agent_result = await run_prediction_agent(prompt)
+
+        # Create prediction record
+        prediction = Prediction(
+            prediction_id=str(uuid.uuid4()),
+            prediction_time=datetime.now(timezone.utc),
+            target_candle_open=target_open,
+            target_candle_close=target_close,
+            symbol=symbol,
+            timeframe=timeframe,
+            direction=agent_result.direction,
+            confidence=agent_result.confidence,
+            reasoning=agent_result.reasoning,
+            key_factors=agent_result.key_factors,
+            session_id=agent_result.session_id,
+            duration_ms=agent_result.duration_ms,
+            model_usage=agent_result.model_usage,
+        )
+
+        # Save to database
+        async with get_database() as db:
+            await db.insert_prediction(prediction)
+
+        health_status.update_job_completed(
+            job_name,
+            success=True,
+            details={
+                "direction": prediction.direction,
+                "confidence": prediction.confidence,
+                "target_candle": target_open.isoformat(),
+            },
+        )
+        logger.info(
+            f"Prediction generated: {prediction.direction} "
+            f"(confidence: {prediction.confidence:.0%}) "
+            f"for candle {target_open.isoformat()}"
+        )
+
+        return prediction
+
+    except Exception as e:
+        error_msg = str(e)
+        health_status.update_job_completed(job_name, success=False, error=error_msg)
+        logger.error(f"Prediction failed: {e}")
+        raise
+
+
+async def full_cycle_job(health_status: HealthStatus) -> dict:
+    """Full prediction cycle: evaluate → collect → predict → notify.
+
+    This is the main scheduled job that orchestrates the entire
+    prediction workflow every 4H.
+
+    Args:
+        health_status: Health status tracker to update.
+
+    Returns:
+        Dictionary with results from all phases.
+    """
+    job_name = "full_cycle"
+
+    start_time = time.time()
+    webhook = await _get_discord_webhook()
+
+    logger.info(
+        f"Starting full prediction cycle at {datetime.now(timezone.utc).isoformat()}"
+    )
+    health_status.update_job_started(job_name)
+
+    results = {
+        "evaluation": None,
+        "collection": None,
+        "prediction": None,
+        "success": False,
+    }
+
+    try:
+        # Phase 1: Evaluate previous predictions
+        logger.info("Phase 1/3: Evaluating previous predictions...")
+        try:
+            evaluation_results = await evaluation_job(health_status)
+            results["evaluation"] = {
+                "count": len(evaluation_results),
+                "results": evaluation_results,
+            }
+        except Exception as e:
+            logger.warning(f"Evaluation phase failed (non-fatal): {e}")
+            results["evaluation"] = {"error": str(e)}
+
+        # Phase 2: Collect new market data
+        logger.info("Phase 2/3: Collecting market data...")
+        collection_results = await collection_job(health_status)
+        results["collection"] = collection_results
+
+        # Phase 3: Generate prediction
+        logger.info("Phase 3/3: Generating prediction...")
+        prediction = await prediction_job(health_status)
+        if prediction:
+            results["prediction"] = {
+                "id": prediction.prediction_id,
+                "direction": prediction.direction,
+                "confidence": prediction.confidence,
+                "target_candle": prediction.target_candle_open.isoformat(),
+                "reasoning": prediction.reasoning,
+                "key_factors": prediction.key_factors,
+            }
+
+        results["success"] = True
+        duration = time.time() - start_time
+
+        health_status.update_job_completed(
+            job_name,
+            success=True,
+            details={
+                "duration_seconds": duration,
+                "phases_completed": 3,
+            },
+        )
+
+        # Send Discord notification with full cycle results
+        if webhook and prediction:
+            try:
+                from perpetual_predict.notifications.scheduler_alerts import (
+                    send_prediction_completed,
+                )
+
+                await send_prediction_completed(
+                    webhook,
+                    prediction,
+                    results.get("evaluation", {}),
+                    health_status,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to send prediction notification: {e}")
+
+        logger.info(f"Full cycle completed in {duration:.1f}s")
+        return results
+
+    except Exception as e:
+        duration = time.time() - start_time
+        error_msg = str(e)
+        results["error"] = error_msg
+        health_status.update_job_completed(job_name, success=False, error=error_msg)
+        logger.error(f"Full cycle failed: {e}")
+
+        # Send failure notification
+        if webhook:
+            try:
+                from perpetual_predict.notifications.scheduler_alerts import (
+                    send_cycle_failed,
+                )
+
+                await send_cycle_failed(webhook, error_msg, duration, health_status)
+            except Exception as ex:
+                logger.warning(f"Failed to send failure notification: {ex}")
+
+        raise
+
+    finally:
         if webhook:
             await webhook.close()

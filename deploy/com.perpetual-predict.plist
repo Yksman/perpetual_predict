@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.perpetual-predict</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/kevin.brave/.local/bin/uv</string>
+        <string>run</string>
+        <string>python</string>
+        <string>-m</string>
+        <string>perpetual_predict</string>
+        <string>cycle</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/kevin.brave/perpetual_predict/llm-analysis</string>
+
+    <!-- 4H intervals aligned with Binance candle times -->
+    <!-- Binance 4H candles: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC -->
+    <!-- Run at :01 to allow candle close + 1 minute buffer -->
+    <!-- KST = UTC+9, so these are: 09:01, 13:01, 17:01, 21:01, 01:01, 05:01 KST -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key><integer>1</integer>
+            <key>Minute</key><integer>1</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>5</integer>
+            <key>Minute</key><integer>1</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>9</integer>
+            <key>Minute</key><integer>1</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>13</integer>
+            <key>Minute</key><integer>1</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>17</integer>
+            <key>Minute</key><integer>1</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>21</integer>
+            <key>Minute</key><integer>1</integer>
+        </dict>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>/Users/kevin.brave/perpetual_predict/llm-analysis/logs/launchd.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/kevin.brave/perpetual_predict/llm-analysis/logs/launchd.err</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/Users/kevin.brave/.local/bin</string>
+        <key>HOME</key>
+        <string>/Users/kevin.brave</string>
+    </dict>
+
+    <!-- Ensure it runs even when waking from sleep -->
+    <key>StartInterval</key>
+    <integer>14400</integer>
+
+    <!-- Keep alive if crashes -->
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
+    <!-- Don't run at load, wait for scheduled time -->
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
