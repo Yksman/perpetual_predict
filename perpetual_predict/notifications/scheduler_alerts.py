@@ -1,6 +1,9 @@
 """Scheduler notification functions for Discord delivery."""
 
+from __future__ import annotations
+
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from perpetual_predict.notifications.discord_webhook import (
     DiscordEmbed,
@@ -9,6 +12,9 @@ from perpetual_predict.notifications.discord_webhook import (
 )
 from perpetual_predict.scheduler.health import HealthStatus
 from perpetual_predict.utils import get_logger
+
+if TYPE_CHECKING:
+    from perpetual_predict.reporters.data_integrity import IntegrityReport
 
 logger = get_logger(__name__)
 
@@ -58,6 +64,7 @@ async def send_collection_completed(
     duration_seconds: float,
     health_status: HealthStatus | None = None,
     symbol: str = "BTCUSDT",
+    integrity_report: IntegrityReport | None = None,
 ) -> bool:
     """Send notification when data collection completes successfully.
 
@@ -67,6 +74,7 @@ async def send_collection_completed(
         duration_seconds: How long the collection took.
         health_status: Optional health status for additional info.
         symbol: Trading symbol.
+        integrity_report: Optional data integrity verification report.
 
     Returns:
         True if sent successfully.
@@ -118,7 +126,18 @@ async def send_collection_completed(
 
     try:
         result = await webhook.send_embed(embed)
-        return result is not None
+        success = result is not None
+
+        # Send integrity report embed if available
+        if success and integrity_report:
+            from perpetual_predict.reporters.discord_report import (
+                create_integrity_report_embed,
+            )
+
+            integrity_embed = create_integrity_report_embed(integrity_report)
+            await webhook.send_embed(integrity_embed)
+
+        return success
     except Exception as e:
         logger.error(f"Failed to send collection completed notification: {e}")
         return False

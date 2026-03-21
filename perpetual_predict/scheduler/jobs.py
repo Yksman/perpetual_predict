@@ -80,15 +80,32 @@ async def collection_job(health_status: HealthStatus) -> dict[str, int]:
         health_status.update_job_completed(job_name, success=True, details=results)
         logger.info(f"Collection completed: {results}")
 
-        # Send completion notification
+        # Send completion notification with integrity report
         if webhook:
             try:
                 from perpetual_predict.notifications.scheduler_alerts import (
                     send_collection_completed,
                 )
+                from perpetual_predict.reporters.data_integrity import (
+                    verify_data_integrity,
+                )
+                from perpetual_predict.storage.database import get_database
+
+                # Run data integrity verification
+                integrity_report = None
+                try:
+                    async with get_database() as db:
+                        integrity_report = await verify_data_integrity(
+                            db, symbol, timeframe, hours=24
+                        )
+                except Exception as integrity_error:
+                    logger.warning(
+                        f"Failed to verify data integrity: {integrity_error}"
+                    )
 
                 await send_collection_completed(
-                    webhook, results, duration, health_status, symbol
+                    webhook, results, duration, health_status, symbol,
+                    integrity_report=integrity_report,
                 )
             except Exception as e:
                 logger.warning(f"Failed to send completion notification: {e}")
