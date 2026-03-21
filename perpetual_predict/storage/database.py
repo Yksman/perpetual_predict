@@ -14,6 +14,8 @@ from perpetual_predict.storage.models import (
     FundingRate,
     LongShortRatio,
     OpenInterest,
+    Prediction,
+    PredictionMetrics,
 )
 
 # SQL table creation statements
@@ -86,6 +88,51 @@ CREATE TABLE IF NOT EXISTS fear_greed_index (
 )
 """
 
+CREATE_PREDICTIONS_TABLE = """
+CREATE TABLE IF NOT EXISTS predictions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prediction_id TEXT NOT NULL UNIQUE,
+    prediction_time TEXT NOT NULL,
+    target_candle_open TEXT NOT NULL,
+    target_candle_close TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    timeframe TEXT NOT NULL,
+    direction TEXT NOT NULL,
+    confidence REAL NOT NULL,
+    reasoning TEXT NOT NULL,
+    key_factors TEXT DEFAULT '[]',
+    session_id TEXT DEFAULT '',
+    duration_ms INTEGER DEFAULT 0,
+    model_usage TEXT DEFAULT '{}',
+    actual_direction TEXT,
+    actual_price_change REAL,
+    is_correct INTEGER,
+    evaluated_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(symbol, timeframe, target_candle_open)
+)
+"""
+
+CREATE_PREDICTION_METRICS_TABLE = """
+CREATE TABLE IF NOT EXISTS prediction_metrics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    window_start TEXT NOT NULL,
+    window_end TEXT NOT NULL,
+    total_predictions INTEGER NOT NULL,
+    correct_predictions INTEGER NOT NULL,
+    accuracy REAL NOT NULL,
+    up_predictions INTEGER DEFAULT 0,
+    up_correct INTEGER DEFAULT 0,
+    down_predictions INTEGER DEFAULT 0,
+    down_correct INTEGER DEFAULT 0,
+    neutral_predictions INTEGER DEFAULT 0,
+    neutral_correct INTEGER DEFAULT 0,
+    avg_confidence REAL DEFAULT 0.5,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(window_start, window_end)
+)
+"""
+
 # Index creation for performance
 CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_candles_symbol_time ON candles(symbol, timeframe, open_time)",
@@ -93,6 +140,9 @@ CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_oi_symbol_time ON open_interest(symbol, timestamp)",
     "CREATE INDEX IF NOT EXISTS idx_lsr_symbol_time ON long_short_ratio(symbol, timestamp)",
     "CREATE INDEX IF NOT EXISTS idx_fg_time ON fear_greed_index(timestamp)",
+    "CREATE INDEX IF NOT EXISTS idx_predictions_pending ON predictions(is_correct) WHERE is_correct IS NULL",
+    "CREATE INDEX IF NOT EXISTS idx_predictions_time ON predictions(target_candle_open DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_predictions_symbol ON predictions(symbol, timeframe)",
 ]
 
 
@@ -124,6 +174,8 @@ class Database:
         await self._connection.execute(CREATE_OPEN_INTEREST_TABLE)
         await self._connection.execute(CREATE_LONG_SHORT_RATIO_TABLE)
         await self._connection.execute(CREATE_FEAR_GREED_TABLE)
+        await self._connection.execute(CREATE_PREDICTIONS_TABLE)
+        await self._connection.execute(CREATE_PREDICTION_METRICS_TABLE)
 
         # Create indexes
         for index_sql in CREATE_INDEXES:
@@ -472,6 +524,242 @@ class Database:
         async with self.connection.execute(sql, params) as cursor:
             rows = await cursor.fetchall()
             return [FearGreedIndex.from_dict(dict(row)) for row in rows]
+
+    # Prediction operations
+    async def insert_prediction(self, prediction: Prediction) -> None:
+        """Insert a prediction record."""
+        import json
+
+        sql = """
+        INSERT OR REPLACE INTO predictions
+        (prediction_id, prediction_time, target_candle_open, target_candle_close,
+         symbol, timeframe, direction, confidence, reasoning, key_factors,
+         session_id, duration_ms, model_usage,
+         actual_direction, actual_price_change, is_correct, evaluated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        await self.connection.execute(
+            sql,
+            (
+                prediction.prediction_id,
+                prediction.prediction_time.isoformat(),
+                prediction.target_candle_open.isoformat(),
+                prediction.target_candle_close.isoformat(),
+                prediction.symbol,
+                prediction.timeframe,
+                prediction.direction,
+                prediction.confidence,
+                prediction.reasoning,
+                json.dumps(prediction.key_factors),
+                prediction.session_id,
+                prediction.duration_ms,
+                json.dumps(prediction.model_usage),
+                prediction.actual_direction,
+                prediction.actual_price_change,
+                prediction.is_correct,
+                prediction.evaluated_at.isoformat() if prediction.evaluated_at else None,
+            ),
+        )
+        await self.connection.commit()
+
+    async def get_prediction(self, prediction_id: str) -> Prediction | None:
+        """Get a single prediction by ID."""
+        sql = "SELECT * FROM predictions WHERE prediction_id = ?"
+        async with self.connection.execute(sql, (prediction_id,)) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                return Prediction.from_dict(dict(row))
+            return None
+
+    async def get_pending_predictions(
+        self,
+        symbol: str | None = None,
+        before_time: datetime | None = None,
+    ) -> list[Prediction]:
+        """Get predictions that haven't been evaluated yet."""
+        sql = "SELECT * FROM predictions WHERE is_correct IS NULL"
+        params: list[Any] = []
+
+        if symbol:
+            sql += " AND symbol = ?"
+            params.append(symbol)
+
+        if before_time:
+            sql += " AND target_candle_close <= ?"
+            params.append(before_time.isoformat())
+
+        sql += " ORDER BY target_candle_open ASC"
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+            return [Prediction.from_dict(dict(row)) for row in rows]
+
+    async def get_predictions(
+        self,
+        symbol: str | None = None,
+        timeframe: str | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        evaluated_only: bool = False,
+        limit: int | None = None,
+    ) -> list[Prediction]:
+        """Get predictions with optional filters."""
+        sql = "SELECT * FROM predictions WHERE 1=1"
+        params: list[Any] = []
+
+        if symbol:
+            sql += " AND symbol = ?"
+            params.append(symbol)
+        if timeframe:
+            sql += " AND timeframe = ?"
+            params.append(timeframe)
+        if start_time:
+            sql += " AND prediction_time >= ?"
+            params.append(start_time.isoformat())
+        if end_time:
+            sql += " AND prediction_time <= ?"
+            params.append(end_time.isoformat())
+        if evaluated_only:
+            sql += " AND is_correct IS NOT NULL"
+
+        sql += " ORDER BY prediction_time DESC"
+
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+            return [Prediction.from_dict(dict(row)) for row in rows]
+
+    async def update_prediction_evaluation(
+        self,
+        prediction_id: str,
+        actual_direction: str,
+        actual_price_change: float,
+        is_correct: bool,
+        evaluated_at: datetime,
+    ) -> None:
+        """Update a prediction with evaluation results."""
+        sql = """
+        UPDATE predictions
+        SET actual_direction = ?, actual_price_change = ?,
+            is_correct = ?, evaluated_at = ?
+        WHERE prediction_id = ?
+        """
+        await self.connection.execute(
+            sql,
+            (
+                actual_direction,
+                actual_price_change,
+                is_correct,
+                evaluated_at.isoformat(),
+                prediction_id,
+            ),
+        )
+        await self.connection.commit()
+
+    async def get_latest_prediction(
+        self,
+        symbol: str,
+        timeframe: str,
+    ) -> Prediction | None:
+        """Get the most recent prediction for a symbol/timeframe."""
+        sql = """
+        SELECT * FROM predictions
+        WHERE symbol = ? AND timeframe = ?
+        ORDER BY prediction_time DESC
+        LIMIT 1
+        """
+        async with self.connection.execute(sql, (symbol, timeframe)) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                return Prediction.from_dict(dict(row))
+            return None
+
+    # Prediction metrics operations
+    async def insert_prediction_metrics(self, metrics: PredictionMetrics) -> None:
+        """Insert or update prediction metrics."""
+        sql = """
+        INSERT OR REPLACE INTO prediction_metrics
+        (window_start, window_end, total_predictions, correct_predictions,
+         accuracy, up_predictions, up_correct, down_predictions, down_correct,
+         neutral_predictions, neutral_correct, avg_confidence)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        await self.connection.execute(
+            sql,
+            (
+                metrics.window_start.isoformat(),
+                metrics.window_end.isoformat(),
+                metrics.total_predictions,
+                metrics.correct_predictions,
+                metrics.accuracy,
+                metrics.up_predictions,
+                metrics.up_correct,
+                metrics.down_predictions,
+                metrics.down_correct,
+                metrics.neutral_predictions,
+                metrics.neutral_correct,
+                metrics.avg_confidence,
+            ),
+        )
+        await self.connection.commit()
+
+    async def get_prediction_accuracy(
+        self,
+        symbol: str | None = None,
+        days: int = 30,
+    ) -> dict[str, Any]:
+        """Calculate prediction accuracy for the last N days."""
+        from datetime import timedelta
+
+        cutoff = datetime.utcnow() - timedelta(days=days)
+
+        sql = """
+        SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct,
+            AVG(confidence) as avg_confidence,
+            SUM(CASE WHEN direction = 'UP' THEN 1 ELSE 0 END) as up_total,
+            SUM(CASE WHEN direction = 'UP' AND is_correct = 1 THEN 1 ELSE 0 END) as up_correct,
+            SUM(CASE WHEN direction = 'DOWN' THEN 1 ELSE 0 END) as down_total,
+            SUM(CASE WHEN direction = 'DOWN' AND is_correct = 1 THEN 1 ELSE 0 END) as down_correct,
+            SUM(CASE WHEN direction = 'NEUTRAL' THEN 1 ELSE 0 END) as neutral_total,
+            SUM(CASE WHEN direction = 'NEUTRAL' AND is_correct = 1 THEN 1 ELSE 0 END) as neutral_correct
+        FROM predictions
+        WHERE is_correct IS NOT NULL
+          AND prediction_time >= ?
+        """
+        params: list[Any] = [cutoff.isoformat()]
+
+        if symbol:
+            sql += " AND symbol = ?"
+            params.append(symbol)
+
+        async with self.connection.execute(sql, params) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                total = row["total"] or 0
+                correct = row["correct"] or 0
+                return {
+                    "total": total,
+                    "correct": correct,
+                    "accuracy": correct / total if total > 0 else 0.0,
+                    "avg_confidence": row["avg_confidence"] or 0.0,
+                    "up_total": row["up_total"] or 0,
+                    "up_correct": row["up_correct"] or 0,
+                    "down_total": row["down_total"] or 0,
+                    "down_correct": row["down_correct"] or 0,
+                    "neutral_total": row["neutral_total"] or 0,
+                    "neutral_correct": row["neutral_correct"] or 0,
+                }
+            return {
+                "total": 0,
+                "correct": 0,
+                "accuracy": 0.0,
+                "avg_confidence": 0.0,
+            }
 
 
 @asynccontextmanager
