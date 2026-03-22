@@ -32,228 +32,259 @@
 |----------|--------|--------|------|
 | 데이터 수집 (Collectors) | 100% | 70% | **C+** |
 | 저장소 (Storage/DB) | 100% | 75% | **B-** |
-| 기술적 분석 (Analyzers) | 100% | 80% | **B** |
-| LLM 에이전트 (Claude) | 100% | 85% | **B+** |
+| 기술적 분석 (Analyzers) | 100% | 30% | **F** |
+| LLM 에이전트 (Claude) | 100% | 40% | **D** |
 | 예측 평가 (Evaluation) | 100% | 75% | **B-** |
 | 스케줄러 (Scheduler) | 100% | 80% | **B** |
 | 디스코드 알림 | 100% | 85% | **B+** |
-| 테스트 커버리지 | 5% | - | **F** |
-| **전체** | **MVP 완성** | **~78%** | **C+** |
+| **전체** | **MVP 완성** | **~60%** | **D+** |
 
 ---
 
-## 3. 구조적 결함 (Structural Defects)
+## 3. [CRITICAL] 에이전트가 동작하지 않는 근본 원인
 
-### 3.1 [CRITICAL] 테스트 커버리지 사실상 부재
+### 3.1 지표 컬럼명 불일치 — 에이전트에 가짜 데이터 전달
 
-- **pytest 테스트 파일:** 1개 (`test_scheduler_alerts.py`, 199줄)
-- **소스 코드:** 51개 파일, ~4,883줄
-- **추정 커버리지:** < 5%
-- **테스트 없는 핵심 모듈:**
-  - `storage/database.py` (778줄) — 전체 데이터 영속성
-  - `collectors/binance/client.py` — API 클라이언트, 서명, 에러 처리
-  - `analyzers/technical/*` — 모든 기술적 지표 계산
-  - `llm/agent/runner.py` — Claude 에이전트 실행
-  - `llm/context/builder.py` — 시장 컨텍스트 생성
-  - `llm/evaluation/evaluator.py` — 예측 평가
-  - `scheduler/jobs.py` (425줄) — 작업 정의 및 실행
-  - `cli/*` — 모든 CLI 진입점
+**검증 결과 (실제 pandas-ta 출력 vs builder.py 기대값):**
 
-**영향:** 리팩토링, 의존성 업그레이드, 버그 수정 시 회귀 테스트 불가. 프로덕션 운영 중 사일런트 실패 위험.
+```
+pandas-ta 실제 컬럼명          builder.py가 찾는 컬럼명      일치?
+─────────────────────────────────────────────────────────────────
+ATRr_14                        ATRr_14                        ✗ (아래 참고)
+BBL_20_2.0_2.0                 BBL_20_2.0                     ✗
+BBM_20_2.0_2.0                 BBM_20_2.0                     ✗
+BBU_20_2.0_2.0                 BBU_20_2.0                     ✗
+MACD_12_26_9                   MACD_12_26_9                   ✓
+MACDh_12_26_9                  MACDh_12_26_9                  ✓
+MACDs_12_26_9                  MACDs_12_26_9                  ✓
+ADX_14                         ADX_14                         ✓
+RSI_14                         RSI_14                         ✓
+STOCHRSIk_14_14_3_3            STOCHRSIk_14_14_3_3            ✓
+STOCHRSId_14_14_3_3            STOCHRSId_14_14_3_3            ✓
+```
 
-### 3.2 [HIGH] 트랜잭션 관리 부재
+**결함 1: ATR 컬럼명 덮어쓰기**
+
+`volatility.py:81`에서 pandas-ta가 반환한 `ATRr_14`를 `ATR_14`로 **이름을 바꿔서** 저장:
+
+```python
+# volatility.py:81 — 컬럼명을 강제로 변경
+result[f"ATR_{period}"] = atr   # ATRr_14 → ATR_14로 저장
+```
+
+`builder.py:239`에서는 원래 pandas-ta 이름으로 조회:
+
+```python
+atr=self._safe_get(latest, "ATRr_14", 0),  # ATR_14를 찾아야 하는데 ATRr_14를 찾음
+```
+
+**결과:** ATR은 항상 fallback 값 `0` → 에이전트에게 "**변동성 = 0**"으로 전달
+
+**결함 2: Bollinger Bands 컬럼명 이중 접미사**
+
+pandas-ta `bbands()`가 `BBL_20_2.0_2.0`을 반환하지만 builder는 `BBL_20_2.0`을 기대:
+
+```python
+# volatility.py:74 — identity transform (아무것도 안 함)
+new_col_name = col.replace(f"_{period}", f"_{period}")  # 같은 걸로 교체 = 변경 없음
+# 실제 컬럼: BBL_20_2.0_2.0 그대로 저장
+
+# builder.py:240-242 — 존재하지 않는 컬럼 조회
+bb_upper=self._safe_get(latest, "BBU_20_2.0", latest["close"] * 1.02),
+bb_middle=self._safe_get(latest, "BBM_20_2.0", latest["close"]),
+bb_lower=self._safe_get(latest, "BBL_20_2.0", latest["close"] * 0.98),
+```
+
+**결과:** BB는 항상 fallback → Upper = 가격×1.02, Middle = 현재가, Lower = 가격×0.98 (가짜 2% 밴드)
+
+**결함 3: SMA_200 물리적 불가능**
+
+builder는 `lookback_candles=100`으로 DB에서 100개 candle만 가져옴.
+SMA_200은 200개 candle이 필요하므로 항상 NaN → fallback `latest["close"]` (현재가)
+
+```python
+sma_200=self._safe_get(latest, "SMA_200", latest["close"]),
+# 결과: SMA 200 = 현재가 → "가격이 SMA 200 위/아래"가 무의미해짐
+```
+
+#### 에이전트가 실제로 받는 데이터 vs 실제 시장 데이터
+
+| 지표 | 에이전트가 받는 값 | 실제 의미 | 심각도 |
+|------|-------------------|----------|--------|
+| ATR (14) | **$0.00 (0.00% of price)** | "변동성 완전히 없음" | CRITICAL |
+| BB Upper | **현재가 × 1.02** | 가짜 2% 밴드 | CRITICAL |
+| BB Middle | **현재가 그대로** | 이동평균 아님 | CRITICAL |
+| BB Lower | **현재가 × 0.98** | 가짜 2% 밴드 | CRITICAL |
+| BB Position | **항상 50%** | 밴드 중앙 | HIGH |
+| SMA 200 | **현재가 그대로** | 이동평균 아님 | HIGH |
+
+**6개 지표 중 5개가 가짜 데이터.** 에이전트의 분석은 근본적으로 왜곡된 입력으로 수행됨.
+
+---
+
+### 3.2 프롬프트에 구조화된 출력 지시 없음
+
+**위치:** `llm/context/builder.py:157`
+
+```python
+prompt = f"""...
+Based on this analysis, predict the direction of the NEXT {self.timeframe} candle."""
+```
+
+프롬프트는 "다음 캔들 방향을 예측하라"는 한 줄로 끝남. `--json-schema`가 출력 형식을 강제하지만:
+
+- 프롬프트에 `direction`, `confidence`, `reasoning`, `key_factors` 각 필드에 대한 설명 없음
+- confidence 범위(0.0-1.0)에 대한 가이드 없음
+- key_factors에 몇 개를 넣어야 하는지 없음
+- 분석의 프레임워크(기술적 분석 → 심리 → 결론)가 없음
+
+**결과:** 에이전트가 스키마에 맞는 JSON은 만들지만, **분석 품질이 프롬프트에 의존하지 않고 모델의 자체 판단에만 의존** → 일관성 없음.
+
+### 3.3 `--json-schema` 플래그가 market_context 프롬프트와 충돌 가능
+
+**위치:** `llm/agent/runner.py:81-87`
+
+```python
+cmd = [
+    "claude",
+    "-p",
+    "--output-format", "json",
+    "--json-schema", PREDICTION_SCHEMA,
+    market_context,  # 이것이 프롬프트
+]
+```
+
+`market_context`는 수천 자의 마크다운 텍스트. CLI 인자로 전달되어:
+- OS 인자 길이 제한에 걸릴 수 있음 (일부 환경에서 ~128KB)
+- `$67,234.50` 같은 가격 표기의 `$` 문자가 shell 변수로 해석될 수 있음 (subprocess.run() list 모드에서는 안전하나 edge case 존재)
+
+---
+
+## 4. 데이터 수집 → 에이전트 활용 구조 평가
+
+### 4.1 수집된 데이터가 에이전트에 도달하는 경로
+
+```
+[DB에서 100개 candle 조회]
+        ↓
+[pandas DataFrame 변환] → _candles_to_df()
+        ↓                  open, high, low, close, volume만 추출
+[기술 지표 계산]         → add_trend/momentum/volatility_indicators()
+        ↓                  ※ 여기서 컬럼명 불일치 발생
+[최신 row에서 값 추출]   → _safe_get() with fallback defaults
+        ↓                  ※ 여기서 가짜 데이터 주입
+[MarketContext 생성]     → 50+ 필드의 dataclass
+        ↓
+[format_prompt()]        → 마크다운 텍스트로 변환
+        ↓
+[Claude CLI에 전달]      → subprocess로 실행
+```
+
+### 4.2 데이터 손실 지점
+
+| 단계 | 손실 | 영향 |
+|------|------|------|
+| DB → DataFrame | `quote_volume`, `trades`, `taker_buy_base`, `taker_buy_quote` 누락 | 거래량 분석 불완전 |
+| DataFrame → 지표 | ATR, BB 컬럼명 불일치 | 5개 지표 가짜 데이터 |
+| 지표 → MarketContext | `_safe_get` fallback | 에이전트 왜곡 |
+| MarketContext → Prompt | Support/Resistance 미포함 | 핵심 분석 누락 |
+| Prompt → CLI | 단일 행 지시문 | 분석 프레임워크 없음 |
+
+### 4.3 Support/Resistance가 완전히 누락됨
+
+`analyzers/technical/support_resistance.py`가 구현되어 있지만:
+- `builder.py`에서 **호출하지 않음**
+- `MarketContext` dataclass에 S/R 필드 **없음**
+- `format_prompt()`에 S/R 섹션 **없음**
+
+선물 거래에서 지지/저항선은 핵심 지표인데 에이전트에 전달되지 않음.
+
+### 4.4 Volume 분석기 미활용
+
+`analyzers/technical/volume.py`에 OBV, VWAP가 구현되어 있지만:
+- `builder.py`에서 `add_volume_indicators()` 호출 안 함
+- MarketContext에 해당 필드 없음
+- 거래량 정보는 24H 합산 volume만 전달
+
+---
+
+## 5. 기타 구조적/기능적 결함
+
+### 5.1 [HIGH] 트랜잭션 관리 부재
 
 **위치:** `storage/database.py`
+- 각 insert마다 개별 commit → 수집 중 실패 시 부분 데이터만 저장
 
-```python
-# 현재: 각 insert마다 개별 commit
-await self.db.execute("INSERT OR REPLACE INTO candles ...", params)
-await self.db.commit()
-```
+### 5.2 [HIGH] datetime 비일관성
 
-- 수집 작업에서 수백 개의 레코드를 개별 commit → 성능 저하
-- 수집 중간에 실패하면 부분 데이터만 저장 → 데이터 정합성 훼손
-- **개선:** 수집 단위별 batch transaction 필요
+**위치:** `storage/database.py` — `datetime.utcnow()` (deprecated, naive) vs `datetime.now(timezone.utc)` (aware) 혼용
 
-### 3.3 [HIGH] datetime 비일관성
+### 5.3 [HIGH] Fear & Greed Index 단일 장애점
 
-**위치:** `storage/database.py:717`
+외부 API (alternative.me)에 retry 로직 없음. 장애 시 해당 데이터 누락.
 
-```python
-# 문제: deprecated 메서드 사용
-now = datetime.utcnow()  # timezone-naive
+### 5.4 [MEDIUM] 미평가 예측의 TTL 없음
 
-# 다른 모듈에서는:
-datetime.now(timezone.utc)  # timezone-aware
-```
+`is_correct IS NULL`인 예측이 무한히 pending 상태로 남을 수 있음.
 
-- timezone-naive와 timezone-aware datetime 혼용
-- SQLite 비교 시 예상치 못한 결과 가능
-- Python 3.12에서 `utcnow()` deprecation 경고 발생
+### 5.5 [MEDIUM] Claude Agent 타임아웃 하드코딩 (120초, 설정 불가)
 
-### 3.4 [MEDIUM] 순환 의존성 위험
+### 5.6 [MEDIUM] 순환 의존성 위험
 
-```
-scheduler/jobs.py → reporters/data_integrity.py → storage/database.py
-notifications/scheduler_alerts.py → (lazy import) → reporters/discord_report.py
-```
+`scheduler_alerts.py`에서 lazy import로 우회 중.
 
-- `scheduler_alerts.py`에서 lazy import로 우회 중 (line 134-136)
-- 현재 동작하지만, 모듈 구조 변경 시 깨지기 쉬움
-
-### 3.5 [MEDIUM] conftest.py 및 테스트 fixture 부재
-
-- 공통 fixture (mock DB, mock API client, sample data) 없음
-- pytest-asyncio 설정 없음
-- 테스트 환경 분리 안됨 (실제 DB 접근 가능성)
+### 5.7 [LOW] Open Interest 현재값 USD 누락 → 0.0으로 저장
 
 ---
 
-## 4. 기능적 결함 (Functional Defects)
+## 6. 아키텍처 설계 평가
 
-### 4.1 [CRITICAL] Fear & Greed Index — 단일 장애점
+### 잘된 점
 
-**위치:** `collectors/sentiment/fear_greed.py`
+1. **Async-first 설계:** 전체 I/O가 `asyncio` + `aiohttp` 기반으로 일관됨
+2. **관심사 분리:** collectors / analyzers / storage / notifications 명확히 분리
+3. **LLM 3단계 폴백:** JSON → 마크다운 추출 → 키워드 기반
+4. **Graceful Shutdown:** SIGTERM/SIGINT 핸들러로 안전 종료
+5. **Health Tracking:** 작업별 성공/실패 카운터 기록
+6. **Data Integrity Reporter:** gap/duplicate 자동 검사
 
-- 외부 API (alternative.me)에 의존하지만 **retry 로직 없음**
-- API 장애 시 전체 수집 작업 영향
-- `cli/collect.py`에서 try-finally로 감싸지만, 실패 시 해당 데이터 누락
-- 다른 Binance 수집기들은 `BinanceClient`의 에러 처리 공유하지만, FGI는 독립적
+### 설계 우려사항
 
-**개선:** `utils/retry.py`의 retry 데코레이터 적용 필요. 또는 선택적(optional) 수집으로 분리.
-
-### 4.2 [HIGH] 리포트 생성 시 지표 검증 부족
-
-**위치:** `cli/report.py:124-151`
-
-```python
-# 위험: candle 수가 충분하지 않으면 NaN/crash
-sma_20 = trend.calculate_sma(df, period=20)  # 최소 20개 candle 필요
-current_sma20 = sma_20.iloc[-1]               # NaN일 수 있음
-```
-
-- 20개 미만의 candle로 SMA_20 계산 시 NaN 반환
-- `.iloc[-1]`에서 NaN 값이 리포트에 그대로 들어감
-- SMA_200은 200개 candle 필요 — 7일(42개 4H candle) 수집으로는 불충분
-
-### 4.3 [HIGH] Context Builder의 무음 실패
-
-**위치:** `llm/context/builder.py`
-
-- `_safe_get()` 메서드가 누락된 지표를 기본값(0)으로 대체
-- ATR=0, ADX=0 등은 "변동성 없음", "추세 없음"으로 해석 → **잘못된 분석 유도**
-- 에이전트에게 데이터 부족/불완전 상태를 알리지 않음
-
-**개선:** 기본값 대신 `null`/`N/A` 표시, 또는 프롬프트에 데이터 가용성 명시.
-
-### 4.4 [HIGH] 데이터 신선도 검증 없음
-
-- 수집된 데이터가 실제로 최신인지 확인하지 않음
-- Binance API가 캐싱된 오래된 데이터를 반환해도 그대로 저장
-- 4H 경계에 정렬되지 않은 candle 데이터 가능성
-- `data_integrity.py`에 gap 검사 있지만, 수집 시점이 아닌 리포트 시점에만 실행
-
-### 4.5 [MEDIUM] 미평가 예측의 TTL 없음
-
-**위치:** `llm/evaluation/evaluator.py`
-
-- `is_correct IS NULL`인 예측이 무한히 pending 상태로 남을 수 있음
-- 데이터 수집 누락으로 target candle이 없으면 영원히 평가 불가
-- 오래된 pending 예측이 누적되면 매 사이클마다 불필요한 조회
-
-**개선:** 일정 시간(예: 48시간) 경과 후 `EXPIRED`로 마킹하는 로직 필요.
-
-### 4.6 [MEDIUM] Claude Agent 타임아웃 하드코딩
-
-**위치:** `llm/agent/runner.py`
-
-```python
-timeout = 120  # seconds, not configurable
-```
-
-- 네트워크 상태, 모델 부하에 따라 120초 초과 가능
-- Cloud Run의 request timeout과 충돌 가능
-- 설정(`SchedulerConfig` 또는 별도)으로 외부화 필요
-
-### 4.7 [MEDIUM] 디스코드 알림 전송 확인 없음
-
-- 웹훅 전송 후 응답 상태만 확인, 실제 메시지 도달 검증 안됨
-- 전송 이력(audit log) 미저장
-- Rate limit 초과 시 retry는 있지만, 실패 시 데이터 유실
-
-### 4.8 [LOW] Open Interest 현재값 USD 누락
-
-**위치:** `collectors/binance/open_interest.py`
-
-- 현재 OI 엔드포인트: `sumOpenInterest`만 제공, USD 값 없음 → `0.0`으로 설정
-- 히스토리 OI에는 USD 값 있음 → 데이터 불일치
-- Context Builder에서 OI 변화율 계산 시 0.0이 포함되면 왜곡
-
----
-
-## 5. 아키텍처 설계 평가
-
-### 5.1 잘된 점
-
-1. **Async-first 설계:** 모든 I/O 작업이 `asyncio` + `aiohttp` 기반으로 일관됨
-2. **관심사 분리:** collectors / analyzers / storage / notifications가 명확히 분리
-3. **LLM 폴백 전략:** JSON 파싱 실패 시 마크다운 추출 → 키워드 기반 추출로 3단계 폴백
-4. **Graceful Shutdown:** SIGTERM/SIGINT 핸들러로 스케줄러 안전 종료
-5. **Health Tracking:** 작업별 성공/실패 카운터와 상태 파일 기록
-6. **Data Integrity Reporter:** 수집 후 데이터 품질 자동 검사 (gap, duplicate 탐지)
-
-### 5.2 설계 우려사항
-
-1. **단일 SQLite 파일:** 동시 쓰기 제한, 데이터 증가 시 성능 저하 예상. 현재 MVP에는 적절하나 확장성 한계.
-2. **동기화 경계:** `asyncio.run()`으로 CLI에서 async 코드 실행 — 중첩 이벤트 루프 문제 가능성 (Jupyter 등에서).
-3. **설정 불변성:** 런타임 설정 변경 불가 (`reload_settings()` 있으나 실제 사용 안됨).
-4. **Out-of-scope 설정 클래스 존재:** `WebSocketConfig`, `WhaleAlertConfig`, `CryptoPanicConfig` 등 사용하지 않는 설정이 코드에 포함 → 혼란 유발.
-
----
-
-## 6. 데이터 흐름 Edge Case
-
-| 시나리오 | 현재 동작 | 위험도 |
-|----------|----------|--------|
-| Binance API 점검 중 수집 | BinanceAPIError → 전체 수집 실패 | HIGH |
-| 4H candle < 20개로 분석 | NaN 지표 → 잘못된 컨텍스트 | HIGH |
-| Claude CLI 미설치 상태 | FileNotFoundError → 예측 실패 | MEDIUM |
-| Discord 웹훅 URL 미설정 | 경고 로그 후 계속 진행 (정상) | LOW |
-| 동시에 두 스케줄러 인스턴스 | SQLite 잠금 충돌 | HIGH |
-| 자정에 날짜 변경 중 수집 | 경계 candle 누락 가능 | LOW |
+1. **단일 SQLite 파일** — 동시 쓰기 제한, 확장성 한계
+2. **Out-of-scope 설정 클래스** — WebSocket, WhaleAlert 등 미사용 코드 포함
 
 ---
 
 ## 7. 우선순위별 개선 권고
 
-### P0 (즉시)
-1. **핵심 모듈 단위 테스트 추가** — database.py, collectors, analyzers 최소 커버리지 확보
-2. **Fear & Greed 수집기에 retry 로직 추가** — `@with_retry` 데코레이터 적용
-3. **지표 계산 전 최소 candle 수 검증** — 부족 시 해당 지표 스킵
+### P0 (즉시 — 에이전트 동작을 위한 필수 수정)
+
+1. **ATR 컬럼명 수정** — `volatility.py`에서 `ATR_{period}` → pandas-ta 원래 이름 사용, 또는 builder에서 `ATR_14`로 조회
+2. **BB 컬럼명 수정** — `volatility.py`에서 실제 pandas-ta 컬럼명 사용, 또는 builder에서 `BBU_20_2.0_2.0` 등으로 조회
+3. **SMA_200 lookback 확대** — `lookback_candles` 200 이상으로 변경, 또는 불충분 시 프롬프트에 명시
+4. **프롬프트 개선** — 분석 프레임워크, 각 필드 설명, confidence 기준 등을 프롬프트에 포함
+5. **Support/Resistance를 Context에 추가** — 이미 구현된 분석기 연결
+6. **Volume 분석기(OBV, VWAP) Context에 추가** — 이미 구현된 분석기 연결
 
 ### P1 (1주 내)
-4. **DB 트랜잭션 batch 처리** — 수집 단위별 단일 트랜잭션
-5. **`datetime.utcnow()` → `datetime.now(timezone.utc)` 전환**
-6. **Context Builder에서 데이터 가용성 명시** — 누락 지표를 프롬프트에 표시
-7. **미평가 예측 TTL 구현** — 48시간 후 EXPIRED 처리
+7. **Fear & Greed 수집기에 retry 로직 추가**
+8. **DB 트랜잭션 batch 처리**
+9. **`datetime.utcnow()` 전환**
+10. **미평가 예측 TTL 구현**
 
 ### P2 (2주 내)
-8. **Claude Agent 타임아웃 설정 외부화**
-9. **OI 현재값 USD 계산** — mark_price × sumOpenInterest로 추정
-10. **디스코드 전송 이력 로깅**
-11. **미사용 설정 클래스 제거** (WebSocket, WhaleAlert, CryptoPanic)
+11. **Claude Agent 타임아웃 설정 외부화**
+12. **디스코드 전송 이력 로깅**
+13. **미사용 설정 클래스 제거**
 
 ---
 
 ## 8. 결론
 
-파이프라인은 **MVP로서 기능적으로 완성**되어 있으며, 데이터 수집부터 AI 분석, 디스코드 알림까지의 전체 흐름이 동작합니다. Async-first 설계, 관심사 분리, LLM 폴백 전략 등 아키텍처적으로 좋은 결정이 다수 포함되어 있습니다.
+**에이전트가 정상 동작하지 않는 핵심 원인:** 기술적 지표 컬럼명 불일치로 인해 에이전트에 전달되는 ATR, Bollinger Bands, SMA 200 데이터가 모두 가짜 fallback 값임. 에이전트는 "ATR $0.00 (변동성 없음)", "BB 밴드폭 ±2%", "SMA 200 = 현재가"라는 비현실적 데이터로 분석을 수행하고 있어, 의미 있는 예측이 불가능한 상태.
 
-그러나 **프로덕션 운영에는 아직 부족**합니다. 핵심 문제는:
+추가로, 이미 구현된 Support/Resistance와 Volume 분석기가 에이전트에 연결되지 않아 핵심 분석 데이터가 누락됨. 프롬프트에도 구조화된 분석 가이드가 없어 에이전트의 출력 품질이 불안정함.
 
-1. **테스트 커버리지 5% 미만** — 어떤 변경도 안전하게 할 수 없는 상태
-2. **데이터 정합성 보장 부재** — 트랜잭션 없는 개별 commit, 신선도 검증 없음
-3. **외부 의존성 취약점** — FGI 단일 장애점, 지표 계산 무음 실패
-4. **무음 데이터 왜곡** — 기본값 0이 "데이터 없음"이 아닌 "값이 0"으로 해석됨
+**전체 등급: D+** — 파이프라인 골격은 완성되었으나, 데이터 파이프라인의 중간 단계에서 critical한 데이터 왜곡이 발생하여 에이전트 분석이 의미 없는 상태.
 
-**전체 등급: C+** — 기능은 완성되었으나 견고성과 테스트가 크게 부족한 상태.
+**수정 범위:** P0 항목(컬럼명 수정, lookback 확대, 프롬프트 개선, 분석기 연결)만 해결하면 에이전트가 정상적인 데이터로 분석을 수행할 수 있게 됨. 코드 변경량은 적지만 영향도가 매우 큼.
