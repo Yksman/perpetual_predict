@@ -242,7 +242,7 @@ Time: {self.context_time.strftime("%Y-%m-%d %H:%M UTC")}
 {self.recent_candles_summary}
 
 ---
-Based on this analysis, predict the direction of the NEXT {self.timeframe} candle.
+Based on this analysis, predict the direction of the CURRENT {self.timeframe} candle (just started).
 
 **중요: 모든 응답(reasoning, key_factors)은 반드시 한국어로 작성하세요.**"""
 

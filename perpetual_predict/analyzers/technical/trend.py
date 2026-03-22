@@ -87,7 +87,8 @@ def calculate_ema_distance(df: pd.DataFrame, ema_period: int) -> pd.Series:
         ema_period: EMA period to calculate distance from.
 
     Returns:
-        Series with EMA distance as percentage.
+        Series with EMA distance as percentage. Returns 0 for rows where
+        EMA cannot be calculated (insufficient data).
     """
     ema_col = f"EMA_{ema_period}"
     if ema_col not in df.columns:
@@ -95,7 +96,13 @@ def calculate_ema_distance(df: pd.DataFrame, ema_period: int) -> pd.Series:
     else:
         ema = df[ema_col]
 
-    return ((df["close"] - ema) / df["close"]) * 100
+    # Handle case where EMA is None/NaN (insufficient data for calculation)
+    if ema is None:
+        return pd.Series(0.0, index=df.index)
+
+    result = ((df["close"] - ema) / df["close"]) * 100
+    # Fill NaN values with 0 (occurs when EMA period > available data)
+    return result.fillna(0.0)
 
 
 def interpret_ema_distance(distance: float, period: int) -> str:

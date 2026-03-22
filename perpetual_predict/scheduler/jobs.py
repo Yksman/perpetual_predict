@@ -394,9 +394,9 @@ def _calculate_target_candle_times(
         hour=candle_start_hour, minute=0, second=0, microsecond=0
     )
 
-    # The target candle is the NEXT candle
-    target_candle_open = current_candle_open + timedelta(hours=hours_per_candle)
-    target_candle_close = target_candle_open + timedelta(hours=hours_per_candle)
+    # The target candle is the CURRENT candle (just started after previous close)
+    target_candle_open = current_candle_open
+    target_candle_close = current_candle_open + timedelta(hours=hours_per_candle)
 
     return target_candle_open, target_candle_close
 
@@ -447,10 +447,10 @@ async def evaluation_job(health_status: HealthStatus) -> list[dict]:
 
 
 async def prediction_job(health_status: HealthStatus) -> Prediction | None:
-    """Scheduled job to generate LLM prediction for next candle.
+    """Scheduled job to generate LLM prediction for current candle.
 
     Builds market context from collected data and runs Claude Code
-    headless agent to predict the direction of the next candle.
+    headless agent to predict the direction of the current candle (just started).
 
     Args:
         health_status: Health status tracker to update.

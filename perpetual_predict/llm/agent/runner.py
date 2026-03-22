@@ -244,7 +244,7 @@ async def test_agent() -> None:
     - Long/Short Ratio: 1.2
     - Fear & Greed: 68 (Greed)
 
-    Based on this data, predict the direction of the next 4H candle.
+    Based on this data, predict the direction of the current 4H candle (just started).
     """
 
     result = await run_prediction_agent(sample_context)

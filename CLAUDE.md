@@ -24,10 +24,7 @@ uv run python -m perpetual_predict collect                  # Collect market dat
 uv run python -m perpetual_predict report                   # Generate analysis report
 uv run python -m perpetual_predict cycle                    # Full cycle: evaluate → collect → predict
 uv run python -m perpetual_predict cycle --phase predict    # Run single phase
-uv run python -m perpetual_predict daemon --run-once        # Single collection (for Cloud Run Jobs)
-
-# Deployment
-./scripts/deploy-gcloud.sh  # Deploy to Google Cloud Run
+uv run python -m perpetual_predict daemon --run-once        # Single collection
 ```
 
 ## Architecture
@@ -40,7 +37,7 @@ uv run python -m perpetual_predict daemon --run-once        # Single collection 
 - `llm/agent/runner.py` - Invokes `claude -p --output-format json --json-schema` for structured predictions
 - `llm/context/builder.py` - Builds market context prompt from collected data
 - `llm/evaluation/evaluator.py` - Compares predictions against actual candle outcomes
-- `scheduler/scheduler.py` - APScheduler-based cron (4H intervals), Cloud Run compatible via `--run-once`
+- `scheduler/scheduler.py` - APScheduler-based cron (4H intervals)
 - `storage/database.py` - Async SQLite via `aiosqlite`, context manager pattern: `async with get_database() as db:`
 - `notifications/discord_webhook.py` - Discord embeds for scheduler status and predictions
 

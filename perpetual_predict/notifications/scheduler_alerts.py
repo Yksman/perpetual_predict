@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 
 from perpetual_predict.notifications.discord_webhook import (
@@ -21,6 +21,9 @@ if TYPE_CHECKING:
     from perpetual_predict.storage.models import Prediction
 
 logger = get_logger(__name__)
+
+# KST timezone offset (UTC+9)
+KST_OFFSET = timedelta(hours=9)
 
 
 async def send_collection_started(
@@ -262,8 +265,8 @@ async def send_prediction_completed(
         )
         .add_field(name="신뢰도", value=confidence_display, inline=True)
         .add_field(
-            name="⏰ 대상 캔들",
-            value=f"`{prediction.target_candle_open.strftime('%Y-%m-%d %H:%M')} UTC`",
+            name="⏰ 캔들 종료",
+            value=f"`{_format_datetime_kst(prediction.target_candle_close)}`",
             inline=False,
         )
         .add_field(name="📝 주요 판단 요소", value=factors_text, inline=False)
@@ -370,10 +373,18 @@ async def send_cycle_failed(
 
 
 def _format_datetime_short(dt: datetime | None) -> str:
-    """Format datetime in short format."""
+    """Format datetime in short format (UTC)."""
     if dt is None:
         return "N/A"
     return dt.strftime("%m-%d %H:%M")
+
+
+def _format_datetime_kst(dt: datetime | None) -> str:
+    """Format datetime in KST timezone."""
+    if dt is None:
+        return "N/A"
+    kst_time = dt + KST_OFFSET
+    return kst_time.strftime("%Y-%m-%d %H:%M KST")
 
 
 async def send_verification_report(

@@ -53,9 +53,5 @@ htmlcov/
 # Ruff
 .ruff_cache/
 
-# Google Cloud SDK (local installation)
-google-cloud-sdk/
-google-cloud-cli-*.tar.gz
-
 # Claude Code
 .claude/
