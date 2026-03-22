@@ -13,10 +13,12 @@
         <string>-m</string>
         <string>perpetual_predict</string>
         <string>cycle</string>
+        <string>--phase</string>
+        <string>all</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/kevin.brave/perpetual_predict/llm-analysis</string>
+    <string>/Users/kevin.brave/perpetual_predict</string>
 
     <!-- 4H intervals aligned with Binance candle times -->
     <!-- Binance 4H candles: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC -->
@@ -26,54 +28,51 @@
     <array>
         <dict>
             <key>Hour</key><integer>1</integer>
-            <key>Minute</key><integer>1</integer>
+            <key>Minute</key><integer>2</integer>
         </dict>
         <dict>
             <key>Hour</key><integer>5</integer>
-            <key>Minute</key><integer>1</integer>
+            <key>Minute</key><integer>2</integer>
         </dict>
         <dict>
             <key>Hour</key><integer>9</integer>
-            <key>Minute</key><integer>1</integer>
+            <key>Minute</key><integer>2</integer>
         </dict>
         <dict>
             <key>Hour</key><integer>13</integer>
-            <key>Minute</key><integer>1</integer>
+            <key>Minute</key><integer>2</integer>
         </dict>
         <dict>
             <key>Hour</key><integer>17</integer>
-            <key>Minute</key><integer>1</integer>
+            <key>Minute</key><integer>2</integer>
         </dict>
         <dict>
             <key>Hour</key><integer>21</integer>
-            <key>Minute</key><integer>1</integer>
+            <key>Minute</key><integer>2</integer>
         </dict>
     </array>
 
     <key>StandardOutPath</key>
-    <string>/Users/kevin.brave/perpetual_predict/llm-analysis/logs/launchd.log</string>
+    <string>/Users/kevin.brave/perpetual_predict/logs/launchd.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/kevin.brave/perpetual_predict/llm-analysis/logs/launchd.err</string>
+    <string>/Users/kevin.brave/perpetual_predict/logs/launchd.err</string>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>/usr/local/bin:/usr/bin:/bin:/Users/kevin.brave/.local/bin</string>
+        <string>/Applications/cmux.app/Contents/Resources/bin:/usr/local/bin:/usr/bin:/bin:/Users/kevin.brave/.local/bin</string>
         <key>HOME</key>
         <string>/Users/kevin.brave</string>
     </dict>
 
-    <!-- Ensure it runs even when waking from sleep -->
-    <key>StartInterval</key>
-    <integer>14400</integer>
+    <!-- Prevent rapid restarts -->
+    <key>ThrottleInterval</key>
+    <integer>300</integer>
 
-    <!-- Keep alive if crashes -->
+    <!-- Do not auto-restart on failure - rely on scheduled times only -->
     <key>KeepAlive</key>
-    <dict>
-        <key>SuccessfulExit</key>
-        <false/>
-    </dict>
+    <false/>
 
     <!-- Don't run at load, wait for scheduled time -->
     <key>RunAtLoad</key>

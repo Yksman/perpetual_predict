@@ -57,7 +57,7 @@ class ClaudeAgentError(Exception):
 
 async def run_prediction_agent(
     market_context: str,
-    timeout_seconds: int = 120,
+    timeout_seconds: int = 300,
     working_dir: Path | None = None,
 ) -> AgentResult:
     """Run Claude Code prediction agent in headless mode.
@@ -117,18 +117,23 @@ async def run_prediction_agent(
         if response.get("is_error"):
             raise ClaudeAgentError(f"Claude returned error: {response.get('result', 'Unknown error')}")
 
-        # Extract prediction from result
-        prediction_text = response.get("result", "")
+        # Extract prediction from structured_output (preferred) or result
+        prediction = response.get("structured_output")
 
-        # Try to parse as JSON (the result should be JSON based on our schema)
-        try:
-            # Sometimes the result is wrapped in markdown code blocks
-            prediction_text = _extract_json(prediction_text)
-            prediction = json.loads(prediction_text)
-        except json.JSONDecodeError:
-            # If not valid JSON, try to extract from text
-            logger.warning("Could not parse prediction as JSON, attempting extraction")
-            prediction = _extract_prediction_from_text(prediction_text)
+        if prediction and isinstance(prediction, dict):
+            # structured_output contains the JSON directly
+            logger.info("Using structured_output from Claude CLI")
+        else:
+            # Fallback to parsing result field
+            prediction_text = response.get("result", "")
+            try:
+                # Sometimes the result is wrapped in markdown code blocks
+                prediction_text = _extract_json(prediction_text)
+                prediction = json.loads(prediction_text)
+            except json.JSONDecodeError:
+                # If not valid JSON, try to extract from text
+                logger.warning("Could not parse prediction as JSON, attempting extraction")
+                prediction = _extract_prediction_from_text(prediction_text)
 
         # Validate required fields
         direction = prediction.get("direction", "NEUTRAL").upper()

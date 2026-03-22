@@ -2,9 +2,14 @@
 
 import logging
 import sys
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 from perpetual_predict.config import get_settings
+
+# Log rotation defaults
+DEFAULT_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+DEFAULT_BACKUP_COUNT = 5  # Keep 5 backup files
 
 # Module-level logger cache
 _loggers: dict[str, logging.Logger] = {}
@@ -59,10 +64,15 @@ def setup_logging(
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
-    # File handler - create directory if needed
+    # File handler with rotation - create directory if needed
     try:
         log_file.parent.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(log_file)
+        file_handler = RotatingFileHandler(
+            log_file,
+            maxBytes=DEFAULT_MAX_BYTES,
+            backupCount=DEFAULT_BACKUP_COUNT,
+            encoding="utf-8",
+        )
         file_handler.setLevel(getattr(logging, level.upper(), logging.INFO))
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)

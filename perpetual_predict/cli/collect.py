@@ -26,6 +26,8 @@ async def collect_data(
 ) -> dict[str, int]:
     """Collect all market data and save to database.
 
+    Runs API calls in parallel for better performance.
+
     Args:
         symbol: Trading symbol (default BTCUSDT).
         timeframe: Candle timeframe (default 4h).
@@ -41,75 +43,96 @@ async def collect_data(
     end_time = datetime.now(timezone.utc)
     start_time = end_time - timedelta(days=days)
 
-    # Create shared client
+    # Create shared client for Binance APIs
     client = BinanceClient(
         api_key=settings.binance.api_key,
         api_secret=settings.binance.api_secret,
         use_testnet=settings.binance.use_testnet,
     )
 
+    # Fear & Greed has its own session
+    fgi_collector = FearGreedCollector()
+
     try:
+        # Initialize collectors
+        ohlcv_collector = OHLCVCollector(
+            client=client, symbol=symbol, timeframe=timeframe
+        )
+        funding_collector = FundingRateCollector(client=client, symbol=symbol)
+        oi_collector = OpenInterestCollector(client=client, symbol=symbol)
+        ls_collector = LongShortRatioCollector(client=client, symbol=symbol)
+
+        oi_limit = min(days * 6, 500)
+        ls_limit = min(days * 6, 500)
+
+        # Run all API calls in parallel
+        logger.info(f"Collecting market data for {symbol} {timeframe} (parallel)...")
+        api_results = await asyncio.gather(
+            ohlcv_collector.collect(start_time=start_time, end_time=end_time),
+            funding_collector.collect(start_time=start_time, end_time=end_time),
+            oi_collector.collect(limit=oi_limit),
+            ls_collector.collect(limit=ls_limit),
+            fgi_collector.collect(limit=days),
+            return_exceptions=True,
+        )
+
+        candles, funding_rates, open_interests, ratios, fgi_data = api_results
+
+        # Process results and save to database using batch inserts
         async with get_database() as db:
-            # Collect OHLCV data
-            logger.info(f"Collecting OHLCV data for {symbol} {timeframe}...")
-            ohlcv_collector = OHLCVCollector(
-                client=client, symbol=symbol, timeframe=timeframe
-            )
-            candles = await ohlcv_collector.collect(
-                start_time=start_time, end_time=end_time
-            )
-            for candle in candles:
-                await db.insert_candle(candle)
-            results["candles"] = len(candles)
-            logger.info(f"Collected {len(candles)} candles")
+            # Handle candles (batch insert)
+            if isinstance(candles, Exception):
+                logger.error(f"Failed to collect candles: {candles}")
+                results["candles"] = 0
+            else:
+                if candles:
+                    await db.insert_candles(candles)
+                results["candles"] = len(candles)
+                logger.info(f"Collected {len(candles)} candles")
 
-            # Collect funding rate
-            logger.info(f"Collecting funding rate for {symbol}...")
-            funding_collector = FundingRateCollector(client=client, symbol=symbol)
-            funding_rates = await funding_collector.collect(
-                start_time=start_time, end_time=end_time
-            )
-            for rate in funding_rates:
-                await db.insert_funding_rate(rate)
-            results["funding_rates"] = len(funding_rates)
-            logger.info(f"Collected {len(funding_rates)} funding rates")
+            # Handle funding rates (batch insert)
+            if isinstance(funding_rates, Exception):
+                logger.error(f"Failed to collect funding rates: {funding_rates}")
+                results["funding_rates"] = 0
+            else:
+                if funding_rates:
+                    await db.insert_funding_rates(funding_rates)
+                results["funding_rates"] = len(funding_rates)
+                logger.info(f"Collected {len(funding_rates)} funding rates")
 
-            # Collect open interest
-            # Note: OI History API doesn't support startTime well, use limit instead
-            logger.info(f"Collecting open interest for {symbol}...")
-            oi_collector = OpenInterestCollector(client=client, symbol=symbol)
-            oi_limit = min(days * 6, 500)  # 6 candles per day for 4H, max 500
-            open_interests = await oi_collector.collect(limit=oi_limit)
-            for oi in open_interests:
-                await db.insert_open_interest(oi)
-            results["open_interests"] = len(open_interests)
-            logger.info(f"Collected {len(open_interests)} open interest records")
+            # Handle open interest (batch insert)
+            if isinstance(open_interests, Exception):
+                logger.error(f"Failed to collect open interest: {open_interests}")
+                results["open_interests"] = 0
+            else:
+                if open_interests:
+                    await db.insert_open_interests(open_interests)
+                results["open_interests"] = len(open_interests)
+                logger.info(f"Collected {len(open_interests)} open interest records")
 
-            # Collect long/short ratio
-            # Note: Long/Short API doesn't support startTime well, use limit instead
-            logger.info(f"Collecting long/short ratio for {symbol}...")
-            ls_collector = LongShortRatioCollector(client=client, symbol=symbol)
-            ls_limit = min(days * 6, 500)  # 6 candles per day for 4H, max 500
-            ratios = await ls_collector.collect(limit=ls_limit)
-            for ratio in ratios:
-                await db.insert_long_short_ratio(ratio)
-            results["long_short_ratios"] = len(ratios)
-            logger.info(f"Collected {len(ratios)} long/short ratios")
+            # Handle long/short ratios (batch insert)
+            if isinstance(ratios, Exception):
+                logger.error(f"Failed to collect long/short ratios: {ratios}")
+                results["long_short_ratios"] = 0
+            else:
+                if ratios:
+                    await db.insert_long_short_ratios(ratios)
+                results["long_short_ratios"] = len(ratios)
+                logger.info(f"Collected {len(ratios)} long/short ratios")
 
-            # Collect Fear & Greed Index
-            logger.info("Collecting Fear & Greed Index...")
-            fgi_collector = FearGreedCollector()
-            try:
-                fgi_data = await fgi_collector.collect(limit=days)
-                for fgi in fgi_data:
-                    await db.insert_fear_greed(fgi)
+            # Handle Fear & Greed (batch insert)
+            if isinstance(fgi_data, Exception):
+                logger.error(f"Failed to collect Fear & Greed: {fgi_data}")
+                results["fear_greed"] = 0
+            else:
+                if fgi_data:
+                    await db.insert_fear_greeds(fgi_data)
                 results["fear_greed"] = len(fgi_data)
                 logger.info(f"Collected {len(fgi_data)} Fear & Greed Index records")
-            finally:
-                await fgi_collector.close()
 
     finally:
         await client.close()
+        await fgi_collector.close()
 
     return results
 

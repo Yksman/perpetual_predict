@@ -1,10 +1,12 @@
 """Scheduler job definitions."""
 
+import asyncio
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
 from perpetual_predict.cli.collect import collect_data
+from perpetual_predict.collectors.binance.client import BinanceClient
 from perpetual_predict.config import get_settings
 from perpetual_predict.notifications.discord_webhook import DiscordWebhook
 from perpetual_predict.scheduler.health import HealthStatus
@@ -13,6 +15,84 @@ from perpetual_predict.storage.models import Prediction
 from perpetual_predict.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+# Timeframe to milliseconds mapping
+TIMEFRAME_MS = {
+    "1m": 60 * 1000,
+    "5m": 5 * 60 * 1000,
+    "15m": 15 * 60 * 1000,
+    "30m": 30 * 60 * 1000,
+    "1h": 60 * 60 * 1000,
+    "4h": 4 * 60 * 60 * 1000,
+    "1d": 24 * 60 * 60 * 1000,
+}
+
+
+async def _wait_for_candle_close(
+    symbol: str,
+    timeframe: str,
+    max_wait_seconds: int = 120,
+    check_interval: int = 10,
+) -> bool:
+    """Wait until the latest candle is fully closed.
+
+    Binance kline data includes close_time which is the end of the candle.
+    This function verifies the most recent candle's close_time is in the past.
+
+    Args:
+        symbol: Trading symbol (e.g., "BTCUSDT").
+        timeframe: Candle timeframe (e.g., "4h").
+        max_wait_seconds: Maximum time to wait (default 120s).
+        check_interval: Seconds between checks (default 10s).
+
+    Returns:
+        True if candle is closed, False if timeout reached.
+    """
+    settings = get_settings()
+    client = BinanceClient(
+        api_key=settings.binance.api_key,
+        api_secret=settings.binance.api_secret,
+        use_testnet=settings.binance.use_testnet,
+    )
+
+    try:
+        start_time = time.time()
+        while time.time() - start_time < max_wait_seconds:
+            # Fetch the latest 2 klines
+            klines = await client.get_klines(symbol, timeframe, limit=2)
+
+            if not klines or len(klines) < 2:
+                logger.warning("Could not fetch klines, retrying...")
+                await asyncio.sleep(check_interval)
+                continue
+
+            # Kline format: [open_time, open, high, low, close, volume, close_time, ...]
+            # The second-to-last kline should be fully closed
+            latest_closed_kline = klines[-2]
+            close_time_ms = int(latest_closed_kline[6])
+            close_time = datetime.fromtimestamp(close_time_ms / 1000, tz=timezone.utc)
+
+            now = datetime.now(timezone.utc)
+
+            if close_time < now:
+                logger.info(
+                    f"Candle closed at {close_time.isoformat()}, "
+                    f"current time: {now.isoformat()}"
+                )
+                return True
+
+            wait_remaining = (close_time - now).total_seconds()
+            logger.info(
+                f"Waiting for candle to close... "
+                f"(closes in {wait_remaining:.0f}s)"
+            )
+            await asyncio.sleep(min(check_interval, wait_remaining + 1))
+
+        logger.warning(f"Timeout waiting for candle close after {max_wait_seconds}s")
+        return False
+
+    finally:
+        await client.close()
 
 
 async def _get_discord_webhook() -> DiscordWebhook | None:
@@ -331,6 +411,21 @@ async def full_cycle_job(health_status: HealthStatus) -> dict:
     )
     health_status.update_job_started(job_name)
 
+    settings = get_settings()
+    symbol = settings.trading.symbol
+    timeframe = settings.trading.timeframe
+
+    # Wait for latest candle to close before proceeding
+    logger.info("Verifying latest candle is closed...")
+    candle_ready = await _wait_for_candle_close(
+        symbol=symbol,
+        timeframe=timeframe,
+        max_wait_seconds=120,
+        check_interval=10,
+    )
+    if not candle_ready:
+        logger.warning("Proceeding despite candle close timeout")
+
     results = {
         "evaluation": None,
         "collection": None,
@@ -423,3 +518,54 @@ async def full_cycle_job(health_status: HealthStatus) -> dict:
     finally:
         if webhook:
             await webhook.close()
+
+
+async def full_cycle_with_retry(
+    health_status: HealthStatus,
+    max_retries: int = 3,
+    retry_delays: list[int] | None = None,
+) -> dict:
+    """Full prediction cycle with automatic retry on failure.
+
+    Wraps full_cycle_job with exponential backoff retry logic.
+    Useful when transient failures (network, API) may resolve on retry.
+
+    Args:
+        health_status: Health status tracker to update.
+        max_retries: Maximum number of retry attempts (default 3).
+        retry_delays: List of delays in seconds between retries.
+                      Defaults to [60, 120, 180] (1, 2, 3 minutes).
+
+    Returns:
+        Dictionary with results from successful cycle.
+
+    Raises:
+        Exception: If all retries are exhausted.
+    """
+    if retry_delays is None:
+        retry_delays = [60, 120, 180]  # 1, 2, 3 minutes
+
+    last_error: Exception | None = None
+
+    for attempt in range(max_retries + 1):
+        try:
+            if attempt > 0:
+                logger.info(f"Retry attempt {attempt}/{max_retries}...")
+
+            return await full_cycle_job(health_status)
+
+        except Exception as e:
+            last_error = e
+            logger.error(f"Cycle attempt {attempt + 1} failed: {e}")
+
+            if attempt < max_retries:
+                delay = retry_delays[min(attempt, len(retry_delays) - 1)]
+                logger.info(f"Waiting {delay}s before retry...")
+                await asyncio.sleep(delay)
+            else:
+                logger.error(f"All {max_retries + 1} attempts failed")
+
+    # Should not reach here, but raise last error if it does
+    if last_error:
+        raise last_error
+    raise RuntimeError("Unexpected retry loop exit")

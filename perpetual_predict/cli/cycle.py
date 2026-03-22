@@ -2,6 +2,9 @@
 
 import argparse
 import asyncio
+import fcntl
+import os
+from pathlib import Path
 
 from perpetual_predict.scheduler.health import HealthStatus
 from perpetual_predict.scheduler.jobs import (
@@ -13,6 +16,9 @@ from perpetual_predict.scheduler.jobs import (
 from perpetual_predict.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+# Lock file to prevent concurrent execution
+LOCK_FILE = Path("/tmp/perpetual_predict_cycle.lock")
 
 
 def setup_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -49,7 +55,19 @@ def run_cycle(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, 1 for failure).
     """
+    lock_fd = None
     try:
+        # Acquire exclusive lock to prevent concurrent execution
+        lock_fd = open(LOCK_FILE, "w")
+        try:
+            fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lock_fd.write(str(os.getpid()))
+            lock_fd.flush()
+            logger.debug(f"Acquired lock: {LOCK_FILE}")
+        except BlockingIOError:
+            logger.error("Another cycle is already running. Exiting.")
+            return 1
+
         return asyncio.run(_run_cycle_async(args))
     except KeyboardInterrupt:
         logger.info("Cycle interrupted by user")
@@ -57,6 +75,15 @@ def run_cycle(args: argparse.Namespace) -> int:
     except Exception as e:
         logger.error(f"Cycle failed: {e}")
         return 1
+    finally:
+        if lock_fd:
+            try:
+                fcntl.flock(lock_fd, fcntl.LOCK_UN)
+                lock_fd.close()
+                LOCK_FILE.unlink(missing_ok=True)
+                logger.debug("Released lock")
+            except Exception:
+                pass
 
 
 async def _run_cycle_async(args: argparse.Namespace) -> int:

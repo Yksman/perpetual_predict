@@ -299,9 +299,7 @@ async def send_prediction_completed(
 
     # Add Claude Code metadata
     if prediction.duration_ms > 0:
-        embed.set_footer(
-            text=f"🤖 Claude Code Headless | {prediction.duration_ms / 1000:.1f}s"
-        )
+        embed.footer = f"🤖 Claude Code Headless | {prediction.duration_ms / 1000:.1f}s"
 
     try:
         result = await webhook.send_embed(embed)

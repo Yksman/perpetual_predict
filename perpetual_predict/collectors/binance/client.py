@@ -1,5 +1,6 @@
 """Binance Futures API client."""
 
+import asyncio
 import hashlib
 import hmac
 import time
@@ -11,6 +12,16 @@ from perpetual_predict.config import get_settings
 from perpetual_predict.utils import get_logger
 
 logger = get_logger(__name__)
+
+# Retryable error codes (rate limits, server errors)
+RETRYABLE_ERROR_CODES = {
+    -1003,  # TOO_MANY_REQUESTS
+    -1015,  # TOO_MANY_ORDERS
+    -1016,  # SERVICE_UNAVAILABLE
+}
+
+# Retryable HTTP status codes
+RETRYABLE_HTTP_STATUS = {429, 500, 502, 503, 504}
 
 
 class BinanceAPIError(Exception):
@@ -103,14 +114,16 @@ class BinanceClient:
         endpoint: str,
         params: dict[str, Any] | None = None,
         signed: bool = False,
+        max_retries: int = 3,
     ) -> Any:
-        """Make an API request.
+        """Make an API request with automatic retry for transient errors.
 
         Args:
             method: HTTP method (GET, POST, etc.).
             endpoint: API endpoint path.
             params: Query parameters.
             signed: Whether to sign the request.
+            max_retries: Maximum number of retry attempts.
 
         Returns:
             JSON response data.
@@ -125,22 +138,63 @@ class BinanceClient:
             params = self._sign_request(params)
 
         url = f"{self.base_url}{endpoint}"
+        last_exception: Exception | None = None
 
-        logger.debug(f"Request: {method} {url}")
+        for attempt in range(max_retries + 1):
+            try:
+                logger.debug(f"Request: {method} {url} (attempt {attempt + 1})")
 
-        async with self.session.request(method, url, params=params) as response:
-            data = await response.json()
+                async with self.session.request(method, url, params=params) as response:
+                    # Handle retryable HTTP status codes
+                    if response.status in RETRYABLE_HTTP_STATUS:
+                        if attempt < max_retries:
+                            delay = min(2 ** attempt, 30)  # Exponential backoff, max 30s
+                            logger.warning(
+                                f"Retryable HTTP {response.status}, retrying in {delay}s..."
+                            )
+                            await asyncio.sleep(delay)
+                            continue
+                        raise BinanceAPIError(
+                            response.status, f"HTTP Error after {max_retries} retries"
+                        )
 
-            # Check for API errors
-            if isinstance(data, dict) and "code" in data and "msg" in data:
-                raise BinanceAPIError(data["code"], data["msg"])
+                    data = await response.json()
 
-            if response.status != 200:
-                raise BinanceAPIError(
-                    response.status, f"HTTP Error: {response.reason}"
-                )
+                    # Check for API errors
+                    if isinstance(data, dict) and "code" in data and "msg" in data:
+                        error_code = data["code"]
+                        # Check if error is retryable
+                        if error_code in RETRYABLE_ERROR_CODES and attempt < max_retries:
+                            delay = min(2 ** attempt, 30)
+                            logger.warning(
+                                f"Retryable API error {error_code}, retrying in {delay}s..."
+                            )
+                            await asyncio.sleep(delay)
+                            continue
+                        raise BinanceAPIError(error_code, data["msg"])
 
-            return data
+                    if response.status != 200:
+                        raise BinanceAPIError(
+                            response.status, f"HTTP Error: {response.reason}"
+                        )
+
+                    return data
+
+            except aiohttp.ClientError as e:
+                last_exception = e
+                if attempt < max_retries:
+                    delay = min(2 ** attempt, 30)
+                    logger.warning(
+                        f"Network error: {e}, retrying in {delay}s..."
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                raise
+
+        # Should not reach here, but just in case
+        if last_exception:
+            raise last_exception
+        raise RuntimeError("Unexpected retry loop exit")
 
     async def get(
         self,
