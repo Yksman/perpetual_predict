@@ -271,6 +271,53 @@ class Prediction:
 
 
 @dataclass
+class Liquidation:
+    """Liquidation (force order) aggregated data for a time period."""
+
+    symbol: str
+    timestamp: datetime
+    long_liquidation_volume: float  # BTC volume of liquidated longs
+    short_liquidation_volume: float  # BTC volume of liquidated shorts
+    total_liquidation_volume: float
+    liquidation_count: int = 0
+
+    @property
+    def imbalance(self) -> float:
+        """Calculate liquidation imbalance.
+
+        Positive = more longs liquidated (bearish pressure)
+        Negative = more shorts liquidated (bullish pressure)
+        """
+        total = self.total_liquidation_volume
+        if total == 0:
+            return 0.0
+        return (self.long_liquidation_volume - self.short_liquidation_volume) / total
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for database storage."""
+        return {
+            "symbol": self.symbol,
+            "timestamp": self.timestamp.isoformat(),
+            "long_liquidation_volume": self.long_liquidation_volume,
+            "short_liquidation_volume": self.short_liquidation_volume,
+            "total_liquidation_volume": self.total_liquidation_volume,
+            "liquidation_count": self.liquidation_count,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Liquidation":
+        """Create from dictionary (database row)."""
+        return cls(
+            symbol=data["symbol"],
+            timestamp=datetime.fromisoformat(data["timestamp"]),
+            long_liquidation_volume=data["long_liquidation_volume"],
+            short_liquidation_volume=data["short_liquidation_volume"],
+            total_liquidation_volume=data["total_liquidation_volume"],
+            liquidation_count=data.get("liquidation_count", 0),
+        )
+
+
+@dataclass
 class PredictionMetrics:
     """Aggregated prediction metrics for a time window."""
 

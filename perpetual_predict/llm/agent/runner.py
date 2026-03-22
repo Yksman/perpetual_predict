@@ -17,19 +17,23 @@ PREDICTION_SCHEMA = json.dumps({
     "properties": {
         "direction": {
             "type": "string",
-            "enum": ["UP", "DOWN", "NEUTRAL"]
+            "enum": ["UP", "DOWN", "NEUTRAL"],
+            "description": "예측 방향 (UP: 상승, DOWN: 하락, NEUTRAL: 횡보)"
         },
         "confidence": {
             "type": "number",
             "minimum": 0.0,
-            "maximum": 1.0
+            "maximum": 1.0,
+            "description": "예측 신뢰도 (0.0 ~ 1.0)"
         },
         "reasoning": {
-            "type": "string"
+            "type": "string",
+            "description": "예측 근거를 한국어로 상세히 설명"
         },
         "key_factors": {
             "type": "array",
-            "items": {"type": "string"}
+            "items": {"type": "string"},
+            "description": "주요 판단 요소 목록 (한국어로 작성)"
         }
     },
     "required": ["direction", "confidence", "reasoning", "key_factors"]
