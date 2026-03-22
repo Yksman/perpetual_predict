@@ -4,6 +4,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 from perpetual_predict.storage.database import Database
+from perpetual_predict.storage.models import (
+    Candle,
+    FundingRate,
+    LongShortRatio,
+    OpenInterest,
+)
 from perpetual_predict.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -371,3 +377,231 @@ async def verify_data_integrity(
         logger.warning("Data integrity check found issues")
 
     return report
+
+
+# =============================================================================
+# Latest Data Verification (for real-time data freshness check)
+# =============================================================================
+
+
+@dataclass
+class LatestDataVerification:
+    """각 데이터 타입별 최신화 검증 결과."""
+
+    # 검증 결과
+    candle_4h: bool = False
+    funding_rate_8h: bool = False
+    open_interest_4h: bool = False
+    long_short_ratio_4h: bool = False
+
+    # 기대 타임스탬프
+    expected_candle_time: datetime | None = None
+    expected_funding_time: datetime | None = None
+    expected_oi_time: datetime | None = None
+    expected_ls_time: datetime | None = None
+
+    # 실제 최신 데이터 (디스코드 표시용)
+    latest_candle: Candle | None = None
+    latest_funding: FundingRate | None = None
+    latest_oi: OpenInterest | None = None
+    latest_ls: LongShortRatio | None = None
+
+    # 메타데이터
+    verified_at: datetime = field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+    @property
+    def all_verified(self) -> bool:
+        """모든 데이터가 검증되었는지 확인."""
+        return all([
+            self.candle_4h,
+            self.funding_rate_8h,
+            self.open_interest_4h,
+            self.long_short_ratio_4h,
+        ])
+
+    @property
+    def verified_count(self) -> int:
+        """검증된 데이터 수."""
+        return sum([
+            self.candle_4h,
+            self.funding_rate_8h,
+            self.open_interest_4h,
+            self.long_short_ratio_4h,
+        ])
+
+    @property
+    def missing_data(self) -> list[str]:
+        """미수집 데이터 목록."""
+        missing = []
+        if not self.candle_4h:
+            missing.append("4H Candle")
+        if not self.funding_rate_8h:
+            missing.append("8H Funding")
+        if not self.open_interest_4h:
+            missing.append("4H OI")
+        if not self.long_short_ratio_4h:
+            missing.append("4H LS Ratio")
+        return missing
+
+
+def calculate_expected_timestamps(
+    reference_time: datetime | None = None,
+) -> dict[str, datetime]:
+    """현재 시간 기준 각 데이터 타입별 기대 타임스탬프 계산.
+
+    4H 캔들: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC
+    8H Funding: 00:00, 08:00, 16:00 UTC
+
+    Args:
+        reference_time: 기준 시간 (기본: 현재 UTC)
+
+    Returns:
+        각 데이터 타입별 기대 타임스탬프
+    """
+    if reference_time is None:
+        reference_time = datetime.now(timezone.utc)
+
+    # 4H 데이터 (Candle, OI, LS Ratio)
+    # 캔들 마감 직후에 실행되므로, 방금 마감된 캔들의 open_time 계산
+    current_4h_slot = (reference_time.hour // 4) * 4
+    current_4h_boundary = reference_time.replace(
+        hour=current_4h_slot, minute=0, second=0, microsecond=0
+    )
+
+    # 캔들 마감 후 첫 10분 내에 실행 시, 방금 마감된 캔들 = 4시간 전
+    # 예: 04:00:30 실행 → 00:00~04:00 캔들 (open_time=00:00)
+    minutes_into_slot = (reference_time - current_4h_boundary).total_seconds() / 60
+    if minutes_into_slot <= 10:
+        expected_4h = current_4h_boundary - timedelta(hours=4)
+    else:
+        expected_4h = current_4h_boundary - timedelta(hours=4)
+
+    # 8H Funding Rate
+    # 00:00, 08:00, 16:00 UTC
+    current_8h_slot = (reference_time.hour // 8) * 8
+    expected_8h = reference_time.replace(
+        hour=current_8h_slot, minute=0, second=0, microsecond=0
+    )
+
+    return {
+        "candle_4h": expected_4h,
+        "oi_4h": expected_4h,
+        "ls_ratio_4h": expected_4h,
+        "funding_8h": expected_8h,
+    }
+
+
+async def verify_latest_data(
+    db: Database,
+    symbol: str = "BTCUSDT",
+    timeframe: str = "4h",
+    tolerance_minutes: int = 5,
+) -> LatestDataVerification:
+    """모든 데이터 타입의 최신화 검증.
+
+    각 데이터 타입별로 기대하는 타임스탬프가 DB에 존재하는지 확인하고,
+    실제 최신 데이터를 함께 반환합니다.
+
+    Args:
+        db: 데이터베이스 연결
+        symbol: 거래 심볼
+        timeframe: 캔들 타임프레임
+        tolerance_minutes: 타임스탬프 허용 오차 (분)
+
+    Returns:
+        LatestDataVerification 검증 결과 및 최신 데이터
+    """
+    expected = calculate_expected_timestamps()
+    tolerance = timedelta(minutes=tolerance_minutes)
+
+    result = LatestDataVerification(
+        expected_candle_time=expected["candle_4h"],
+        expected_funding_time=expected["funding_8h"],
+        expected_oi_time=expected["oi_4h"],
+        expected_ls_time=expected["ls_ratio_4h"],
+    )
+
+    logger.info(
+        f"Verifying latest data for {symbol} - "
+        f"expected 4H: {expected['candle_4h'].isoformat()}, "
+        f"expected 8H funding: {expected['funding_8h'].isoformat()}"
+    )
+
+    # 1. 4H Candle 검증
+    candles = await db.get_candles(
+        symbol=symbol,
+        timeframe=timeframe,
+        start_time=expected["candle_4h"] - tolerance,
+        limit=5,
+    )
+    if candles:
+        result.latest_candle = candles[0]
+        for candle in candles:
+            time_diff = abs((candle.open_time - expected["candle_4h"]).total_seconds())
+            if time_diff < tolerance.total_seconds():
+                result.candle_4h = True
+                result.latest_candle = candle
+                break
+
+    # 2. 8H Funding Rate 검증
+    funding_rates = await db.get_funding_rates(
+        symbol=symbol,
+        start_time=expected["funding_8h"] - tolerance,
+        limit=5,
+    )
+    if funding_rates:
+        result.latest_funding = funding_rates[0]
+        for fr in funding_rates:
+            time_diff = abs(
+                (fr.funding_time - expected["funding_8h"]).total_seconds()
+            )
+            if time_diff < tolerance.total_seconds():
+                result.funding_rate_8h = True
+                result.latest_funding = fr
+                break
+
+    # 3. 4H Open Interest 검증
+    ois = await db.get_open_interests(
+        symbol=symbol,
+        start_time=expected["oi_4h"] - tolerance,
+        limit=5,
+    )
+    if ois:
+        result.latest_oi = ois[0]
+        for oi in ois:
+            time_diff = abs((oi.timestamp - expected["oi_4h"]).total_seconds())
+            if time_diff < tolerance.total_seconds():
+                result.open_interest_4h = True
+                result.latest_oi = oi
+                break
+
+    # 4. 4H Long/Short Ratio 검증
+    ls_ratios = await db.get_long_short_ratios(
+        symbol=symbol,
+        start_time=expected["ls_ratio_4h"] - tolerance,
+        limit=5,
+    )
+    if ls_ratios:
+        result.latest_ls = ls_ratios[0]
+        for ls in ls_ratios:
+            time_diff = abs((ls.timestamp - expected["ls_ratio_4h"]).total_seconds())
+            if time_diff < tolerance.total_seconds():
+                result.long_short_ratio_4h = True
+                result.latest_ls = ls
+                break
+
+    # 로그 출력
+    if result.all_verified:
+        logger.info(
+            f"All data verified: Candle, Funding, OI, LS Ratio "
+            f"({result.verified_count}/4)"
+        )
+    else:
+        logger.warning(
+            f"Data verification incomplete ({result.verified_count}/4): "
+            f"missing {result.missing_data}"
+        )
+
+    return result

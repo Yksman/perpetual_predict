@@ -4,97 +4,64 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Perpetual Predict is a cryptocurrency futures prediction system for BTCUSDT.P on 4H timeframes. Phase 1 MVP focuses on data collection automation and analysis report generation for manual Claude Code analysis.
+Perpetual Predict is a cryptocurrency futures prediction system for BTCUSDT.P on 4H timeframes. The system collects market data, runs technical analysis, makes predictions via Claude Code CLI (`claude -p`), evaluates past predictions, and sends Discord notifications.
 
 ## Commands
 
 ```bash
 # Install dependencies
-uv sync  # or pip install -e .
+uv sync
 
 # Run linter
 ruff check .
 
-# Run tests
+# Run tests (async mode auto-enabled via pyproject.toml)
 pytest
+pytest tests/test_notifications/test_scheduler_alerts.py  # Single file
 
-# Run single test file
-pytest tests/test_collectors/test_market_data.py
+# CLI commands
+uv run python -m perpetual_predict collect                  # Collect market data
+uv run python -m perpetual_predict report                   # Generate analysis report
+uv run python -m perpetual_predict cycle                    # Full cycle: evaluate → collect → predict
+uv run python -m perpetual_predict cycle --phase predict    # Run single phase
+uv run python -m perpetual_predict daemon --run-once        # Single collection (for Cloud Run Jobs)
 
-# CLI commands (after implementation)
-python -m perpetual_predict collect   # Collect market data
-python -m perpetual_predict report    # Generate analysis report
+# Deployment
+./scripts/deploy-gcloud.sh  # Deploy to Google Cloud Run
 ```
 
 ## Architecture
 
-```
-perpetual_predict/
-├── collectors/           # Async data collectors
-│   ├── base_collector.py    # Abstract base class
-│   ├── binance/             # Binance Futures API
-│   │   ├── client.py           # API client with retry logic
-│   │   ├── market_data.py      # OHLCV & long/short ratio
-│   │   ├── funding.py          # Funding rate collector
-│   │   └── open_interest.py    # Open interest collector
-│   └── sentiment/           # External sentiment sources
-│       └── fear_greed.py       # Fear & Greed Index
-├── analyzers/            # Technical analysis
-│   └── technical/
-│       ├── trend.py         # SMA, EMA, MACD, ADX
-│       ├── momentum.py      # RSI, Stochastic RSI
-│       ├── volatility.py    # Bollinger Bands, ATR
-│       ├── volume.py        # OBV, VWAP
-│       └── support_resistance.py
-├── storage/              # Data persistence
-│   ├── database.py          # SQLite connection/operations
-│   └── models.py            # Data models
-├── reporters/            # Report generation
-│   ├── markdown_generator.py
-│   └── templates/
-│       └── analysis_report.md.j2
-├── config/               # Configuration
-│   ├── __init__.py
-│   └── settings.py          # Env vars & settings
-└── utils/
-    ├── logger.py            # Logging setup
-    └── retry.py             # Retry decorator for API calls
-```
+**Data Flow**: Binance API → Collectors → SQLite → LLM Context Builder → Claude CLI → Predictions → Evaluator → Discord
+
+**Key Modules**:
+- `cli/` - Command entry points: `collect.py`, `cycle.py`, `daemon.py`, `report.py`
+- `collectors/binance/` - Async collectors sharing a `BinanceClient` session
+- `llm/agent/runner.py` - Invokes `claude -p --output-format json --json-schema` for structured predictions
+- `llm/context/builder.py` - Builds market context prompt from collected data
+- `llm/evaluation/evaluator.py` - Compares predictions against actual candle outcomes
+- `scheduler/scheduler.py` - APScheduler-based cron (4H intervals), Cloud Run compatible via `--run-once`
+- `storage/database.py` - Async SQLite via `aiosqlite`, context manager pattern: `async with get_database() as db:`
+- `notifications/discord_webhook.py` - Discord embeds for scheduler status and predictions
 
 ## Key Patterns
 
-- **Async collectors**: All Binance API collectors use `asyncio` and `aiohttp`
-- **Retry logic**: API calls wrapped with exponential backoff via `utils/retry.py`
-- **SQLite storage**: Single `storage/database.py` handles all DB operations
-- **Jinja2 reports**: Markdown templates in `reporters/templates/`
+- **Async context managers**: Database uses `async with get_database() as db:` pattern
+- **Parallel API calls**: Collectors use `asyncio.gather(..., return_exceptions=True)` for concurrent requests
+- **File locking**: `cycle` command uses `fcntl.flock()` to prevent concurrent execution
+- **Structured LLM output**: Predictions use JSON schema validation with fallback text parsing
+- **Settings singleton**: `get_settings()` lazily loads from env vars, use `reload_settings()` to refresh
 
-## Tech Stack
+## Environment Variables
 
-- Python 3.12+
-- `aiohttp` for async HTTP
-- `pandas` for data manipulation
-- `ta` or `pandas-ta` for technical indicators
-- `SQLite` for local storage
-- `Jinja2` for report templates
-- `ruff` for linting
-- `pytest` for testing
+Required:
+- `BINANCE_API_KEY`, `BINANCE_API_SECRET` - Binance Futures API credentials
 
-## Out of Scope (Do Not Implement)
+Optional (see `config/settings.py` for defaults):
+- `DISCORD_WEBHOOK_URL`, `DISCORD_ENABLED` - Discord notifications
+- `SCHEDULER_CRON_HOUR=0,4,8,12,16,20` - 4H candle close times
+- `DATABASE_PATH=data/perpetual_predict.db`
 
-- Auto-trading (order_manager.py, position_tracker.py)
-- Claude API auto-analysis integration
-- Telegram Bot notifications
-- Backtesting system
-- WebSocket real-time data
-- Liquidation data collection
-- On-chain exchange flow/whale alerts
-- CryptoPanic news collection
-- Scheduler automation
+## Database Tables
 
-## Ralph Agent System
-
-This project uses `ralph.sh` for autonomous task execution:
-- Tasks defined in `.ralph/current/PRD.md`
-- Progress logged to `.ralph/current/progress.txt`
-- Each task = one commit with format: `feat: US-XX - [task name]`
-- Run `./ralph.sh` to start autonomous development loop
+Predictions are stored with `is_correct` initially NULL, then evaluated when the target candle closes. Query pending evaluations: `SELECT * FROM predictions WHERE is_correct IS NULL`

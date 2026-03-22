@@ -22,33 +22,33 @@
 
     <!-- 4H intervals aligned with Binance candle times -->
     <!-- Binance 4H candles: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC -->
-    <!-- Run at :01 to allow candle close + 1 minute buffer -->
-    <!-- KST = UTC+9, so these are: 09:01, 13:01, 17:01, 21:01, 01:01, 05:01 KST -->
+    <!-- Run at :00 exactly at candle close - system handles API latency with retry logic -->
+    <!-- KST = UTC+9, so these are: 09:00, 13:00, 17:00, 21:00, 01:00, 05:00 KST -->
     <key>StartCalendarInterval</key>
     <array>
         <dict>
             <key>Hour</key><integer>1</integer>
-            <key>Minute</key><integer>2</integer>
+            <key>Minute</key><integer>0</integer>
         </dict>
         <dict>
             <key>Hour</key><integer>5</integer>
-            <key>Minute</key><integer>2</integer>
+            <key>Minute</key><integer>0</integer>
         </dict>
         <dict>
             <key>Hour</key><integer>9</integer>
-            <key>Minute</key><integer>2</integer>
+            <key>Minute</key><integer>0</integer>
         </dict>
         <dict>
             <key>Hour</key><integer>13</integer>
-            <key>Minute</key><integer>2</integer>
+            <key>Minute</key><integer>0</integer>
         </dict>
         <dict>
             <key>Hour</key><integer>17</integer>
-            <key>Minute</key><integer>2</integer>
+            <key>Minute</key><integer>0</integer>
         </dict>
         <dict>
             <key>Hour</key><integer>21</integer>
-            <key>Minute</key><integer>2</integer>
+            <key>Minute</key><integer>0</integer>
         </dict>
     </array>
 

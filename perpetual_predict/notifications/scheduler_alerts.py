@@ -14,7 +14,10 @@ from perpetual_predict.scheduler.health import HealthStatus
 from perpetual_predict.utils import get_logger
 
 if TYPE_CHECKING:
-    from perpetual_predict.reporters.data_integrity import IntegrityReport
+    from perpetual_predict.reporters.data_integrity import (
+        IntegrityReport,
+        LatestDataVerification,
+    )
     from perpetual_predict.storage.models import Prediction
 
 logger = get_logger(__name__)
@@ -363,4 +366,257 @@ async def send_cycle_failed(
         return result is not None
     except Exception as e:
         logger.error(f"Failed to send cycle failed notification: {e}")
+        return False
+
+
+def _format_datetime_short(dt: datetime | None) -> str:
+    """Format datetime in short format."""
+    if dt is None:
+        return "N/A"
+    return dt.strftime("%m-%d %H:%M")
+
+
+async def send_verification_report(
+    webhook: DiscordWebhook,
+    verification: LatestDataVerification,
+    symbol: str = "BTCUSDT",
+) -> bool:
+    """검증 결과와 각 데이터 타입별 최신 레코드를 전송.
+
+    Args:
+        webhook: DiscordWebhook 인스턴스
+        verification: 데이터 검증 결과
+        symbol: 거래 심볼
+
+    Returns:
+        True if sent successfully
+    """
+    if verification.all_verified:
+        color = EmbedColors.SUCCESS
+        title = "📊 데이터 검증 완료"
+        description = "모든 데이터가 최신 상태로 확인되었습니다."
+    else:
+        color = EmbedColors.WARNING
+        title = f"📊 데이터 검증 ({verification.verified_count}/4)"
+        description = f"일부 데이터 미수집: {', '.join(verification.missing_data)}"
+
+    embed = (
+        DiscordEmbed(
+            title=title,
+            description=description,
+            color=color,
+        )
+        .add_field(name="심볼", value=f"`{symbol}`", inline=True)
+        .add_field(
+            name="검증 시간",
+            value=f"`{verification.verified_at.strftime('%H:%M:%S')} UTC`",
+            inline=True,
+        )
+        .set_timestamp()
+    )
+
+    # 4H Candle
+    candle_status = "✅" if verification.candle_4h else "❌"
+    if verification.latest_candle:
+        c = verification.latest_candle
+        candle_text = (
+            f"{candle_status} **4H Candle**\n"
+            f"open_time: `{_format_datetime_short(c.open_time)} UTC`\n"
+            f"close: `${c.close:,.2f}`\n"
+            f"volume: `{c.volume:,.2f} BTC`"
+        )
+    else:
+        candle_text = (
+            f"{candle_status} **4H Candle**\n"
+            f"기대: `{_format_datetime_short(verification.expected_candle_time)} UTC`\n"
+            f"❌ 데이터 없음"
+        )
+    embed.add_field(name="", value=candle_text, inline=True)
+
+    # 8H Funding Rate
+    funding_status = "✅" if verification.funding_rate_8h else "❌"
+    if verification.latest_funding:
+        f = verification.latest_funding
+        funding_text = (
+            f"{funding_status} **8H Funding**\n"
+            f"funding_time: `{_format_datetime_short(f.funding_time)} UTC`\n"
+            f"rate: `{f.funding_rate * 100:.4f}%`\n"
+            f"mark: `${f.mark_price:,.2f}`"
+        )
+    else:
+        funding_text = (
+            f"{funding_status} **8H Funding**\n"
+            f"기대: `{_format_datetime_short(verification.expected_funding_time)} UTC`\n"
+            f"❌ 데이터 없음"
+        )
+    embed.add_field(name="", value=funding_text, inline=True)
+
+    # 4H Open Interest
+    oi_status = "✅" if verification.open_interest_4h else "❌"
+    if verification.latest_oi:
+        o = verification.latest_oi
+        oi_text = (
+            f"{oi_status} **4H OI**\n"
+            f"timestamp: `{_format_datetime_short(o.timestamp)} UTC`\n"
+            f"OI: `{o.open_interest:,.2f} BTC`"
+        )
+    else:
+        oi_text = (
+            f"{oi_status} **4H OI**\n"
+            f"기대: `{_format_datetime_short(verification.expected_oi_time)} UTC`\n"
+            f"❌ 데이터 없음"
+        )
+    embed.add_field(name="", value=oi_text, inline=True)
+
+    # 4H Long/Short Ratio
+    ls_status = "✅" if verification.long_short_ratio_4h else "❌"
+    if verification.latest_ls:
+        ls = verification.latest_ls
+        ls_text = (
+            f"{ls_status} **4H LS Ratio**\n"
+            f"timestamp: `{_format_datetime_short(ls.timestamp)} UTC`\n"
+            f"ratio: `{ls.long_short_ratio:.3f}` (L:{ls.long_ratio*100:.1f}%)"
+        )
+    else:
+        ls_text = (
+            f"{ls_status} **4H LS Ratio**\n"
+            f"기대: `{_format_datetime_short(verification.expected_ls_time)} UTC`\n"
+            f"❌ 데이터 없음"
+        )
+    embed.add_field(name="", value=ls_text, inline=True)
+
+    try:
+        result = await webhook.send_embed(embed)
+        return result is not None
+    except Exception as e:
+        logger.error(f"Failed to send verification report: {e}")
+        return False
+
+
+async def send_verification_retry(
+    webhook: DiscordWebhook,
+    verification: LatestDataVerification,
+    attempt: int,
+    max_attempts: int,
+    delay_seconds: float,
+    symbol: str = "BTCUSDT",
+) -> bool:
+    """검증 실패 시 재시도 알림 전송.
+
+    Args:
+        webhook: DiscordWebhook 인스턴스
+        verification: 데이터 검증 결과
+        attempt: 현재 시도 횟수
+        max_attempts: 최대 시도 횟수
+        delay_seconds: 다음 재시도까지 대기 시간
+        symbol: 거래 심볼
+
+    Returns:
+        True if sent successfully
+    """
+    embed = (
+        DiscordEmbed(
+            title=f"🔄 데이터 재수집 중 ({attempt}/{max_attempts})",
+            description=f"미수집 데이터: {', '.join(verification.missing_data)}",
+            color=EmbedColors.WARNING,
+        )
+        .add_field(name="심볼", value=f"`{symbol}`", inline=True)
+        .add_field(
+            name="다음 시도",
+            value=f"`{delay_seconds:.0f}초` 후",
+            inline=True,
+        )
+        .set_timestamp()
+    )
+
+    try:
+        result = await webhook.send_embed(embed)
+        return result is not None
+    except Exception as e:
+        logger.error(f"Failed to send verification retry notification: {e}")
+        return False
+
+
+async def send_verification_failed(
+    webhook: DiscordWebhook,
+    verification: LatestDataVerification,
+    attempts: int,
+    symbol: str = "BTCUSDT",
+) -> bool:
+    """데이터 검증 최종 실패 알림 전송.
+
+    Args:
+        webhook: DiscordWebhook 인스턴스
+        verification: 데이터 검증 결과
+        attempts: 총 시도 횟수
+        symbol: 거래 심볼
+
+    Returns:
+        True if sent successfully
+    """
+    # 각 데이터별 상세 상태
+    status_lines = []
+
+    # Candle
+    if verification.candle_4h:
+        status_lines.append(f"✅ 4H Candle: `{_format_datetime_short(verification.latest_candle.open_time if verification.latest_candle else None)} UTC`")
+    else:
+        expected = _format_datetime_short(verification.expected_candle_time)
+        actual = _format_datetime_short(verification.latest_candle.open_time if verification.latest_candle else None)
+        status_lines.append(f"❌ 4H Candle: 기대 `{expected}` / 실제 `{actual}`")
+
+    # Funding
+    if verification.funding_rate_8h:
+        status_lines.append(f"✅ 8H Funding: `{_format_datetime_short(verification.latest_funding.funding_time if verification.latest_funding else None)} UTC`")
+    else:
+        expected = _format_datetime_short(verification.expected_funding_time)
+        actual = _format_datetime_short(verification.latest_funding.funding_time if verification.latest_funding else None)
+        status_lines.append(f"❌ 8H Funding: 기대 `{expected}` / 실제 `{actual}`")
+
+    # OI
+    if verification.open_interest_4h:
+        status_lines.append(f"✅ 4H OI: `{_format_datetime_short(verification.latest_oi.timestamp if verification.latest_oi else None)} UTC`")
+    else:
+        expected = _format_datetime_short(verification.expected_oi_time)
+        actual = _format_datetime_short(verification.latest_oi.timestamp if verification.latest_oi else None)
+        status_lines.append(f"❌ 4H OI: 기대 `{expected}` / 실제 `{actual}`")
+
+    # LS Ratio
+    if verification.long_short_ratio_4h:
+        status_lines.append(f"✅ 4H LS: `{_format_datetime_short(verification.latest_ls.timestamp if verification.latest_ls else None)} UTC`")
+    else:
+        expected = _format_datetime_short(verification.expected_ls_time)
+        actual = _format_datetime_short(verification.latest_ls.timestamp if verification.latest_ls else None)
+        status_lines.append(f"❌ 4H LS: 기대 `{expected}` / 실제 `{actual}`")
+
+    embed = (
+        DiscordEmbed(
+            title="🚫 데이터 검증 실패",
+            description="최신 데이터 검증에 실패하여 예측 사이클이 중단되었습니다.",
+            color=EmbedColors.ERROR,
+        )
+        .add_field(name="심볼", value=f"`{symbol}`", inline=True)
+        .add_field(name="시도 횟수", value=f"`{attempts}`회", inline=True)
+        .add_field(
+            name="📊 데이터 상태",
+            value="\n".join(status_lines),
+            inline=False,
+        )
+        .add_field(
+            name="원인 분석",
+            value=(
+                "• Binance API 지연\n"
+                "• 네트워크 연결 문제\n"
+                "• 거래소 데이터 지연"
+            ),
+            inline=False,
+        )
+        .set_timestamp()
+    )
+
+    try:
+        result = await webhook.send_embed(embed)
+        return result is not None
+    except Exception as e:
+        logger.error(f"Failed to send verification failed notification: {e}")
         return False

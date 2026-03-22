@@ -9,12 +9,24 @@ from perpetual_predict.cli.collect import collect_data
 from perpetual_predict.collectors.binance.client import BinanceClient
 from perpetual_predict.config import get_settings
 from perpetual_predict.notifications.discord_webhook import DiscordWebhook
+from perpetual_predict.reporters.data_integrity import (
+    LatestDataVerification,
+    verify_latest_data,
+)
 from perpetual_predict.scheduler.health import HealthStatus
 from perpetual_predict.storage.database import get_database
 from perpetual_predict.storage.models import Prediction
 from perpetual_predict.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+class DataIntegrityError(Exception):
+    """데이터 검증 실패 시 발생하는 예외."""
+
+    def __init__(self, message: str, verification: LatestDataVerification | None = None):
+        super().__init__(message)
+        self.verification = verification
 
 # Timeframe to milliseconds mapping
 TIMEFRAME_MS = {
@@ -93,6 +105,137 @@ async def _wait_for_candle_close(
 
     finally:
         await client.close()
+
+
+async def collect_with_verification(
+    health_status: HealthStatus,
+    symbol: str,
+    timeframe: str,
+    max_retries: int = 5,
+    retry_delays: list[float] | None = None,
+    send_notifications: bool = True,
+) -> tuple[dict[str, int], LatestDataVerification]:
+    """데이터 수집 후 최신 데이터 검증을 수행.
+
+    수집 후 모든 데이터 타입(Candle, Funding, OI, LS)이
+    최신 타임스탬프를 가지고 있는지 검증합니다.
+    검증 실패 시 빠른 재시도를 수행합니다.
+
+    Args:
+        health_status: 헬스 상태 추적기
+        symbol: 거래 심볼
+        timeframe: 타임프레임
+        max_retries: 최대 재시도 횟수 (기본: 5)
+        retry_delays: 재시도 대기 시간 목록 (기본: [2, 4, 6, 8, 10])
+        send_notifications: 디스코드 알림 전송 여부
+
+    Returns:
+        tuple: (수집 결과 dict, 검증 결과)
+
+    Raises:
+        DataIntegrityError: 모든 재시도 실패 시
+    """
+    if retry_delays is None:
+        retry_delays = [2.0, 4.0, 6.0, 8.0, 10.0]
+
+    webhook = await _get_discord_webhook() if send_notifications else None
+
+    last_results: dict[str, int] = {}
+    last_verification: LatestDataVerification | None = None
+
+    for attempt in range(max_retries):
+        try:
+            # 재시도 대기 (첫 시도 제외)
+            if attempt > 0:
+                delay = retry_delays[min(attempt - 1, len(retry_delays) - 1)]
+                logger.info(f"Retry {attempt}/{max_retries}: waiting {delay:.0f}s...")
+
+                # 재시도 알림 (첫 재시도만)
+                if webhook and attempt == 1 and last_verification:
+                    try:
+                        from perpetual_predict.notifications.scheduler_alerts import (
+                            send_verification_retry,
+                        )
+                        await send_verification_retry(
+                            webhook,
+                            last_verification,
+                            attempt,
+                            max_retries,
+                            delay,
+                            symbol,
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to send retry notification: {e}")
+
+                await asyncio.sleep(delay)
+
+            # 데이터 수집
+            logger.info(f"Collection attempt {attempt + 1}/{max_retries}")
+            last_results = await collection_job(health_status)
+
+            # 최신 데이터 검증
+            async with get_database() as db:
+                last_verification = await verify_latest_data(
+                    db=db,
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    tolerance_minutes=5,
+                )
+
+            if last_verification.all_verified:
+                logger.info(
+                    f"Data verification PASSED on attempt {attempt + 1} - "
+                    f"all {last_verification.verified_count} data types verified"
+                )
+
+                # 검증 성공 알림
+                if webhook:
+                    try:
+                        from perpetual_predict.notifications.scheduler_alerts import (
+                            send_verification_report,
+                        )
+                        await send_verification_report(webhook, last_verification, symbol)
+                    except Exception as e:
+                        logger.warning(f"Failed to send verification report: {e}")
+
+                return last_results, last_verification
+            else:
+                logger.warning(
+                    f"Data verification FAILED on attempt {attempt + 1}: "
+                    f"missing {last_verification.missing_data} "
+                    f"({last_verification.verified_count}/4)"
+                )
+
+        except Exception as e:
+            logger.error(f"Collection attempt {attempt + 1} failed: {e}")
+            if attempt == max_retries - 1:
+                raise
+
+    # 모든 재시도 소진
+    error_msg = (
+        f"Data verification failed after {max_retries} attempts. "
+        f"Missing: {last_verification.missing_data if last_verification else 'unknown'}"
+    )
+    logger.error(error_msg)
+
+    # 최종 실패 알림
+    if webhook and last_verification:
+        try:
+            from perpetual_predict.notifications.scheduler_alerts import (
+                send_verification_failed,
+            )
+            await send_verification_failed(
+                webhook,
+                last_verification,
+                max_retries,
+                symbol,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send verification failed notification: {e}")
+        finally:
+            await webhook.close()
+
+    raise DataIntegrityError(error_msg, last_verification)
 
 
 async def _get_discord_webhook() -> DiscordWebhook | None:
@@ -415,20 +558,21 @@ async def full_cycle_job(health_status: HealthStatus) -> dict:
     symbol = settings.trading.symbol
     timeframe = settings.trading.timeframe
 
-    # Wait for latest candle to close before proceeding
-    logger.info("Verifying latest candle is closed...")
+    # Wait for latest candle to close before proceeding (reduced wait time)
+    logger.info("Phase 0: Verifying latest candle is closed in API...")
     candle_ready = await _wait_for_candle_close(
         symbol=symbol,
         timeframe=timeframe,
-        max_wait_seconds=120,
-        check_interval=10,
+        max_wait_seconds=30,  # Reduced from 120s - verification handles retries
+        check_interval=5,    # Reduced from 10s for faster detection
     )
     if not candle_ready:
-        logger.warning("Proceeding despite candle close timeout")
+        logger.warning("Candle not confirmed closed in API, proceeding to collection")
 
     results = {
         "evaluation": None,
         "collection": None,
+        "verification": None,
         "prediction": None,
         "success": False,
     }
@@ -446,12 +590,28 @@ async def full_cycle_job(health_status: HealthStatus) -> dict:
             logger.warning(f"Evaluation phase failed (non-fatal): {e}")
             results["evaluation"] = {"error": str(e)}
 
-        # Phase 2: Collect new market data
-        logger.info("Phase 2/3: Collecting market data...")
-        collection_results = await collection_job(health_status)
+        # Phase 2: Collect new market data + Verify latest data
+        logger.info("Phase 2/3: Collecting market data with verification...")
+        collection_results, verification = await collect_with_verification(
+            health_status=health_status,
+            symbol=symbol,
+            timeframe=timeframe,
+            max_retries=5,
+            retry_delays=[2.0, 4.0, 6.0, 8.0, 10.0],
+            send_notifications=True,
+        )
         results["collection"] = collection_results
+        results["verification"] = {
+            "all_verified": verification.all_verified,
+            "verified_count": verification.verified_count,
+            "missing_data": verification.missing_data,
+            "candle_time": (
+                verification.latest_candle.open_time.isoformat()
+                if verification.latest_candle else None
+            ),
+        }
 
-        # Phase 3: Generate prediction
+        # Phase 3: Generate prediction (only if verification passed)
         logger.info("Phase 3/3: Generating prediction...")
         prediction = await prediction_job(health_status)
         if prediction:
@@ -473,6 +633,8 @@ async def full_cycle_job(health_status: HealthStatus) -> dict:
             details={
                 "duration_seconds": duration,
                 "phases_completed": 3,
+                "data_verified": True,
+                "verified_count": verification.verified_count,
             },
         )
 
