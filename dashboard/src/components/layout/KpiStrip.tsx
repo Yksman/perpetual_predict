@@ -33,7 +33,7 @@ export function KpiStrip({ metrics }: KpiStripProps) {
       <KpiCard label="Total Return" value={performance.total_return_pct} suffix="%" colorize />
       <KpiCard label="Sharpe Ratio" value={performance.sharpe_ratio} decimals={2} />
       <KpiCard label="Max Drawdown" value={performance.max_drawdown_pct} suffix="%" colorize />
-      <KpiCard label="Pred. Accuracy" value={prediction_accuracy.accuracy} suffix="%" />
+      <KpiCard label="Pred. Accuracy" value={prediction_accuracy.accuracy * 100} suffix="%" />
     </div>
   );
 }
