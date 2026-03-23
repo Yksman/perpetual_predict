@@ -128,6 +128,27 @@ class PredictionEvaluator:
             evaluated_at=datetime.now(timezone.utc),
         )
 
+        # Paper trading: close position
+        try:
+            from perpetual_predict.config.settings import get_settings
+            from perpetual_predict.trading.engine import PaperTradingEngine
+
+            paper_settings = get_settings().paper_trading
+            if paper_settings.enabled:
+                engine = PaperTradingEngine(self.db, paper_settings.account_id)
+                closed_trade = await engine.close_position(
+                    prediction_id=prediction.prediction_id,
+                    exit_price=candle.close,
+                )
+                if closed_trade:
+                    logger.info(
+                        f"Paper trade closed: PnL ${closed_trade.net_pnl:+.2f} "
+                        f"({closed_trade.return_pct:+.2f}%) "
+                        f"Balance: ${closed_trade.balance_after:.2f}"
+                    )
+        except Exception as e:
+            logger.warning(f"Paper trading close failed (non-fatal): {e}")
+
         result = {
             "prediction_id": prediction.prediction_id,
             "prediction_time": prediction.prediction_time.isoformat(),

@@ -1,9 +1,14 @@
 """SQLite database connection and operations."""
 
+from __future__ import annotations
+
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Any, AsyncIterator
+from typing import TYPE_CHECKING, Any, AsyncIterator
+
+if TYPE_CHECKING:
+    from perpetual_predict.trading.models import PaperAccount, PaperTrade
 
 import aiosqlite
 
@@ -149,6 +154,48 @@ CREATE TABLE IF NOT EXISTS prediction_metrics (
 )
 """
 
+CREATE_PAPER_ACCOUNT_TABLE = """
+CREATE TABLE IF NOT EXISTS paper_account (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_id TEXT NOT NULL UNIQUE,
+    initial_balance REAL NOT NULL DEFAULT 1000.0,
+    current_balance REAL NOT NULL DEFAULT 1000.0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
+CREATE_PAPER_TRADES_TABLE = """
+CREATE TABLE IF NOT EXISTS paper_trades (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trade_id TEXT NOT NULL UNIQUE,
+    account_id TEXT NOT NULL DEFAULT 'default',
+    prediction_id TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    side TEXT NOT NULL,
+    leverage REAL NOT NULL,
+    position_size REAL NOT NULL,
+    position_ratio REAL NOT NULL DEFAULT 1.0,
+    notional_value REAL NOT NULL,
+    entry_price REAL NOT NULL,
+    entry_time TEXT NOT NULL,
+    exit_price REAL,
+    exit_time TEXT,
+    entry_fee REAL,
+    exit_fee REAL,
+    total_fees REAL,
+    gross_pnl REAL,
+    net_pnl REAL,
+    return_pct REAL,
+    balance_before REAL NOT NULL,
+    balance_after REAL,
+    status TEXT NOT NULL DEFAULT 'OPEN',
+    confidence REAL NOT NULL,
+    trading_reasoning TEXT DEFAULT '',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
 # Index creation for performance
 CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_candles_symbol_time ON candles(symbol, timeframe, open_time)",
@@ -160,6 +207,9 @@ CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_predictions_pending ON predictions(is_correct) WHERE is_correct IS NULL",
     "CREATE INDEX IF NOT EXISTS idx_predictions_time ON predictions(target_candle_open DESC)",
     "CREATE INDEX IF NOT EXISTS idx_predictions_symbol ON predictions(symbol, timeframe)",
+    "CREATE INDEX IF NOT EXISTS idx_paper_trades_status ON paper_trades(status)",
+    "CREATE INDEX IF NOT EXISTS idx_paper_trades_prediction ON paper_trades(prediction_id)",
+    "CREATE INDEX IF NOT EXISTS idx_paper_trades_account ON paper_trades(account_id, entry_time DESC)",
 ]
 
 
@@ -194,6 +244,8 @@ class Database:
         await self._connection.execute(CREATE_LIQUIDATIONS_TABLE)
         await self._connection.execute(CREATE_PREDICTIONS_TABLE)
         await self._connection.execute(CREATE_PREDICTION_METRICS_TABLE)
+        await self._connection.execute(CREATE_PAPER_ACCOUNT_TABLE)
+        await self._connection.execute(CREATE_PAPER_TRADES_TABLE)
 
         # Create indexes
         for index_sql in CREATE_INDEXES:
@@ -206,16 +258,27 @@ class Database:
 
     async def _run_migrations(self) -> None:
         """Run database migrations for schema updates."""
-        # Migration: Add predicted_return column to predictions table
         cursor = await self._connection.execute(
             "PRAGMA table_info(predictions)"
         )
         columns = [row[1] for row in await cursor.fetchall()]
 
+        # Migration: Add predicted_return column
         if "predicted_return" not in columns:
             await self._connection.execute(
                 "ALTER TABLE predictions ADD COLUMN predicted_return REAL"
             )
+
+        # Migration: Add paper trading fields to predictions
+        for col, col_type, default in [
+            ("leverage", "REAL", "1.0"),
+            ("position_ratio", "REAL", "0.0"),
+            ("trading_reasoning", "TEXT", "''"),
+        ]:
+            if col not in columns:
+                await self._connection.execute(
+                    f"ALTER TABLE predictions ADD COLUMN {col} {col_type} DEFAULT {default}"
+                )
 
     async def close(self) -> None:
         """Close database connection."""
@@ -641,8 +704,9 @@ class Database:
         (prediction_id, prediction_time, target_candle_open, target_candle_close,
          symbol, timeframe, direction, confidence, reasoning, key_factors,
          session_id, duration_ms, model_usage,
-         actual_direction, actual_price_change, is_correct, evaluated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         leverage, position_ratio, trading_reasoning,
+         actual_direction, actual_price_change, is_correct, predicted_return, evaluated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         await self.connection.execute(
             sql,
@@ -660,9 +724,13 @@ class Database:
                 prediction.session_id,
                 prediction.duration_ms,
                 json.dumps(prediction.model_usage),
+                prediction.leverage,
+                prediction.position_ratio,
+                prediction.trading_reasoning,
                 prediction.actual_direction,
                 prediction.actual_price_change,
                 prediction.is_correct,
+                prediction.predicted_return,
                 prediction.evaluated_at.isoformat() if prediction.evaluated_at else None,
             ),
         )
@@ -813,6 +881,147 @@ class Database:
             ),
         )
         await self.connection.commit()
+
+    # Paper trading operations
+    async def insert_paper_account(self, account: PaperAccount) -> None:
+        """Insert a paper trading account (ignore if exists)."""
+        sql = """
+        INSERT OR IGNORE INTO paper_account
+        (account_id, initial_balance, current_balance, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+        """
+        await self.connection.execute(
+            sql,
+            (
+                account.account_id,
+                account.initial_balance,
+                account.current_balance,
+                account.created_at.isoformat(),
+                account.updated_at.isoformat(),
+            ),
+        )
+        await self.connection.commit()
+
+    async def get_paper_account(self, account_id: str) -> PaperAccount | None:
+        """Get a paper trading account by ID."""
+        from perpetual_predict.trading.models import PaperAccount
+
+        sql = "SELECT * FROM paper_account WHERE account_id = ?"
+        async with self.connection.execute(sql, (account_id,)) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                return PaperAccount.from_dict(dict(row))
+            return None
+
+    async def update_paper_account_balance(
+        self, account_id: str, new_balance: float
+    ) -> None:
+        """Update paper account balance."""
+        sql = """
+        UPDATE paper_account
+        SET current_balance = ?, updated_at = ?
+        WHERE account_id = ?
+        """
+        await self.connection.execute(
+            sql,
+            (new_balance, datetime.utcnow().isoformat(), account_id),
+        )
+        await self.connection.commit()
+
+    async def insert_paper_trade(self, trade: PaperTrade) -> None:
+        """Insert a paper trade record."""
+        d = trade.to_dict()
+        sql = """
+        INSERT INTO paper_trades
+        (trade_id, account_id, prediction_id, symbol,
+         side, leverage, position_size, position_ratio, notional_value,
+         entry_price, entry_time,
+         exit_price, exit_time,
+         entry_fee, exit_fee, total_fees,
+         gross_pnl, net_pnl, return_pct,
+         balance_before, balance_after,
+         status, confidence, trading_reasoning)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        await self.connection.execute(
+            sql,
+            (
+                d["trade_id"], d["account_id"], d["prediction_id"], d["symbol"],
+                d["side"], d["leverage"], d["position_size"], d["position_ratio"],
+                d["notional_value"],
+                d["entry_price"], d["entry_time"],
+                d["exit_price"], d["exit_time"],
+                d["entry_fee"], d["exit_fee"], d["total_fees"],
+                d["gross_pnl"], d["net_pnl"], d["return_pct"],
+                d["balance_before"], d["balance_after"],
+                d["status"], d["confidence"], d["trading_reasoning"],
+            ),
+        )
+        await self.connection.commit()
+
+    async def get_open_trade(self, prediction_id: str) -> PaperTrade | None:
+        """Get an open paper trade by prediction ID."""
+        from perpetual_predict.trading.models import PaperTrade
+
+        sql = "SELECT * FROM paper_trades WHERE prediction_id = ? AND status = 'OPEN'"
+        async with self.connection.execute(sql, (prediction_id,)) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                return PaperTrade.from_dict(dict(row))
+            return None
+
+    async def update_paper_trade_close(self, trade: PaperTrade) -> None:
+        """Update a paper trade with close data."""
+        sql = """
+        UPDATE paper_trades
+        SET exit_price = ?, exit_time = ?,
+            entry_fee = ?, exit_fee = ?, total_fees = ?,
+            gross_pnl = ?, net_pnl = ?, return_pct = ?,
+            balance_after = ?, status = 'CLOSED'
+        WHERE trade_id = ?
+        """
+        await self.connection.execute(
+            sql,
+            (
+                trade.exit_price,
+                trade.exit_time.isoformat() if trade.exit_time else None,
+                trade.entry_fee,
+                trade.exit_fee,
+                trade.total_fees,
+                trade.gross_pnl,
+                trade.net_pnl,
+                trade.return_pct,
+                trade.balance_after,
+                trade.trade_id,
+            ),
+        )
+        await self.connection.commit()
+
+    async def get_paper_trades(
+        self,
+        account_id: str = "default",
+        status: str | None = None,
+        limit: int | None = None,
+    ) -> list[PaperTrade]:
+        """Get paper trades with optional filters."""
+        from perpetual_predict.trading.models import PaperTrade
+
+        sql = "SELECT * FROM paper_trades WHERE account_id = ?"
+        params: list[Any] = [account_id]
+
+        if status:
+            sql += " AND status = ?"
+            params.append(status)
+
+        sql += " ORDER BY entry_time DESC"
+
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+            return [PaperTrade.from_dict(dict(row)) for row in rows]
 
     async def get_prediction_accuracy(
         self,

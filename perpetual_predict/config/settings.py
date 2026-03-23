@@ -119,6 +119,18 @@ class DiscordConfig:
 
 
 @dataclass
+class PaperTradingConfig:
+    """Paper trading configuration."""
+
+    enabled: bool = True
+    initial_balance: float = 1000.0
+    max_leverage: float = 3.0
+    entry_fee_pct: float = 0.1  # 0.1%
+    exit_fee_pct: float = 0.1   # 0.1%
+    account_id: str = "default"
+
+
+@dataclass
 class Settings:
     """Application settings container."""
 
@@ -132,6 +144,7 @@ class Settings:
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
     telegram: TelegramConfig = field(default_factory=TelegramConfig)
     discord: DiscordConfig = field(default_factory=DiscordConfig)
+    paper_trading: PaperTradingConfig = field(default_factory=PaperTradingConfig)
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = None) -> "Settings":
@@ -206,6 +219,14 @@ class Settings:
                 username=os.getenv("DISCORD_USERNAME", "Perpetual Predict"),
                 avatar_url=os.getenv("DISCORD_AVATAR_URL", ""),
                 enabled=os.getenv("DISCORD_ENABLED", "false").lower() == "true",
+            ),
+            paper_trading=PaperTradingConfig(
+                enabled=os.getenv("PAPER_TRADING_ENABLED", "true").lower() == "true",
+                initial_balance=float(os.getenv("PAPER_TRADING_INITIAL_BALANCE", "1000.0")),
+                max_leverage=float(os.getenv("PAPER_TRADING_MAX_LEVERAGE", "3.0")),
+                entry_fee_pct=float(os.getenv("PAPER_TRADING_ENTRY_FEE", "0.1")),
+                exit_fee_pct=float(os.getenv("PAPER_TRADING_EXIT_FEE", "0.1")),
+                account_id=os.getenv("PAPER_TRADING_ACCOUNT_ID", "default"),
             ),
         )
 

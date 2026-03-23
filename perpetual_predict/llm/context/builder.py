@@ -108,6 +108,16 @@ class MarketContext:
     timeframe: str = "4h"
     context_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
+    # Portfolio context (optional, for paper trading)
+    portfolio_balance: float | None = None
+    portfolio_initial_balance: float | None = None
+    portfolio_return_pct: float | None = None
+    portfolio_max_drawdown: float | None = None
+    portfolio_recent_win_rate: float | None = None
+    portfolio_consecutive_losses: int = 0
+    portfolio_total_trades: int = 0
+    portfolio_recent_trades: str = ""
+
     def format_prompt(self) -> str:
         """Format context as LLM prompt."""
         # Price position relative to MAs
@@ -243,10 +253,30 @@ Time: {self.context_time.strftime("%Y-%m-%d %H:%M UTC")}
 
 ---
 Based on this analysis, predict the direction of the CURRENT {self.timeframe} candle (just started).
-
-**중요: 모든 응답(reasoning, key_factors)은 반드시 한국어로 작성하세요.**"""
+{self._format_portfolio_section()}
+**중요: 모든 응답(reasoning, key_factors, trading_reasoning)은 반드시 한국어로 작성하세요.**"""
 
         return prompt
+
+    def _format_portfolio_section(self) -> str:
+        """Format portfolio context section for the prompt."""
+        if self.portfolio_balance is None:
+            return ""
+
+        return f"""
+### Paper Trading Portfolio
+- Current Balance: ${self.portfolio_balance:,.2f} (Initial: ${self.portfolio_initial_balance:,.2f}, Return: {self.portfolio_return_pct:+.2f}%)
+- Max Drawdown: {self.portfolio_max_drawdown:+.2f}%
+- Recent Win Rate: {self.portfolio_recent_win_rate:.1f}% ({self.portfolio_total_trades} trades)
+- Consecutive Losses: {self.portfolio_consecutive_losses}
+- Recent Trades:
+{self.portfolio_recent_trades}
+
+위 포트폴리오 상태를 고려하여 leverage(1.0~3.0)와 position_ratio(0.0~1.0)를 결정하세요.
+- 연속 손실 중이면 포지션을 줄이는 것을 고려
+- 높은 확신도에서만 높은 레버리지 사용
+- MDD가 클 때는 보수적으로 접근
+"""
 
 
 class MarketContextBuilder:
@@ -262,12 +292,17 @@ class MarketContextBuilder:
         self.symbol = symbol
         self.timeframe = timeframe
 
-    async def build(self, lookback_candles: int = 250) -> MarketContext:
+    async def build(
+        self,
+        lookback_candles: int = 250,
+        portfolio_context: dict | None = None,
+    ) -> MarketContext:
         """Build complete market context.
 
         Args:
             lookback_candles: Number of historical candles for technical analysis.
                 Default 250 for SMA200 calculation + buffer.
+            portfolio_context: Optional portfolio state dict from PaperTradingEngine.
 
         Returns:
             MarketContext with all market data.
@@ -377,6 +412,16 @@ class MarketContextBuilder:
             symbol=self.symbol,
             timeframe=self.timeframe,
             context_time=datetime.now(timezone.utc),
+
+            # Portfolio context (from paper trading engine)
+            portfolio_balance=portfolio_context.get("balance") if portfolio_context else None,
+            portfolio_initial_balance=portfolio_context.get("initial_balance") if portfolio_context else None,
+            portfolio_return_pct=portfolio_context.get("total_return_pct", 0.0) if portfolio_context else None,
+            portfolio_max_drawdown=portfolio_context.get("max_drawdown_pct", 0.0) if portfolio_context else None,
+            portfolio_recent_win_rate=portfolio_context.get("recent_win_rate", 0.0) if portfolio_context else None,
+            portfolio_consecutive_losses=portfolio_context.get("consecutive_losses", 0) if portfolio_context else 0,
+            portfolio_total_trades=portfolio_context.get("total_trades", 0) if portfolio_context else 0,
+            portfolio_recent_trades=portfolio_context.get("recent_trades_summary", "") if portfolio_context else "",
         )
 
     def _candles_to_df(self, candles: list[Candle]) -> pd.DataFrame:

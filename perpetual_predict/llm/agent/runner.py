@@ -34,9 +34,25 @@ PREDICTION_SCHEMA = json.dumps({
             "type": "array",
             "items": {"type": "string"},
             "description": "주요 판단 요소 목록 (한국어로 작성)"
+        },
+        "leverage": {
+            "type": "number",
+            "minimum": 1.0,
+            "maximum": 3.0,
+            "description": "사용할 레버리지 배수 (1.0~3.0). 시장 확신도와 리스크에 따라 결정. NEUTRAL이면 1.0"
+        },
+        "position_ratio": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "잔고 대비 포지션 비율 (0.0~1.0). 0.0=진입 안함, 1.0=전액 투입. NEUTRAL이면 0.0"
+        },
+        "trading_reasoning": {
+            "type": "string",
+            "description": "레버리지와 포지션 비율 결정 근거를 한국어로 설명"
         }
     },
-    "required": ["direction", "confidence", "reasoning", "key_factors"]
+    "required": ["direction", "confidence", "reasoning", "key_factors", "leverage", "position_ratio", "trading_reasoning"]
 })
 
 
@@ -48,6 +64,9 @@ class AgentResult:
     confidence: float
     reasoning: str
     key_factors: list[str] = field(default_factory=list)
+    leverage: float = 1.0
+    position_ratio: float = 0.0
+    trading_reasoning: str = ""
     session_id: str = ""
     duration_ms: int = 0
     model_usage: dict[str, Any] = field(default_factory=dict)
@@ -147,11 +166,26 @@ async def run_prediction_agent(
         confidence = float(prediction.get("confidence", 0.5))
         confidence = max(0.0, min(1.0, confidence))  # Clamp to [0, 1]
 
+        # Parse trading parameters (agent-driven)
+        leverage = float(prediction.get("leverage", 1.0))
+        leverage = max(1.0, min(3.0, leverage))
+
+        position_ratio = float(prediction.get("position_ratio", 0.0))
+        position_ratio = max(0.0, min(1.0, position_ratio))
+
+        # Force no position for NEUTRAL
+        if direction == "NEUTRAL":
+            position_ratio = 0.0
+            leverage = 1.0
+
         return AgentResult(
             direction=direction,
             confidence=confidence,
             reasoning=prediction.get("reasoning", "No reasoning provided"),
             key_factors=prediction.get("key_factors", []),
+            leverage=leverage,
+            position_ratio=position_ratio,
+            trading_reasoning=prediction.get("trading_reasoning", ""),
             session_id=response.get("session_id", ""),
             duration_ms=response.get("duration_ms", 0),
             model_usage=response.get("modelUsage", {}),
@@ -187,6 +221,9 @@ def _extract_prediction_from_text(text: str) -> dict[str, Any]:
         "confidence": 0.5,
         "reasoning": text[:500] if text else "Unable to parse prediction",
         "key_factors": [],
+        "leverage": 1.0,
+        "position_ratio": 0.0,
+        "trading_reasoning": "",
     }
 
     text_lower = text.lower()

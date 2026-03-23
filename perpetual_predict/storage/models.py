@@ -202,6 +202,11 @@ class Prediction:
     duration_ms: int = 0
     model_usage: dict[str, Any] = field(default_factory=dict)
 
+    # Trading parameters (decided by agent)
+    leverage: float = 1.0
+    position_ratio: float = 0.0
+    trading_reasoning: str = ""
+
     # Evaluation results (filled after candle closes)
     actual_direction: Direction | None = None
     actual_price_change: float | None = None
@@ -227,6 +232,9 @@ class Prediction:
             "session_id": self.session_id,
             "duration_ms": self.duration_ms,
             "model_usage": json.dumps(self.model_usage),
+            "leverage": self.leverage,
+            "position_ratio": self.position_ratio,
+            "trading_reasoning": self.trading_reasoning,
             "actual_direction": self.actual_direction,
             "actual_price_change": self.actual_price_change,
             "is_correct": self.is_correct,
@@ -261,6 +269,9 @@ class Prediction:
             session_id=data.get("session_id", ""),
             duration_ms=data.get("duration_ms", 0),
             model_usage=model_usage,
+            leverage=data.get("leverage", 1.0),
+            position_ratio=data.get("position_ratio", 0.0),
+            trading_reasoning=data.get("trading_reasoning", ""),
             actual_direction=data.get("actual_direction"),
             actual_price_change=data.get("actual_price_change"),
             is_correct=data.get("is_correct"),

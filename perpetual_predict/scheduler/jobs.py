@@ -475,10 +475,24 @@ async def prediction_job(health_status: HealthStatus) -> Prediction | None:
         # Calculate target candle times
         target_open, target_close = _calculate_target_candle_times(timeframe)
 
-        # Build market context
+        # Build market context with portfolio state
+        paper_settings = settings.paper_trading
         async with get_database() as db:
             context_builder = MarketContextBuilder(db, symbol, timeframe)
-            market_context = await context_builder.build()
+
+            portfolio_context = None
+            if paper_settings.enabled:
+                try:
+                    from perpetual_predict.trading.engine import PaperTradingEngine
+                    engine = PaperTradingEngine(db, paper_settings.account_id)
+                    await engine.ensure_account(paper_settings.initial_balance)
+                    portfolio_context = await engine.get_portfolio_context()
+                except Exception as e:
+                    logger.warning(f"Failed to load portfolio context (non-fatal): {e}")
+
+            market_context = await context_builder.build(
+                portfolio_context=portfolio_context,
+            )
 
         # Format context as prompt
         prompt = market_context.format_prompt()
@@ -502,11 +516,47 @@ async def prediction_job(health_status: HealthStatus) -> Prediction | None:
             session_id=agent_result.session_id,
             duration_ms=agent_result.duration_ms,
             model_usage=agent_result.model_usage,
+            leverage=agent_result.leverage,
+            position_ratio=agent_result.position_ratio,
+            trading_reasoning=agent_result.trading_reasoning,
         )
 
-        # Save to database
+        # Save to database + open paper trade
         async with get_database() as db:
             await db.insert_prediction(prediction)
+
+            # Paper trading: open position
+            if (
+                paper_settings.enabled
+                and prediction.direction != "NEUTRAL"
+                and prediction.position_ratio > 0
+            ):
+                try:
+                    from perpetual_predict.trading.engine import PaperTradingEngine
+                    engine = PaperTradingEngine(db, paper_settings.account_id)
+                    candles = await db.get_candles(
+                        symbol=symbol,
+                        timeframe=timeframe,
+                        start_time=target_open,
+                        end_time=target_open,
+                        limit=1,
+                    )
+                    if candles:
+                        trade = await engine.open_position(prediction, candles[0].open)
+                        if trade:
+                            logger.info(
+                                f"Paper trade opened: {trade.side} "
+                                f"leverage={trade.leverage:.1f}x "
+                                f"ratio={trade.position_ratio:.0%} "
+                                f"notional=${trade.notional_value:.2f}"
+                            )
+                    else:
+                        logger.warning(
+                            "No candle data for entry price, "
+                            "paper trade skipped"
+                        )
+                except Exception as e:
+                    logger.warning(f"Paper trading open failed (non-fatal): {e}")
 
         health_status.update_job_completed(
             job_name,
@@ -515,11 +565,15 @@ async def prediction_job(health_status: HealthStatus) -> Prediction | None:
                 "direction": prediction.direction,
                 "confidence": prediction.confidence,
                 "target_candle": target_open.isoformat(),
+                "leverage": prediction.leverage,
+                "position_ratio": prediction.position_ratio,
             },
         )
         logger.info(
             f"Prediction generated: {prediction.direction} "
-            f"(confidence: {prediction.confidence:.0%}) "
+            f"(confidence: {prediction.confidence:.0%}, "
+            f"leverage: {prediction.leverage:.1f}x, "
+            f"ratio: {prediction.position_ratio:.0%}) "
             f"for candle {target_open.isoformat()}"
         )
 
