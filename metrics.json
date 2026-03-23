@@ -1,0 +1,44 @@
+{
+  "account": {
+    "initial_balance": 0.0,
+    "current_balance": 0.0
+  },
+  "performance": {
+    "total_trades": 0,
+    "winning_trades": 0,
+    "losing_trades": 0,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "cumulative_pnl": 0.0,
+    "total_return_pct": 0.0,
+    "avg_win": 0.0,
+    "avg_loss": 0.0,
+    "max_drawdown_pct": 0.0,
+    "current_drawdown_pct": 0.0,
+    "sharpe_ratio": 0.0,
+    "max_consecutive_wins": 0,
+    "max_consecutive_losses": 0
+  },
+  "monthly_returns": {},
+  "prediction_accuracy": {
+    "total": 0,
+    "correct": 0,
+    "accuracy": 0.0,
+    "avg_confidence": 0.0,
+    "by_direction": {
+      "UP": {
+        "total": 0,
+        "correct": 0
+      },
+      "DOWN": {
+        "total": 0,
+        "correct": 0
+      },
+      "NEUTRAL": {
+        "total": 0,
+        "correct": 0
+      }
+    }
+  },
+  "equity_curve": []
+}
