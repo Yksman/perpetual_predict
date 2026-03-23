@@ -206,6 +206,7 @@ class Prediction:
     actual_direction: Direction | None = None
     actual_price_change: float | None = None
     is_correct: bool | None = None
+    predicted_return: float | None = None
     evaluated_at: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -229,6 +230,7 @@ class Prediction:
             "actual_direction": self.actual_direction,
             "actual_price_change": self.actual_price_change,
             "is_correct": self.is_correct,
+            "predicted_return": self.predicted_return,
             "evaluated_at": self.evaluated_at.isoformat() if self.evaluated_at else None,
         }
 
@@ -262,6 +264,7 @@ class Prediction:
             actual_direction=data.get("actual_direction"),
             actual_price_change=data.get("actual_price_change"),
             is_correct=data.get("is_correct"),
+            predicted_return=data.get("predicted_return"),
             evaluated_at=(
                 datetime.fromisoformat(data["evaluated_at"])
                 if data.get("evaluated_at")

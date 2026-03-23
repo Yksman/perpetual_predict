@@ -29,7 +29,7 @@ def setup_parser(subparsers: argparse._SubParsersAction) -> None:
     """
     parser = subparsers.add_parser(
         "cycle",
-        help="Run the full prediction cycle (evaluate → collect → predict)",
+        help="Run the full prediction cycle (collect → evaluate → predict)",
     )
     parser.add_argument(
         "--phase",

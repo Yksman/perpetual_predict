@@ -533,7 +533,7 @@ async def prediction_job(health_status: HealthStatus) -> Prediction | None:
 
 
 async def full_cycle_job(health_status: HealthStatus) -> dict:
-    """Full prediction cycle: evaluate → collect → predict → notify.
+    """Full prediction cycle: collect → evaluate → predict → notify.
 
     This is the main scheduled job that orchestrates the entire
     prediction workflow every 4H.
@@ -578,20 +578,9 @@ async def full_cycle_job(health_status: HealthStatus) -> dict:
     }
 
     try:
-        # Phase 1: Evaluate previous predictions
-        logger.info("Phase 1/3: Evaluating previous predictions...")
-        try:
-            evaluation_results = await evaluation_job(health_status)
-            results["evaluation"] = {
-                "count": len(evaluation_results),
-                "results": evaluation_results,
-            }
-        except Exception as e:
-            logger.warning(f"Evaluation phase failed (non-fatal): {e}")
-            results["evaluation"] = {"error": str(e)}
-
-        # Phase 2: Collect new market data + Verify latest data
-        logger.info("Phase 2/3: Collecting market data with verification...")
+        # Phase 1: Collect new market data + Verify latest data
+        # NOTE: Collection runs FIRST to ensure evaluation uses fresh candle data
+        logger.info("Phase 1/3: Collecting market data with verification...")
         collection_results, verification = await collect_with_verification(
             health_status=health_status,
             symbol=symbol,
@@ -611,7 +600,19 @@ async def full_cycle_job(health_status: HealthStatus) -> dict:
             ),
         }
 
-        # Phase 3: Generate prediction (only if verification passed)
+        # Phase 2: Evaluate previous predictions (with fresh candle data)
+        logger.info("Phase 2/3: Evaluating previous predictions...")
+        try:
+            evaluation_results = await evaluation_job(health_status)
+            results["evaluation"] = {
+                "count": len(evaluation_results),
+                "results": evaluation_results,
+            }
+        except Exception as e:
+            logger.warning(f"Evaluation phase failed (non-fatal): {e}")
+            results["evaluation"] = {"error": str(e)}
+
+        # Phase 3: Generate prediction
         logger.info("Phase 3/3: Generating prediction...")
         prediction = await prediction_job(health_status)
         if prediction:

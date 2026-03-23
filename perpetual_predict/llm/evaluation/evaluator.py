@@ -11,8 +11,14 @@ logger = get_logger(__name__)
 
 Direction = Literal["UP", "DOWN", "NEUTRAL"]
 
-# Threshold for determining neutral movement (±0.5%)
-NEUTRAL_THRESHOLD = 0.005
+# Threshold for determining neutral movement (±0.2%)
+# Based on trading fee (0.2%) - movements below this are not profitable
+NEUTRAL_THRESHOLD = 0.002
+
+# Trading fee constants (percentage)
+ENTRY_FEE = 0.1  # 진입 수수료 0.1%
+EXIT_FEE = 0.1   # 청산 수수료 0.1%
+TOTAL_FEE = ENTRY_FEE + EXIT_FEE  # 총 0.2%
 
 
 class PredictionEvaluator:
@@ -73,10 +79,12 @@ class PredictionEvaluator:
             Evaluation result dict or None if candle data not available.
         """
         # Get the actual candle for the target period
+        # Use both start_time and end_time for exact match (avoids DESC ordering issue)
         candles = await self.db.get_candles(
             symbol=self.symbol,
             timeframe=self.timeframe,
             start_time=prediction.target_candle_open,
+            end_time=prediction.target_candle_open,  # Exact match
             limit=1,
         )
 
@@ -103,12 +111,20 @@ class PredictionEvaluator:
         # Check if prediction was correct
         is_correct = prediction.direction == actual_direction
 
+        # Calculate predicted return based on direction
+        predicted_return = self._calculate_predicted_return(
+            direction=prediction.direction,
+            open_price=candle.open,
+            close_price=candle.close,
+        )
+
         # Update prediction record in database
         await self.db.update_prediction_evaluation(
             prediction_id=prediction.prediction_id,
             actual_direction=actual_direction,
             actual_price_change=price_change * 100,  # As percentage
             is_correct=is_correct,
+            predicted_return=predicted_return,
             evaluated_at=datetime.now(timezone.utc),
         )
 
@@ -121,6 +137,7 @@ class PredictionEvaluator:
             "actual_direction": actual_direction,
             "actual_price_change": price_change * 100,
             "is_correct": is_correct,
+            "predicted_return": predicted_return,
             "open_price": candle.open,
             "close_price": candle.close,
         }
@@ -130,6 +147,7 @@ class PredictionEvaluator:
             f"Evaluated {prediction.prediction_id}: "
             f"Predicted {prediction.direction} ({prediction.confidence:.0%}) → "
             f"Actual {actual_direction} ({price_change*100:+.2f}%) "
+            f"Return: {predicted_return:+.2f}% "
             f"{'✓' if is_correct else '✗'}"
         )
 
@@ -150,6 +168,35 @@ class PredictionEvaluator:
             return "DOWN"
         else:
             return "NEUTRAL"
+
+    def _calculate_predicted_return(
+        self,
+        direction: Direction,
+        open_price: float,
+        close_price: float,
+    ) -> float:
+        """Calculate predicted return based on prediction direction.
+
+        Args:
+            direction: Predicted direction (UP/DOWN/NEUTRAL).
+            open_price: Candle open price.
+            close_price: Candle close price.
+
+        Returns:
+            Return percentage after fees.
+            - UP: gain when price rises, loss when it falls
+            - DOWN: gain when price falls, loss when it rises
+            - NEUTRAL: 0 (no position, no fees)
+        """
+        if direction == "NEUTRAL":
+            return 0.0
+
+        price_change_pct = (close_price - open_price) / open_price * 100
+
+        if direction == "UP":
+            return price_change_pct - TOTAL_FEE
+        else:  # DOWN
+            return -price_change_pct - TOTAL_FEE
 
 
 async def get_accuracy_summary(

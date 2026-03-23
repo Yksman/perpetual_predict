@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS predictions (
     actual_direction TEXT,
     actual_price_change REAL,
     is_correct INTEGER,
+    predicted_return REAL,
     evaluated_at TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(symbol, timeframe, target_candle_open)
@@ -198,7 +199,23 @@ class Database:
         for index_sql in CREATE_INDEXES:
             await self._connection.execute(index_sql)
 
+        # Run migrations for existing databases
+        await self._run_migrations()
+
         await self._connection.commit()
+
+    async def _run_migrations(self) -> None:
+        """Run database migrations for schema updates."""
+        # Migration: Add predicted_return column to predictions table
+        cursor = await self._connection.execute(
+            "PRAGMA table_info(predictions)"
+        )
+        columns = [row[1] for row in await cursor.fetchall()]
+
+        if "predicted_return" not in columns:
+            await self._connection.execute(
+                "ALTER TABLE predictions ADD COLUMN predicted_return REAL"
+            )
 
     async def close(self) -> None:
         """Close database connection."""
@@ -727,13 +744,14 @@ class Database:
         actual_direction: str,
         actual_price_change: float,
         is_correct: bool,
+        predicted_return: float,
         evaluated_at: datetime,
     ) -> None:
         """Update a prediction with evaluation results."""
         sql = """
         UPDATE predictions
         SET actual_direction = ?, actual_price_change = ?,
-            is_correct = ?, evaluated_at = ?
+            is_correct = ?, predicted_return = ?, evaluated_at = ?
         WHERE prediction_id = ?
         """
         await self.connection.execute(
@@ -742,6 +760,7 @@ class Database:
                 actual_direction,
                 actual_price_change,
                 is_correct,
+                predicted_return,
                 evaluated_at.isoformat(),
                 prediction_id,
             ),
