@@ -709,6 +709,22 @@ async def full_cycle_job(health_status: HealthStatus) -> dict:
             except Exception as e:
                 logger.warning(f"Failed to send prediction notification: {e}")
 
+        # Dashboard export (if enabled)
+        if get_settings().dashboard.export_enabled:
+            try:
+                from perpetual_predict.export.exporter import (
+                    export_dashboard_data,
+                    push_to_data_branch,
+                )
+
+                export_path = await export_dashboard_data()
+                logger.info(f"Dashboard data exported to {export_path}")
+
+                if get_settings().dashboard.auto_push:
+                    push_to_data_branch(export_path)
+            except Exception as e:
+                logger.warning(f"Dashboard export failed (non-fatal): {e}")
+
         logger.info(f"Full cycle completed in {duration:.1f}s")
         return results
 

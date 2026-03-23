@@ -131,6 +131,17 @@ class PaperTradingConfig:
 
 
 @dataclass
+class DashboardConfig:
+    """Dashboard export configuration."""
+
+    export_enabled: bool = False
+    auto_push: bool = False
+    export_dir: str = "/tmp/perpetual_predict_export"
+    history_days: int = 90
+    git_data_branch: str = "data"
+
+
+@dataclass
 class Settings:
     """Application settings container."""
 
@@ -145,6 +156,7 @@ class Settings:
     telegram: TelegramConfig = field(default_factory=TelegramConfig)
     discord: DiscordConfig = field(default_factory=DiscordConfig)
     paper_trading: PaperTradingConfig = field(default_factory=PaperTradingConfig)
+    dashboard: DashboardConfig = field(default_factory=DashboardConfig)
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = None) -> "Settings":
@@ -227,6 +239,13 @@ class Settings:
                 entry_fee_pct=float(os.getenv("PAPER_TRADING_ENTRY_FEE", "0.1")),
                 exit_fee_pct=float(os.getenv("PAPER_TRADING_EXIT_FEE", "0.1")),
                 account_id=os.getenv("PAPER_TRADING_ACCOUNT_ID", "default"),
+            ),
+            dashboard=DashboardConfig(
+                export_enabled=os.getenv("DASHBOARD_EXPORT_ENABLED", "false").lower() == "true",
+                auto_push=os.getenv("DASHBOARD_AUTO_PUSH", "false").lower() == "true",
+                export_dir=os.getenv("DASHBOARD_EXPORT_DIR", "/tmp/perpetual_predict_export"),
+                history_days=int(os.getenv("DASHBOARD_HISTORY_DAYS", "90")),
+                git_data_branch=os.getenv("DASHBOARD_GIT_DATA_BRANCH", "data"),
             ),
         )
 

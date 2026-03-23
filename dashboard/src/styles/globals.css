@@ -1,0 +1,137 @@
+/* Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+/* Design Tokens */
+:root {
+  /* Base */
+  --bg-primary: #06060b;
+  --bg-secondary: #0c0c14;
+  --bg-tertiary: #12121e;
+  --border: #1a1a2e;
+  --border-active: #2a2a45;
+
+  /* Text */
+  --text-primary: #e8e8ed;
+  --text-secondary: #6b6b80;
+  --text-muted: #3d3d52;
+
+  /* Semantic — Trading Colors */
+  --color-long: #00dc82;
+  --color-long-dim: #00dc8220;
+  --color-short: #ff3b5c;
+  --color-short-dim: #ff3b5c20;
+  --color-neutral: #ffb800;
+  --color-neutral-dim: #ffb80020;
+  --color-accent: #00b4d8;
+  --color-accent-dim: #00b4d820;
+
+  /* Effects */
+  --glow-long: 0 0 12px #00dc8240;
+  --glow-short: 0 0 12px #ff3b5c40;
+  --glow-accent: 0 0 8px #00b4d830;
+
+  /* Typography */
+  --font-display: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Spacing */
+  --panel-padding: 24px;
+  --gap: 1px;
+}
+
+/* Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-display);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* Noise texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* Monospace numbers */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Semantic colors */
+.text-long { color: var(--color-long); }
+.text-short { color: var(--color-short); }
+.text-neutral { color: var(--color-neutral); }
+.text-accent { color: var(--color-accent); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+
+/* Panel base */
+.panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  padding: var(--panel-padding);
+}
+
+.panel:hover {
+  border-color: var(--border-active);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-active);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Selection */
+::selection {
+  background: var(--color-accent-dim);
+  color: var(--text-primary);
+}
+
+/* Links */
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
