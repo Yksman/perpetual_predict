@@ -5,12 +5,18 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
+from perpetual_predict.analyzers.technical.divergence import analyze_divergences
+from perpetual_predict.analyzers.technical.market_structure import analyze_market_structure
 from perpetual_predict.analyzers.technical.momentum import add_momentum_indicators
 from perpetual_predict.analyzers.technical.price_structure import (
     add_price_structure_indicators,
     interpret_body_ratio,
     interpret_close_in_range,
     interpret_volume_ratio,
+)
+from perpetual_predict.analyzers.technical.support_resistance import (
+    calculate_nearest_levels,
+    find_support_resistance_levels,
 )
 from perpetual_predict.analyzers.technical.trend import (
     add_trend_indicators,
@@ -99,6 +105,19 @@ class MarketContext:
     long_short_ratio: float = 1.0
     fear_greed_value: int = 50
     fear_greed_classification: str = "Neutral"
+
+    # Market structure (HH/HL/LH/LL)
+    market_structure_summary: str = ""
+    market_structure_state: str = "Undefined"
+
+    # Divergences
+    divergence_summary: str = ""
+
+    # Support/Resistance
+    nearest_support: float | None = None
+    nearest_resistance: float | None = None
+    support_distance_pct: float = 0.0
+    resistance_distance_pct: float = 0.0
 
     # Recent candle summary
     recent_candles_summary: str = ""
@@ -248,6 +267,15 @@ Time: {self.context_time.strftime("%Y-%m-%d %H:%M UTC")}
 - Long/Short Ratio: {self.long_short_ratio:.2f} ({"Longs dominate" if self.long_short_ratio > 1 else "Shorts dominate" if self.long_short_ratio < 1 else "Balanced"})
 - Fear & Greed Index: {self.fear_greed_value} ({self.fear_greed_classification})
 
+### Market Structure (Swing HH/HL/LH/LL)
+{self.market_structure_summary}
+
+### Divergences
+{self.divergence_summary}
+
+### Key Levels (Support/Resistance)
+{self._format_levels_section()}
+
 ### Recent Candles (Last 5)
 {self.recent_candles_summary}
 
@@ -257,6 +285,34 @@ Based on this analysis, predict the direction of the CURRENT {self.timeframe} ca
 **중요: 모든 응답(reasoning, key_factors, trading_reasoning)은 반드시 한국어로 작성하세요.**"""
 
         return prompt
+
+    def _format_levels_section(self) -> str:
+        """Format support/resistance levels section."""
+        lines = []
+        if self.nearest_support is not None:
+            lines.append(
+                f"- Nearest Support: ${self.nearest_support:,.0f} "
+                f"({self.support_distance_pct:+.2f}% from price)"
+            )
+        else:
+            lines.append("- Nearest Support: Not detected")
+
+        if self.nearest_resistance is not None:
+            lines.append(
+                f"- Nearest Resistance: ${self.nearest_resistance:,.0f} "
+                f"({self.resistance_distance_pct:+.2f}% from price)"
+            )
+        else:
+            lines.append("- Nearest Resistance: Not detected")
+
+        # Price position between support and resistance
+        if self.nearest_support is not None and self.nearest_resistance is not None:
+            sr_range = self.nearest_resistance - self.nearest_support
+            if sr_range > 0:
+                position_pct = (self.current_price - self.nearest_support) / sr_range * 100
+                lines.append(f"- Position in Range: {position_pct:.0f}% (0%=support, 100%=resistance)")
+
+        return "\n".join(lines)
 
     def _format_portfolio_section(self) -> str:
         """Format portfolio context section for the prompt."""
@@ -325,6 +381,25 @@ class MarketContextBuilder:
         df = add_volatility_indicators(df)
         df = add_price_structure_indicators(df)
         df = add_volume_indicators(df)
+
+        # Market structure analysis (HH/HL/LH/LL)
+        structure_result = analyze_market_structure(df, left_bars=3, right_bars=3)
+
+        # Divergence analysis (RSI/MACD)
+        divergence_result = analyze_divergences(df, left_bars=3, right_bars=3)
+
+        # Support/Resistance levels
+        sr_levels = find_support_resistance_levels(df, left_bars=5, right_bars=5)
+        current_price = float(df.iloc[-1]["close"])
+        nearest = calculate_nearest_levels(current_price, sr_levels)
+
+        # Calculate distances to nearest levels
+        support_dist = 0.0
+        resistance_dist = 0.0
+        if nearest["nearest_support"] is not None:
+            support_dist = ((nearest["nearest_support"] - current_price) / current_price) * 100
+        if nearest["nearest_resistance"] is not None:
+            resistance_dist = ((nearest["nearest_resistance"] - current_price) / current_price) * 100
 
         # Get latest values
         latest = df.iloc[-1]
@@ -406,6 +481,19 @@ class MarketContextBuilder:
             long_short_ratio=long_short[0].long_short_ratio if long_short else 1.0,
             fear_greed_value=fear_greed[0].value if fear_greed else 50,
             fear_greed_classification=fear_greed[0].classification if fear_greed else "Neutral",
+
+            # Market structure
+            market_structure_summary=structure_result.summary,
+            market_structure_state=structure_result.current_structure,
+
+            # Divergences
+            divergence_summary=divergence_result.summary,
+
+            # Support/Resistance
+            nearest_support=nearest["nearest_support"],
+            nearest_resistance=nearest["nearest_resistance"],
+            support_distance_pct=support_dist,
+            resistance_distance_pct=resistance_dist,
 
             recent_candles_summary=recent_summary,
 
