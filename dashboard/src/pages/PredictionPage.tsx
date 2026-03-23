@@ -3,6 +3,7 @@ import { DirectionDonut } from '../components/charts/DirectionDonut';
 import { AccuracyTimeline } from '../components/charts/AccuracyTimeline';
 import { ConfidenceScatter } from '../components/charts/ConfidenceScatter';
 import { PredictionTable } from '../components/tables/PredictionTable';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import type { Prediction, MetricsData } from '../types';
 
 interface PredictionPageProps {
@@ -11,6 +12,8 @@ interface PredictionPageProps {
 }
 
 export function PredictionPage({ predictions, metrics }: PredictionPageProps) {
+  const isMobile = useIsMobile();
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -19,7 +22,7 @@ export function PredictionPage({ predictions, metrics }: PredictionPageProps) {
     >
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 2fr)',
+        gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) minmax(0, 2fr)',
         gap: 'var(--gap)',
         background: 'var(--border)',
       }}>

@@ -1,6 +1,6 @@
-/* Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/* Fonts — optimized subsets */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap');
 
 /* Design Tokens */
 :root {
@@ -35,9 +35,39 @@
   --font-display: 'Outfit', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Spacing */
+  /* Responsive Spacing */
   --panel-padding: 24px;
+  --header-padding: 16px 24px;
   --gap: 1px;
+  --chart-height: 220px;
+  --kpi-value-size: 1.75rem;
+  --kpi-padding: 16px 20px;
+  --cell-padding: 10px 12px;
+  --table-font: 0.75rem;
+}
+
+/* Mobile breakpoint */
+@media (max-width: 480px) {
+  :root {
+    --panel-padding: 14px;
+    --header-padding: 12px 14px;
+    --chart-height: 180px;
+    --kpi-value-size: 1.35rem;
+    --kpi-padding: 12px 14px;
+    --cell-padding: 8px 10px;
+    --table-font: 0.7rem;
+  }
+}
+
+/* Tablet breakpoint */
+@media (min-width: 481px) and (max-width: 768px) {
+  :root {
+    --panel-padding: 18px;
+    --header-padding: 14px 18px;
+    --chart-height: 200px;
+    --kpi-value-size: 1.5rem;
+    --kpi-padding: 14px 16px;
+  }
 }
 
 /* Reset */
@@ -61,6 +91,8 @@ body {
   color: var(--text-primary);
   line-height: 1.5;
   min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
 }
 
 /* Noise texture overlay */
@@ -97,8 +129,18 @@ body::before {
   padding: var(--panel-padding);
 }
 
-.panel:hover {
-  border-color: var(--border-active);
+@media (hover: hover) {
+  .panel:hover {
+    border-color: var(--border-active);
+  }
+}
+
+/* Touch feedback */
+@media (hover: none) {
+  .touch-feedback:active {
+    background: var(--bg-tertiary) !important;
+    transition: background 0.08s;
+  }
 }
 
 /* Scrollbar */
@@ -118,6 +160,15 @@ body::before {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* Hide scrollbar for carousel elements */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Selection */

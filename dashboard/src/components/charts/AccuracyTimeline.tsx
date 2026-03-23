@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts';
 import { Panel } from '../common/Panel';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import type { Prediction } from '../../types';
 
 interface AccuracyTimelineProps {
@@ -8,21 +9,21 @@ interface AccuracyTimelineProps {
 }
 
 export function AccuracyTimeline({ predictions }: AccuracyTimelineProps) {
+  const isMobile = useIsMobile();
+
   const data = useMemo(() => {
-    // Only evaluated predictions, sorted chronologically
     const evaluated = predictions
       .filter(p => p.is_correct !== null)
       .sort((a, b) => a.time.localeCompare(b.time));
 
     if (evaluated.length < 7) return [];
 
-    // 7-prediction rolling accuracy
     const points: Array<{ date: string; accuracy: number }> = [];
     for (let i = 6; i < evaluated.length; i++) {
       const window = evaluated.slice(i - 6, i + 1);
       const correct = window.filter(p => p.is_correct).length;
       points.push({
-        date: evaluated[i].time.slice(5, 10), // MM-DD
+        date: evaluated[i].time.slice(5, 10),
         accuracy: Math.round((correct / 7) * 100),
       });
     }
@@ -39,23 +40,27 @@ export function AccuracyTimeline({ predictions }: AccuracyTimelineProps) {
     );
   }
 
+  const tickFontSize = isMobile ? 9 : 10;
+
   return (
-    <Panel title="Accuracy Over Time (7-prediction rolling)">
-      <ResponsiveContainer width="100%" height={220}>
+    <Panel title={isMobile ? 'Accuracy (7-rolling)' : 'Accuracy Over Time (7-prediction rolling)'}>
+      <ResponsiveContainer width="100%" height={isMobile ? 180 : 220}>
         <LineChart data={data}>
           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
           <XAxis
             dataKey="date"
-            tick={{ fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
+            tick={{ fill: 'var(--text-muted)', fontSize: tickFontSize, fontFamily: 'var(--font-mono)' }}
             axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}
+            interval={isMobile ? Math.max(0, Math.floor(data.length / 4) - 1) : 'preserveStartEnd'}
           />
           <YAxis
             domain={[0, 100]}
-            tick={{ fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
+            tick={{ fill: 'var(--text-muted)', fontSize: tickFontSize, fontFamily: 'var(--font-mono)' }}
             axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}
             tickFormatter={v => `${v}%`}
+            width={isMobile ? 35 : 45}
           />
           <Tooltip
             contentStyle={{

@@ -1,5 +1,6 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Panel } from '../common/Panel';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import type { MetricsData } from '../../types';
 
 interface DirectionDonutProps {
@@ -13,22 +14,26 @@ const COLORS: Record<string, string> = {
 };
 
 export function DirectionDonut({ accuracy }: DirectionDonutProps) {
+  const isMobile = useIsMobile();
   const data = Object.entries(accuracy.by_direction).map(([dir, val]) => ({
     name: dir,
     value: val.total,
     correct: val.correct,
   }));
 
+  const innerR = isMobile ? 40 : 55;
+  const outerR = isMobile ? 65 : 85;
+
   return (
     <Panel title="Direction Distribution">
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={isMobile ? 180 : 220}>
         <PieChart>
           <Pie
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius={55}
-            outerRadius={85}
+            innerRadius={innerR}
+            outerRadius={outerR}
             dataKey="value"
             stroke="var(--bg-secondary)"
             strokeWidth={2}
@@ -57,7 +62,7 @@ export function DirectionDonut({ accuracy }: DirectionDonutProps) {
       <div style={{
         display: 'flex',
         justifyContent: 'center',
-        gap: '20px',
+        gap: isMobile ? '14px' : '20px',
         marginTop: '8px',
       }}>
         {data.map(d => (

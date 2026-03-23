@@ -1,13 +1,16 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell, ReferenceLine } from 'recharts';
 import { Panel } from '../common/Panel';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 
 interface MonthlyReturnsProps {
   monthlyReturns: Record<string, number>;
 }
 
 export function MonthlyReturns({ monthlyReturns }: MonthlyReturnsProps) {
+  const isMobile = useIsMobile();
+
   const data = Object.entries(monthlyReturns).map(([month, value]) => ({
-    month: month.slice(2), // "26-01" from "2026-01"
+    month: month.slice(2),
     value,
   }));
 
@@ -21,22 +24,25 @@ export function MonthlyReturns({ monthlyReturns }: MonthlyReturnsProps) {
     );
   }
 
+  const tickFontSize = isMobile ? 9 : 10;
+
   return (
     <Panel title="Monthly Returns (%)">
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={isMobile ? 180 : 220}>
         <BarChart data={data}>
           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
           <XAxis
             dataKey="month"
-            tick={{ fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
+            tick={{ fill: 'var(--text-muted)', fontSize: tickFontSize, fontFamily: 'var(--font-mono)' }}
             axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
+            tick={{ fill: 'var(--text-muted)', fontSize: tickFontSize, fontFamily: 'var(--font-mono)' }}
             axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}
             tickFormatter={v => `${v}%`}
+            width={isMobile ? 35 : 45}
           />
           <Tooltip
             contentStyle={{

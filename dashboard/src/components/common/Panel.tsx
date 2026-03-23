@@ -18,7 +18,7 @@ export function Panel({ title, children, style, className = '' }: PanelProps) {
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
           color: 'var(--text-secondary)',
-          marginBottom: '16px',
+          marginBottom: '12px',
         }}>
           {title}
         </h3>

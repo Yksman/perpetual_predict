@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, ReferenceLine } from 'recharts';
 import { Panel } from '../common/Panel';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import type { Prediction } from '../../types';
 
 interface ConfidenceScatterProps {
@@ -8,10 +9,11 @@ interface ConfidenceScatterProps {
 }
 
 export function ConfidenceScatter({ predictions }: ConfidenceScatterProps) {
+  const isMobile = useIsMobile();
+
   const data = useMemo(() => {
     const evaluated = predictions.filter(p => p.is_correct !== null);
 
-    // Group by confidence bucket (0.1 width)
     const buckets: Record<number, { total: number; correct: number }> = {};
     for (const p of evaluated) {
       const bucket = Math.floor(p.confidence * 10) / 10;
@@ -37,15 +39,17 @@ export function ConfidenceScatter({ predictions }: ConfidenceScatterProps) {
     );
   }
 
+  const tickFontSize = isMobile ? 9 : 10;
+
   return (
     <Panel title="Confidence Calibration">
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={isMobile ? 180 : 220}>
         <ScatterChart>
           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
           <XAxis
             dataKey="confidence"
             name="Confidence"
-            tick={{ fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
+            tick={{ fill: 'var(--text-muted)', fontSize: tickFontSize, fontFamily: 'var(--font-mono)' }}
             axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}
             tickFormatter={v => `${v}%`}
@@ -54,11 +58,12 @@ export function ConfidenceScatter({ predictions }: ConfidenceScatterProps) {
           <YAxis
             dataKey="accuracy"
             name="Accuracy"
-            tick={{ fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
+            tick={{ fill: 'var(--text-muted)', fontSize: tickFontSize, fontFamily: 'var(--font-mono)' }}
             axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}
             tickFormatter={v => `${v}%`}
             domain={[0, 100]}
+            width={isMobile ? 35 : 45}
           />
           <Tooltip
             contentStyle={{
@@ -71,7 +76,6 @@ export function ConfidenceScatter({ predictions }: ConfidenceScatterProps) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             formatter={(value: any, name: any) => [`${value}%`, name]}
           />
-          {/* Perfect calibration line */}
           <ReferenceLine
             segment={[{ x: 0, y: 0 }, { x: 100, y: 100 }]}
             stroke="var(--text-muted)"

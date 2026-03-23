@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell, ReferenceLine } from 'recharts';
 import { Panel } from '../common/Panel';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import type { Trade } from '../../types';
 
 interface TradeDistributionProps {
@@ -8,12 +9,13 @@ interface TradeDistributionProps {
 }
 
 export function TradeDistribution({ trades }: TradeDistributionProps) {
+  const isMobile = useIsMobile();
+
   const data = useMemo(() => {
     const closedTrades = trades.filter(t => t.return_pct !== null);
     if (closedTrades.length === 0) return [];
 
-    // Create histogram buckets
-    const bucketSize = 1; // 1% buckets
+    const bucketSize = 1;
     const buckets: Record<number, number> = {};
 
     for (const t of closedTrades) {
@@ -40,21 +42,25 @@ export function TradeDistribution({ trades }: TradeDistributionProps) {
     );
   }
 
+  const tickFontSize = isMobile ? 8 : 9;
+
   return (
     <Panel title="Return Distribution (%)">
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={isMobile ? 180 : 220}>
         <BarChart data={data}>
           <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
           <XAxis
             dataKey="range"
-            tick={{ fill: 'var(--text-muted)', fontSize: 9, fontFamily: 'var(--font-mono)' }}
+            tick={{ fill: 'var(--text-muted)', fontSize: tickFontSize, fontFamily: 'var(--font-mono)' }}
             axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}
+            interval={isMobile ? 1 : 0}
           />
           <YAxis
-            tick={{ fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
+            tick={{ fill: 'var(--text-muted)', fontSize: isMobile ? 9 : 10, fontFamily: 'var(--font-mono)' }}
             axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}
+            width={isMobile ? 25 : 35}
           />
           <Tooltip
             contentStyle={{

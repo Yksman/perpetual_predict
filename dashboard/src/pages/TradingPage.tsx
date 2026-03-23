@@ -3,6 +3,7 @@ import { EquityCurve } from '../components/charts/EquityCurve';
 import { MonthlyReturns } from '../components/charts/MonthlyReturns';
 import { TradeDistribution } from '../components/charts/TradeDistribution';
 import { TradeTable } from '../components/tables/TradeTable';
+import { useIsMobile } from '../hooks/useMediaQuery';
 import type { Trade, MetricsData } from '../types';
 
 interface TradingPageProps {
@@ -11,6 +12,8 @@ interface TradingPageProps {
 }
 
 export function TradingPage({ trades, metrics }: TradingPageProps) {
+  const isMobile = useIsMobile();
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -23,7 +26,7 @@ export function TradingPage({ trades, metrics }: TradingPageProps) {
       />
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+        gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) minmax(0, 1fr)',
         gap: 'var(--gap)',
         marginTop: 'var(--gap)',
         background: 'var(--border)',

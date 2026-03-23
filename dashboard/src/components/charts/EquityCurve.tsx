@@ -1,5 +1,6 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { Panel } from '../common/Panel';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import type { MetricsData } from '../../types';
 import { formatPrice } from '../../utils/format';
 
@@ -9,6 +10,8 @@ interface EquityCurveProps {
 }
 
 export function EquityCurve({ equityCurve, currentBalance }: EquityCurveProps) {
+  const isMobile = useIsMobile();
+
   const data = equityCurve.map(p => ({
     date: p.time.slice(5, 10),
     balance: p.balance,
@@ -28,11 +31,48 @@ export function EquityCurve({ equityCurve, currentBalance }: EquityCurveProps) {
   const max = Math.max(...data.map(d => d.balance));
   const padding = (max - min) * 0.1 || 10;
 
+  const balanceDisplay = (
+    <div style={{
+      textAlign: isMobile ? 'left' : 'right',
+      minWidth: isMobile ? undefined : '120px',
+      paddingTop: isMobile ? '0' : '20px',
+      ...(isMobile ? { marginBottom: '8px' } : {}),
+    }}>
+      <div style={{
+        fontFamily: 'var(--font-display)',
+        fontSize: '0.65rem',
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        color: 'var(--text-secondary)',
+        marginBottom: '4px',
+      }}>
+        Balance
+      </div>
+      <div style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: isMobile ? '1.25rem' : '1.5rem',
+        fontWeight: 700,
+        color: 'var(--color-long)',
+        textShadow: '0 0 12px #00dc8240',
+      }}>
+        ${formatPrice(currentBalance)}
+      </div>
+    </div>
+  );
+
+  const tickFontSize = isMobile ? 9 : 10;
+
   return (
     <Panel title="Equity Curve">
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '24px' }}>
+      {isMobile && balanceDisplay}
+      <div style={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'stretch' : 'flex-start',
+        gap: isMobile ? '0' : '24px',
+      }}>
         <div style={{ flex: 1 }}>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={isMobile ? 180 : 250}>
             <AreaChart data={data}>
               <defs>
                 <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
@@ -43,16 +83,18 @@ export function EquityCurve({ equityCurve, currentBalance }: EquityCurveProps) {
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
               <XAxis
                 dataKey="date"
-                tick={{ fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
+                tick={{ fill: 'var(--text-muted)', fontSize: tickFontSize, fontFamily: 'var(--font-mono)' }}
                 axisLine={{ stroke: 'var(--border)' }}
                 tickLine={false}
+                interval={isMobile ? Math.max(0, Math.floor(data.length / 5) - 1) : 'preserveStartEnd'}
               />
               <YAxis
                 domain={[min - padding, max + padding]}
-                tick={{ fill: 'var(--text-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
+                tick={{ fill: 'var(--text-muted)', fontSize: tickFontSize, fontFamily: 'var(--font-mono)' }}
                 axisLine={{ stroke: 'var(--border)' }}
                 tickLine={false}
-                tickFormatter={v => `$${v.toFixed(0)}`}
+                tickFormatter={v => isMobile ? `$${(v / 1000).toFixed(0)}K` : `$${v.toFixed(0)}`}
+                width={isMobile ? 40 : 60}
               />
               <Tooltip
                 contentStyle={{
@@ -77,31 +119,7 @@ export function EquityCurve({ equityCurve, currentBalance }: EquityCurveProps) {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        <div style={{
-          textAlign: 'right',
-          minWidth: '120px',
-          paddingTop: '20px',
-        }}>
-          <div style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: '0.65rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.06em',
-            color: 'var(--text-secondary)',
-            marginBottom: '4px',
-          }}>
-            Balance
-          </div>
-          <div style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '1.5rem',
-            fontWeight: 700,
-            color: 'var(--color-long)',
-            textShadow: '0 0 12px #00dc8240',
-          }}>
-            ${formatPrice(currentBalance)}
-          </div>
-        </div>
+        {!isMobile && balanceDisplay}
       </div>
     </Panel>
   );

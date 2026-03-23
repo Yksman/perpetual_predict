@@ -6,10 +6,12 @@ import { KpiStrip } from './components/layout/KpiStrip';
 import { PredictionPage } from './pages/PredictionPage';
 import { TradingPage } from './pages/TradingPage';
 import { usePredictions, useTrades, useMetrics, useMeta } from './hooks/useData';
+import { useIsMobile } from './hooks/useMediaQuery';
 import { Skeleton } from './components/common/Skeleton';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('predictions');
+  const isMobile = useIsMobile();
 
   const { data: predictionsData, loading: loadingPred } = usePredictions();
   const { data: tradesData, loading: loadingTrades } = useTrades();
@@ -25,21 +27,31 @@ export default function App() {
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',
-      border: '1px solid var(--border)',
+      border: isMobile ? 'none' : '1px solid var(--border)',
       borderTop: 'none',
       borderBottom: 'none',
     }}>
       <Header exportedAt={metaData?.exported_at ?? null} />
 
       {loading ? (
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} height="80px" />
+        <div style={{
+          padding: isMobile ? '14px' : '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: isMobile ? '8px' : '16px',
+        }}>
+          <div style={{
+            display: isMobile ? 'flex' : 'grid',
+            gridTemplateColumns: isMobile ? undefined : 'repeat(5, 1fr)',
+            gap: '8px',
+            ...(isMobile ? { overflowX: 'hidden' } : {}),
+          }}>
+            {Array.from({ length: isMobile ? 3 : 5 }).map((_, i) => (
+              <Skeleton key={i} height="80px" width={isMobile ? '140px' : '100%'} />
             ))}
           </div>
-          <Skeleton height="300px" />
-          <Skeleton height="200px" />
+          <Skeleton height={isMobile ? '180px' : '300px'} />
+          <Skeleton height={isMobile ? '150px' : '200px'} />
         </div>
       ) : metricsData && predictionsData && tradesData ? (
         <>
@@ -68,6 +80,8 @@ export default function App() {
           fontFamily: 'var(--font-mono)',
           color: 'var(--text-muted)',
           fontSize: '0.85rem',
+          padding: '0 14px',
+          textAlign: 'center',
         }}>
           No data available. Run <code style={{ color: 'var(--color-accent)' }}>perpetual_predict export</code> first.
         </div>
