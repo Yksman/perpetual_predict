@@ -50,11 +50,11 @@
       "created_at": "2026-03-24T03:49:15.109000+00:00",
       "completed_at": null,
       "winner": null,
-      "sample_size": 0,
-      "progress_pct": 0.0,
+      "sample_size": 1,
+      "progress_pct": 3.3,
       "result": {
-        "control_accuracy": 0,
-        "variant_accuracy": 0,
+        "control_accuracy": 1.0,
+        "variant_accuracy": 1.0,
         "control_return": 0,
         "variant_return": 0,
         "control_sharpe": 0.0,
@@ -76,21 +76,21 @@
       "equity_curves": {
         "control": [
           {
-            "time": "2026-03-24T12:14:32.306629",
+            "time": "2026-03-24T16:02:52.687236",
             "balance": 1000.0
           }
         ],
         "variant": [
           {
-            "time": "2026-03-24T12:14:32.306633",
+            "time": "2026-03-24T16:02:52.687245",
             "balance": 1000.0
           }
         ]
       },
       "prediction_pairs": [
         {
-          "target_candle_open": "2026-03-24T12:00:00+00:00",
-          "target_candle_close": "2026-03-24T16:00:00+00:00",
+          "target_candle_open": "2026-03-24T16:00:00+00:00",
+          "target_candle_close": "2026-03-24T20:00:00+00:00",
           "control": {
             "direction": "DOWN",
             "confidence": 0.55,
@@ -102,12 +102,34 @@
           },
           "variant": {
             "direction": "DOWN",
-            "confidence": 0.42,
+            "confidence": 0.45,
             "leverage": 1.0,
             "position_ratio": 0.05,
             "is_correct": null,
             "actual_direction": null,
             "actual_price_change": null
+          }
+        },
+        {
+          "target_candle_open": "2026-03-24T12:00:00+00:00",
+          "target_candle_close": "2026-03-24T16:00:00+00:00",
+          "control": {
+            "direction": "DOWN",
+            "confidence": 0.55,
+            "leverage": 1.0,
+            "position_ratio": 0.05,
+            "is_correct": 1,
+            "actual_direction": "DOWN",
+            "actual_price_change": -1.7980381459128936
+          },
+          "variant": {
+            "direction": "DOWN",
+            "confidence": 0.42,
+            "leverage": 1.0,
+            "position_ratio": 0.05,
+            "is_correct": 1,
+            "actual_direction": "DOWN",
+            "actual_price_change": -1.7980381459128936
           }
         }
       ]

@@ -1,6 +1,75 @@
 {
   "predictions": [
     {
+      "id": "7375954c-3bac-4ceb-ad5f-5651aec5ef40",
+      "time": "2026-03-24T16:02:52.105227+00:00",
+      "target_open": "2026-03-24T16:00:00+00:00",
+      "target_close": "2026-03-24T20:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.45,
+      "key_factors": [
+        "RSI·MACD 히든 베어리시 다이버전스 — 가격 LH vs 지표 HH로 하방 전환 신호",
+        "약세 시장 구조(5회 구조 이탈) + SMA 50 하회 + 저항선($70,070) 근접",
+        "-1.80% 급락 후 도지 캔들 — 매도 압력 소강이나 반전 확인 부재",
+        "극단적 공포(F&G 11) 속 롱 과다(L/S 1.76) — 롱 청산 리스크 잠재",
+        "MACD 히스토그램 양전환(190) 및 DXY 약세가 하방 시나리오에 대한 역풍"
+      ],
+      "reasoning": "시장은 현재 전형적인 약세 구조 속 일시적 반등 후 소강 국면에 있다. 직전 캔들에서 -1.80% 급락 후 도지(Doji) 캔들이 출현했는데, 이는 매수·매도 양측 모두 확신이 없는 상태를 반영한다. 핵심적으로 RSI와 MACD 모두 히든 베어리시 다이버전스를 보이고 있어(가격은 LH인데 지표는 HH), 하방 압력이 잠재되어 있다. 시장 구조는 5회의 구조 이탈과 함께 명확한 약세이며, 가격은 SMA 50($70,968) 아래에 위치한다. 다만 MACD 히스토그램이 190으로 양전환 중이고 DXY 약세(-0.70%)가 BTC에 우호적일 수 있어 하방 확신도를 낮춘다. 극단적 공포(F&G: 11)에도 롱/숏 비율 1.76으로 롱이 과다한 점은 오히려 청산 리스크를 시사한다.",
+      "leverage": 1.0,
+      "position_ratio": 0.05,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "13310791-c883-4775-8f5b-b77c47965fd9",
+      "time": "2026-03-24T16:01:33.107611+00:00",
+      "target_open": "2026-03-24T16:00:00+00:00",
+      "target_close": "2026-03-24T20:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.55,
+      "key_factors": [
+        "히든 베어리시 다이버전스 (RSI, MACD 모두) - 가격은 LH이나 지표는 HH",
+        "베어리시 시장 구조: 5회 구조 이탈, LH-LL 패턴 지속",
+        "-1.80% 강한 하락 후 도지 캔들 - 하락 지속 가능성 높은 패턴",
+        "저항선($70,070) 근접 + SMA50($70,968) 아래 위치",
+        "극단적 공포(F&G 11) + 롱 비율 1.76 - 롱 청산 압력 잠재"
+      ],
+      "reasoning": "직전 캔들에서 -1.80% 강한 하락 후 도지(Doji) 캔들이 형성되었으며, 이는 하락 추세 중 일시적 멈춤으로 해석됩니다. RSI와 MACD 모두 히든 베어리시 다이버전스를 보이고 있어 추가 하락 가능성을 시사합니다. 시장 구조는 명확히 베어리시(LH-LL 패턴, 구조 이탈 5회)이며, 현재 가격이 저항선($70,070) 대비 0.34% 아래에 위치해 상방 압력이 제한적입니다. 다만 MACD 히스토그램이 양전환(190.31)하고 있고, 극단적 공포(F&G 11)는 역발상 매수 신호가 될 수 있어 확신도를 낮게 설정합니다.",
+      "leverage": 1.0,
+      "position_ratio": 0.05,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "236bf66d-339a-41bf-abcd-1c7056d1e027",
+      "time": "2026-03-24T16:01:33.107611+00:00",
+      "target_open": "2026-03-24T16:00:00+00:00",
+      "target_close": "2026-03-24T20:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.55,
+      "key_factors": [
+        "히든 베어리시 다이버전스 (RSI, MACD 모두) - 가격은 LH이나 지표는 HH",
+        "베어리시 시장 구조: 5회 구조 이탈, LH-LL 패턴 지속",
+        "-1.80% 강한 하락 후 도지 캔들 - 하락 지속 가능성 높은 패턴",
+        "저항선($70,070) 근접 + SMA50($70,968) 아래 위치",
+        "극단적 공포(F&G 11) + 롱 비율 1.76 - 롱 청산 압력 잠재"
+      ],
+      "reasoning": "직전 캔들에서 -1.80% 강한 하락 후 도지(Doji) 캔들이 형성되었으며, 이는 하락 추세 중 일시적 멈춤으로 해석됩니다. RSI와 MACD 모두 히든 베어리시 다이버전스를 보이고 있어 추가 하락 가능성을 시사합니다. 시장 구조는 명확히 베어리시(LH-LL 패턴, 구조 이탈 5회)이며, 현재 가격이 저항선($70,070) 대비 0.34% 아래에 위치해 상방 압력이 제한적입니다. 다만 MACD 히스토그램이 양전환(190.31)하고 있고, 극단적 공포(F&G 11)는 역발상 매수 신호가 될 수 있어 확신도를 낮게 설정합니다.",
+      "leverage": 1.0,
+      "position_ratio": 0.05,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "4bb876be-9056-4823-80f2-990e31343112",
       "time": "2026-03-24T12:06:27.855902+00:00",
       "target_open": "2026-03-24T12:00:00+00:00",
@@ -18,11 +87,11 @@
       "reasoning": "현재 캔들은 저항선($71,161) 바로 아래에서 시작되었으며, 직전 강한 양봉(+1.05%) 이후 두 개의 약세 캔들이 연속 출현하여 상승 모멘텀 소진 패턴을 보이고 있다. 스토캐스틱 RSI가 96.1/95.6으로 극도의 과매수 상태이며, CVD가 -109 BTC로 매도 압력이 우세하다. 거래량이 전 캔들 대비 0.02배로 극히 낮아 매수세 부재를 시사한다. 다만 MACD 히스토그램이 양수 전환(338.96)되고 DXY가 약세(-0.70%)인 점은 하방 확신을 제한한다. ADX 23.8로 뚜렷한 추세 없이 횡보-약세 가능성이 높다.",
       "leverage": 1.0,
       "position_ratio": 0.05,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -1.7980381459128936,
+      "predicted_return": 1.5980381459128936,
+      "evaluated_at": "2026-03-24T16:00:17.227395+00:00"
     },
     {
       "id": "f55a35a3-a2e9-4d8f-8209-2f22f8424f47",
@@ -41,11 +110,11 @@
       "reasoning": "현재 캔들은 극도로 낮은 거래량(이전 대비 0.02x)의 도지/비결정 캔들로 시작되었으며, 직전 2개 캔들이 행잉맨과 약세 캔들로 단기 반전 신호를 보이고 있다. 스토캐스틱 RSI가 K=96.1, D=95.6으로 극단적 과매수 구간에 진입해 있고, 가격이 지지/저항 범위의 94% 지점으로 저항선($71,161)에 거의 도달한 상태다. CVD가 -109.14 BTC로 매도 압력이 우세하며, ADX 23.8로 추세 강도가 약해 상승 지속이 어려운 환경이다. MACD 히스토그램이 증가 중이나, 가격이 SMA 50 아래에 있고 시장 구조가 전환(Transition) 상태로 5번의 구조 이탈이 발생해 방향성이 불명확하다. 극단적 공포(F&G 11)는 역발상 매수 신호일 수 있으나, 단기 4H 기준에서는 과매수 해소를 위한 하방 조정 가능성이 더 높다고 판단한다.",
       "leverage": 1.0,
       "position_ratio": 0.05,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -1.7980381459128936,
+      "predicted_return": 1.5980381459128936,
+      "evaluated_at": "2026-03-24T16:00:17.182433+00:00"
     },
     {
       "id": "0872f0bc-e200-45dc-af3e-8eb526fa2101",
@@ -64,11 +133,11 @@
       "reasoning": "현재 캔들은 극도로 낮은 거래량(이전 대비 0.02x)의 도지/비결정 캔들로 시작되었으며, 직전 2개 캔들이 행잉맨과 약세 캔들로 단기 반전 신호를 보이고 있다. 스토캐스틱 RSI가 K=96.1, D=95.6으로 극단적 과매수 구간에 진입해 있고, 가격이 지지/저항 범위의 94% 지점으로 저항선($71,161)에 거의 도달한 상태다. CVD가 -109.14 BTC로 매도 압력이 우세하며, ADX 23.8로 추세 강도가 약해 상승 지속이 어려운 환경이다. MACD 히스토그램이 증가 중이나, 가격이 SMA 50 아래에 있고 시장 구조가 전환(Transition) 상태로 5번의 구조 이탈이 발생해 방향성이 불명확하다. 극단적 공포(F&G 11)는 역발상 매수 신호일 수 있으나, 단기 4H 기준에서는 과매수 해소를 위한 하방 조정 가능성이 더 높다고 판단한다.",
       "leverage": 1.0,
       "position_ratio": 0.05,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -1.7980381459128936,
+      "predicted_return": 1.5980381459128936,
+      "evaluated_at": "2026-03-24T16:00:17.224507+00:00"
     },
     {
       "id": "2056e064-0ab0-4d6f-b481-de1253d96775",
