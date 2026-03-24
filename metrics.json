@@ -1,7 +1,7 @@
 {
   "account": {
     "initial_balance": 1000.0,
-    "current_balance": 1000.4269308388206
+    "current_balance": 999.8026035994566
   },
   "performance": {
     "total_trades": 5,
@@ -9,8 +9,8 @@
     "losing_trades": 4,
     "win_rate": 20.0,
     "profit_factor": 0.01,
-    "cumulative_pnl": 0.43,
-    "total_return_pct": 0.04,
+    "cumulative_pnl": -0.2,
+    "total_return_pct": -0.02,
     "avg_win": 0.05,
     "avg_loss": 1.18,
     "max_drawdown_pct": -0.33,
@@ -23,13 +23,13 @@
     "2026-03": -0.47
   },
   "prediction_accuracy": {
-    "total": 10,
+    "total": 11,
     "correct": 4,
-    "accuracy": 0.4,
-    "avg_confidence": 0.5,
+    "accuracy": 0.36,
+    "avg_confidence": 0.51,
     "by_direction": {
       "UP": {
-        "total": 4,
+        "total": 5,
         "correct": 2
       },
       "DOWN": {

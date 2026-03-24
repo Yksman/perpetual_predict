@@ -54,7 +54,7 @@
       "progress_pct": 0.0,
       "result": {
         "control_accuracy": 0,
-        "variant_accuracy": 1.0,
+        "variant_accuracy": 0.5,
         "control_return": 0,
         "variant_return": 0,
         "control_sharpe": 0.0,
@@ -76,13 +76,13 @@
       "equity_curves": {
         "control": [
           {
-            "time": "2026-03-24T11:58:01.659008",
+            "time": "2026-03-24T12:03:07.258245",
             "balance": 1000.0
           }
         ],
         "variant": [
           {
-            "time": "2026-03-24T11:58:01.659012",
+            "time": "2026-03-24T12:03:07.258251",
             "balance": 1000.0
           }
         ]
