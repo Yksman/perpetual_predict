@@ -116,8 +116,7 @@ CREATE TABLE IF NOT EXISTS predictions (
     is_correct INTEGER,
     predicted_return REAL,
     evaluated_at TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(symbol, timeframe, target_candle_open)
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
 )
 """
 
@@ -365,8 +364,70 @@ class Database:
                     f"ALTER TABLE paper_trades ADD COLUMN {col} {col_type} DEFAULT {default}"
                 )
 
-        # Migration: Update UNIQUE constraint on predictions to allow experiment arms
-        # Drop old unique index and create new one that includes experiment_id and arm
+        # Migration: Remove inline UNIQUE(symbol, timeframe, target_candle_open)
+        # constraint that prevents multiple arms per candle.
+        # SQLite can't DROP inline constraints, so we rebuild the table.
+        autoindex_exists = await self._connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE name='sqlite_autoindex_predictions_2'"
+        )
+        if await autoindex_exists.fetchone():
+            pass  # Rebuilding predictions table to remove old UNIQUE constraint
+            await self._connection.execute(
+                "CREATE TABLE IF NOT EXISTS predictions_new ("
+                "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                "  prediction_id TEXT NOT NULL UNIQUE,"
+                "  prediction_time TEXT NOT NULL,"
+                "  target_candle_open TEXT NOT NULL,"
+                "  target_candle_close TEXT NOT NULL,"
+                "  symbol TEXT NOT NULL,"
+                "  timeframe TEXT NOT NULL,"
+                "  direction TEXT NOT NULL,"
+                "  confidence REAL NOT NULL,"
+                "  reasoning TEXT NOT NULL,"
+                "  key_factors TEXT DEFAULT '[]',"
+                "  session_id TEXT DEFAULT '',"
+                "  duration_ms INTEGER DEFAULT 0,"
+                "  model_usage TEXT DEFAULT '{}',"
+                "  actual_direction TEXT,"
+                "  actual_price_change REAL,"
+                "  is_correct INTEGER,"
+                "  predicted_return REAL,"
+                "  evaluated_at TEXT,"
+                "  created_at TEXT DEFAULT CURRENT_TIMESTAMP,"
+                "  leverage REAL DEFAULT 1.0,"
+                "  position_ratio REAL DEFAULT 0.0,"
+                "  trading_reasoning TEXT DEFAULT '',"
+                "  experiment_id TEXT DEFAULT NULL,"
+                "  arm TEXT DEFAULT 'baseline'"
+                ")"
+            )
+            await self._connection.execute(
+                "INSERT INTO predictions_new SELECT * FROM predictions"
+            )
+            await self._connection.execute("DROP TABLE predictions")
+            await self._connection.execute(
+                "ALTER TABLE predictions_new RENAME TO predictions"
+            )
+            # Recreate other indexes
+            await self._connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_predictions_pending "
+                "ON predictions(is_correct) WHERE is_correct IS NULL"
+            )
+            await self._connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_predictions_time "
+                "ON predictions(target_candle_open DESC)"
+            )
+            await self._connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_predictions_symbol "
+                "ON predictions(symbol, timeframe)"
+            )
+            await self._connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_predictions_experiment "
+                "ON predictions(experiment_id, arm)"
+            )
+            pass  # Predictions table rebuilt successfully
+
+        # Ensure experiment-aware unique index exists
         await self._connection.execute(
             "DROP INDEX IF EXISTS idx_predictions_unique_experiment"
         )
