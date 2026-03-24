@@ -614,27 +614,88 @@ async def prediction_job(health_status: HealthStatus) -> Prediction | None:
 
             for exp in active_experiments:
                 import json
-                control_modules = json.loads(exp.control_modules) if isinstance(exp.control_modules, str) else exp.control_modules
                 variant_modules = json.loads(exp.variant_modules) if isinstance(exp.variant_modules, str) else exp.variant_modules
 
-                for arm_name, modules in [("control", control_modules), ("variant", variant_modules)]:
+                # Reuse baseline as control (same modules = same prompt)
+                # Just save baseline result under the experiment's control arm
+                if prediction:
                     try:
-                        await _run_single_prediction(
-                            market_context=market_context,
-                            target_open=target_open,
-                            target_close=target_close,
-                            symbol=symbol,
-                            timeframe=timeframe,
-                            enabled_modules=modules,
-                            experiment_id=exp.experiment_id,
-                            arm=arm_name,
-                            account_id=f"{exp.experiment_id}_{arm_name}",
+                        async with get_database() as db:
+                            control_pred = Prediction(
+                                prediction_id=str(uuid.uuid4()),
+                                prediction_time=prediction.prediction_time,
+                                target_candle_open=target_open,
+                                target_candle_close=target_close,
+                                symbol=symbol,
+                                timeframe=timeframe,
+                                direction=prediction.direction,
+                                confidence=prediction.confidence,
+                                reasoning=prediction.reasoning,
+                                key_factors=prediction.key_factors,
+                                session_id=prediction.session_id,
+                                duration_ms=prediction.duration_ms,
+                                model_usage=prediction.model_usage,
+                                leverage=prediction.leverage,
+                                position_ratio=prediction.position_ratio,
+                                trading_reasoning=prediction.trading_reasoning,
+                            )
+                            await db.insert_prediction(
+                                control_pred,
+                                experiment_id=exp.experiment_id,
+                                arm="control",
+                            )
+
+                            # Open paper trade for control arm
+                            if (
+                                paper_settings.enabled
+                                and control_pred.direction != "NEUTRAL"
+                                and control_pred.position_ratio > 0
+                            ):
+                                from perpetual_predict.trading.engine import PaperTradingEngine
+                                ctrl_account_id = f"{exp.experiment_id}_control"
+                                engine = PaperTradingEngine(db, ctrl_account_id)
+                                await engine.ensure_account(paper_settings.initial_balance)
+                                candles = await db.get_candles(
+                                    symbol=symbol, timeframe=timeframe,
+                                    start_time=target_open, end_time=target_open, limit=1,
+                                )
+                                if candles:
+                                    trade = await engine.open_position(control_pred, candles[0].open)
+                                    if trade:
+                                        logger.info(
+                                            f"[control] Paper trade opened (reused baseline): "
+                                            f"{trade.side} notional=${trade.notional_value:.2f}"
+                                        )
+                        logger.info(
+                            f"[control] Reused baseline prediction for {exp.experiment_id}"
                         )
                     except Exception as e:
                         logger.warning(
-                            f"Experiment {exp.experiment_id} {arm_name} "
-                            f"prediction failed (non-fatal): {e}"
+                            f"Experiment {exp.experiment_id} control "
+                            f"(baseline reuse) failed (non-fatal): {e}"
                         )
+
+                # Cooldown before variant call to avoid rate limiting
+                await asyncio.sleep(10)
+
+                # Run variant prediction (different modules = needs its own claude -p call)
+                try:
+                    await _run_single_prediction(
+                        market_context=market_context,
+                        target_open=target_open,
+                        target_close=target_close,
+                        symbol=symbol,
+                        timeframe=timeframe,
+                        enabled_modules=variant_modules,
+                        experiment_id=exp.experiment_id,
+                        arm="variant",
+                        account_id=f"{exp.experiment_id}_variant",
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Experiment {exp.experiment_id} variant "
+                        f"prediction failed (non-fatal): {e}"
+                    )
 
         health_status.update_job_completed(
             job_name,
