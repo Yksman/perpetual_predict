@@ -1,0 +1,180 @@
+{
+  "experiments": [
+    {
+      "experiment_id": "exp_31ba738f",
+      "name": "macro-indicators",
+      "description": "매크로 경제지표(금리, DXY, SPX, 금) 추가 효과 검증",
+      "status": "active",
+      "control_modules": [
+        "price_action",
+        "candle_structure",
+        "ema_distance",
+        "trend",
+        "momentum",
+        "volatility",
+        "cvd",
+        "liquidation",
+        "sentiment",
+        "market_structure",
+        "divergences",
+        "support_resistance",
+        "recent_candles",
+        "portfolio"
+      ],
+      "variant_modules": [
+        "price_action",
+        "candle_structure",
+        "ema_distance",
+        "trend",
+        "momentum",
+        "volatility",
+        "cvd",
+        "liquidation",
+        "sentiment",
+        "market_structure",
+        "divergences",
+        "support_resistance",
+        "recent_candles",
+        "portfolio",
+        "macro"
+      ],
+      "module_diff": {
+        "added": [
+          "macro"
+        ],
+        "removed": []
+      },
+      "min_samples": 30,
+      "significance_level": 0.05,
+      "primary_metric": "net_return",
+      "created_at": "2026-03-24T03:49:15.109000+00:00",
+      "completed_at": null,
+      "winner": null,
+      "sample_size": 0,
+      "progress_pct": 0.0,
+      "result": {
+        "control_accuracy": 0,
+        "variant_accuracy": 0,
+        "control_return": 0,
+        "variant_return": 0,
+        "control_sharpe": 0.0,
+        "variant_sharpe": 0.0,
+        "p_value": null,
+        "is_significant": false,
+        "recommended_winner": null
+      },
+      "accounts": {
+        "control": {
+          "initial_balance": 1000.0,
+          "current_balance": 1000.0
+        },
+        "variant": {
+          "initial_balance": 1000.0,
+          "current_balance": 1000.0
+        }
+      },
+      "equity_curves": {
+        "control": [
+          {
+            "time": "2026-03-24T05:54:05.355633",
+            "balance": 1000.0
+          }
+        ],
+        "variant": [
+          {
+            "time": "2026-03-24T05:54:05.355637",
+            "balance": 1000.0
+          }
+        ]
+      },
+      "prediction_pairs": []
+    },
+    {
+      "experiment_id": "exp_3c371b1b",
+      "name": "test_no_divergence",
+      "description": "",
+      "status": "paused",
+      "control_modules": [
+        "price_action",
+        "candle_structure",
+        "ema_distance",
+        "trend",
+        "momentum",
+        "volatility",
+        "cvd",
+        "liquidation",
+        "sentiment",
+        "market_structure",
+        "divergences",
+        "support_resistance",
+        "recent_candles",
+        "portfolio"
+      ],
+      "variant_modules": [
+        "price_action",
+        "candle_structure",
+        "ema_distance",
+        "trend",
+        "momentum",
+        "volatility",
+        "cvd",
+        "liquidation",
+        "sentiment",
+        "market_structure",
+        "recent_candles",
+        "portfolio"
+      ],
+      "module_diff": {
+        "added": [],
+        "removed": [
+          "divergences",
+          "support_resistance"
+        ]
+      },
+      "min_samples": 30,
+      "significance_level": 0.05,
+      "primary_metric": "net_return",
+      "created_at": "2026-03-23T23:53:53.630924+00:00",
+      "completed_at": null,
+      "winner": null,
+      "sample_size": 0,
+      "progress_pct": 0.0,
+      "result": {
+        "control_accuracy": 0,
+        "variant_accuracy": 0,
+        "control_return": 0,
+        "variant_return": 0,
+        "control_sharpe": 0.0,
+        "variant_sharpe": 0.0,
+        "p_value": null,
+        "is_significant": false,
+        "recommended_winner": null
+      },
+      "accounts": {
+        "control": {
+          "initial_balance": 1000.0,
+          "current_balance": 1000.0
+        },
+        "variant": {
+          "initial_balance": 1000.0,
+          "current_balance": 1000.0
+        }
+      },
+      "equity_curves": {
+        "control": [
+          {
+            "time": "2026-03-24T05:54:05.356721",
+            "balance": 1000.0
+          }
+        ],
+        "variant": [
+          {
+            "time": "2026-03-24T05:54:05.356725",
+            "balance": 1000.0
+          }
+        ]
+      },
+      "prediction_pairs": []
+    }
+  ]
+}
