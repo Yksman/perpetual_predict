@@ -76,100 +76,13 @@
       "equity_curves": {
         "control": [
           {
-            "time": "2026-03-24T09:03:31.757673",
+            "time": "2026-03-24T10:26:25.576723",
             "balance": 1000.0
           }
         ],
         "variant": [
           {
-            "time": "2026-03-24T09:03:31.757680",
-            "balance": 1000.0
-          }
-        ]
-      },
-      "prediction_pairs": []
-    },
-    {
-      "experiment_id": "exp_3c371b1b",
-      "name": "test_no_divergence",
-      "description": "",
-      "status": "paused",
-      "control_modules": [
-        "price_action",
-        "candle_structure",
-        "ema_distance",
-        "trend",
-        "momentum",
-        "volatility",
-        "cvd",
-        "liquidation",
-        "sentiment",
-        "market_structure",
-        "divergences",
-        "support_resistance",
-        "recent_candles",
-        "portfolio"
-      ],
-      "variant_modules": [
-        "price_action",
-        "candle_structure",
-        "ema_distance",
-        "trend",
-        "momentum",
-        "volatility",
-        "cvd",
-        "liquidation",
-        "sentiment",
-        "market_structure",
-        "recent_candles",
-        "portfolio"
-      ],
-      "module_diff": {
-        "added": [],
-        "removed": [
-          "divergences",
-          "support_resistance"
-        ]
-      },
-      "min_samples": 30,
-      "significance_level": 0.05,
-      "primary_metric": "net_return",
-      "created_at": "2026-03-23T23:53:53.630924+00:00",
-      "completed_at": null,
-      "winner": null,
-      "sample_size": 0,
-      "progress_pct": 0.0,
-      "result": {
-        "control_accuracy": 0,
-        "variant_accuracy": 0,
-        "control_return": 0,
-        "variant_return": 0,
-        "control_sharpe": 0.0,
-        "variant_sharpe": 0.0,
-        "p_value": null,
-        "is_significant": false,
-        "recommended_winner": null
-      },
-      "accounts": {
-        "control": {
-          "initial_balance": 1000.0,
-          "current_balance": 1000.0
-        },
-        "variant": {
-          "initial_balance": 1000.0,
-          "current_balance": 1000.0
-        }
-      },
-      "equity_curves": {
-        "control": [
-          {
-            "time": "2026-03-24T09:03:31.759150",
-            "balance": 1000.0
-          }
-        ],
-        "variant": [
-          {
-            "time": "2026-03-24T09:03:31.759156",
+            "time": "2026-03-24T10:26:25.576728",
             "balance": 1000.0
           }
         ]
