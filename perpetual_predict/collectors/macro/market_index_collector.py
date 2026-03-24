@@ -58,10 +58,16 @@ class MarketIndexCollector(BaseCollector):
                     logger.warning(f"No yfinance data for {ticker_symbol}")
                     continue
 
+                import math
+
                 rows = list(hist.iterrows())
                 for i, (date, row) in enumerate(rows):
                     close_price = float(row["Close"])
+                    if math.isnan(close_price):
+                        continue
                     prev_close = float(rows[i - 1][1]["Close"]) if i > 0 else None
+                    if prev_close is not None and math.isnan(prev_close):
+                        prev_close = None
                     results.append(MacroIndicator(
                         source="yfinance",
                         indicator=indicator_name,
