@@ -54,7 +54,7 @@
       "progress_pct": 0.0,
       "result": {
         "control_accuracy": 0,
-        "variant_accuracy": 0,
+        "variant_accuracy": 1.0,
         "control_return": 0,
         "variant_return": 0,
         "control_sharpe": 0.0,
@@ -76,13 +76,13 @@
       "equity_curves": {
         "control": [
           {
-            "time": "2026-03-24T05:54:05.355633",
+            "time": "2026-03-24T09:03:31.757673",
             "balance": 1000.0
           }
         ],
         "variant": [
           {
-            "time": "2026-03-24T05:54:05.355637",
+            "time": "2026-03-24T09:03:31.757680",
             "balance": 1000.0
           }
         ]
@@ -163,13 +163,13 @@
       "equity_curves": {
         "control": [
           {
-            "time": "2026-03-24T05:54:05.356721",
+            "time": "2026-03-24T09:03:31.759150",
             "balance": 1000.0
           }
         ],
         "variant": [
           {
-            "time": "2026-03-24T05:54:05.356725",
+            "time": "2026-03-24T09:03:31.759156",
             "balance": 1000.0
           }
         ]
