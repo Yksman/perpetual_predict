@@ -1,16 +1,17 @@
 import { useIsMobile } from '../../hooks/useMediaQuery';
 
+export interface Tab {
+  id: string;
+  label: string;
+}
+
 interface TabNavProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  tabs: Tab[];
 }
 
-const tabs = [
-  { id: 'predictions', label: 'Predictions' },
-  { id: 'trading', label: 'Trading' },
-];
-
-export function TabNav({ activeTab, onTabChange }: TabNavProps) {
+export function TabNav({ activeTab, onTabChange, tabs }: TabNavProps) {
   const isMobile = useIsMobile();
 
   return (

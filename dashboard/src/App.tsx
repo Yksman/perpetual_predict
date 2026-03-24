@@ -5,7 +5,8 @@ import { TabNav } from './components/layout/TabNav';
 import { KpiStrip } from './components/layout/KpiStrip';
 import { PredictionPage } from './pages/PredictionPage';
 import { TradingPage } from './pages/TradingPage';
-import { usePredictions, useTrades, useMetrics, useMeta } from './hooks/useData';
+import { ExperimentPage } from './pages/ExperimentPage';
+import { usePredictions, useTrades, useMetrics, useMeta, useExperiments } from './hooks/useData';
 import { useIsMobile } from './hooks/useMediaQuery';
 import { Skeleton } from './components/common/Skeleton';
 
@@ -17,8 +18,16 @@ export default function App() {
   const { data: tradesData, loading: loadingTrades } = useTrades();
   const { data: metricsData, loading: loadingMetrics } = useMetrics();
   const { data: metaData } = useMeta();
+  const { data: experimentsData } = useExperiments();
 
   const loading = loadingPred || loadingTrades || loadingMetrics;
+
+  const hasExperiments = (experimentsData?.experiments?.length ?? 0) > 0;
+  const tabs = [
+    { id: 'predictions', label: 'Predictions' },
+    { id: 'trading', label: 'Trading' },
+    ...(hasExperiments ? [{ id: 'experiments', label: 'Experiments' }] : []),
+  ];
 
   return (
     <div style={{
@@ -56,12 +65,16 @@ export default function App() {
       ) : metricsData && predictionsData && tradesData ? (
         <>
           <KpiStrip metrics={metricsData} />
-          <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
+          <TabNav activeTab={activeTab} onTabChange={setActiveTab} tabs={tabs} />
           <main style={{ flex: 1 }}>
             {activeTab === 'predictions' ? (
               <PredictionPage
                 predictions={predictionsData.predictions}
                 metrics={metricsData}
+              />
+            ) : activeTab === 'experiments' && hasExperiments ? (
+              <ExperimentPage
+                experiments={experimentsData!.experiments}
               />
             ) : (
               <TradingPage

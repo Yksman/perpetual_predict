@@ -91,3 +91,78 @@ export interface MetaData {
     trades: number;
   };
 }
+
+// A/B Test Experiments
+
+export type ExperimentStatus = 'active' | 'paused' | 'completed';
+
+export interface ExperimentPredictionArm {
+  direction: Direction;
+  confidence: number;
+  leverage: number;
+  position_ratio: number;
+  is_correct: boolean | null;
+  actual_direction: Direction | null;
+  actual_price_change: number | null;
+}
+
+export interface ExperimentPredictionPair {
+  target_candle_open: string;
+  target_candle_close: string;
+  control: ExperimentPredictionArm;
+  variant: ExperimentPredictionArm;
+}
+
+export interface ExperimentResult {
+  control_accuracy: number;
+  variant_accuracy: number;
+  control_return: number;
+  variant_return: number;
+  control_sharpe: number;
+  variant_sharpe: number;
+  p_value: number | null;
+  is_significant: boolean;
+  recommended_winner: 'control' | 'variant' | null;
+}
+
+export interface ExperimentAccount {
+  initial_balance: number;
+  current_balance: number;
+}
+
+export interface EquityPoint {
+  time: string;
+  balance: number;
+}
+
+export interface Experiment {
+  experiment_id: string;
+  name: string;
+  description: string;
+  status: ExperimentStatus;
+  control_modules: string[];
+  variant_modules: string[];
+  module_diff: { added: string[]; removed: string[] };
+  min_samples: number;
+  significance_level: number;
+  primary_metric: string;
+  created_at: string;
+  completed_at: string | null;
+  winner: string | null;
+  sample_size: number;
+  progress_pct: number;
+  result: ExperimentResult | null;
+  accounts: {
+    control: ExperimentAccount;
+    variant: ExperimentAccount;
+  };
+  equity_curves: {
+    control: EquityPoint[];
+    variant: EquityPoint[];
+  };
+  prediction_pairs: ExperimentPredictionPair[];
+}
+
+export interface ExperimentsData {
+  experiments: Experiment[];
+}

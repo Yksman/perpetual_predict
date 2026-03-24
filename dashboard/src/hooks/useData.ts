@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DATA_BASE_URL } from '../constants';
-import type { PredictionsData, TradesData, MetricsData, MetaData } from '../types';
+import type { PredictionsData, TradesData, MetricsData, MetaData, ExperimentsData } from '../types';
 
 interface FetchState<T> {
   data: T | null;
@@ -53,4 +53,8 @@ export function useMetrics() {
 
 export function useMeta() {
   return useFetch<MetaData>('meta.json');
+}
+
+export function useExperiments() {
+  return useFetch<ExperimentsData>('experiments.json');
 }

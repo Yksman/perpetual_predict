@@ -1,12 +1,14 @@
 """Export dashboard data from SQLite to JSON files."""
 
+from __future__ import annotations
+
 import json
 import subprocess
 from datetime import datetime, timedelta
 from pathlib import Path
 
 from perpetual_predict.config.settings import get_settings
-from perpetual_predict.storage.database import get_database
+from perpetual_predict.storage.database import Database, get_database
 from perpetual_predict.trading.metrics import compute_metrics
 from perpetual_predict.utils.logger import get_logger
 
@@ -63,11 +65,16 @@ async def export_dashboard_data(
             days=days,
         )
 
+        # 6. Experiment data
+        experiments_data = await _build_experiments(db)
+
     # Build and write JSON files
     _write_json(output_path / "predictions.json", _build_predictions(predictions))
     _write_json(output_path / "trades.json", _build_trades(trades))
     _write_json(output_path / "metrics.json", _build_metrics(metrics, accuracy, account, trades))
     _write_json(output_path / "meta.json", _build_meta(predictions, trades))
+    if experiments_data["experiments"]:
+        _write_json(output_path / "experiments.json", experiments_data)
 
     logger.info(
         f"Exported dashboard data: {len(predictions)} predictions, "
@@ -233,6 +240,152 @@ def _build_meta(predictions: list, trades: list) -> dict:
             "trades": len(trades),
         },
     }
+
+
+async def _build_experiments(db: Database) -> dict:
+    """Build experiments JSON structure for A/B test dashboard."""
+    from perpetual_predict.experiment.analyzer import ExperimentAnalyzer
+
+    experiments = await db.get_experiments()
+    if not experiments:
+        return {"experiments": []}
+
+    analyzer = ExperimentAnalyzer(db)
+    items = []
+
+    for exp in experiments:
+        result = await analyzer.analyze(exp.experiment_id)
+
+        # Accounts
+        ctrl_acc = await db.get_experiment_account(exp.experiment_id, "control")
+        var_acc = await db.get_experiment_account(exp.experiment_id, "variant")
+
+        # Predictions per arm
+        ctrl_preds = await db.get_predictions_by_experiment(
+            exp.experiment_id, "control",
+        )
+        var_preds = await db.get_predictions_by_experiment(
+            exp.experiment_id, "variant",
+        )
+
+        # Trades per arm
+        ctrl_trades = await db.get_paper_trades_by_experiment(
+            exp.experiment_id, "control",
+        )
+        var_trades = await db.get_paper_trades_by_experiment(
+            exp.experiment_id, "variant",
+        )
+
+        # Module diff
+        added = sorted(set(exp.variant_modules) - set(exp.control_modules))
+        removed = sorted(set(exp.control_modules) - set(exp.variant_modules))
+
+        # Progress
+        sample_size = result.sample_size if result else 0
+        progress_pct = min(sample_size / exp.min_samples * 100, 100) if exp.min_samples > 0 else 0
+
+        # Prediction pairs: match by target_candle_open
+        ctrl_by_candle = {p.target_candle_open.isoformat(): p for p in ctrl_preds}
+        var_by_candle = {p.target_candle_open.isoformat(): p for p in var_preds}
+        common_candles = sorted(set(ctrl_by_candle) & set(var_by_candle), reverse=True)
+
+        prediction_pairs = []
+        for candle_key in common_candles:
+            cp = ctrl_by_candle[candle_key]
+            vp = var_by_candle[candle_key]
+            prediction_pairs.append({
+                "target_candle_open": candle_key,
+                "target_candle_close": cp.target_candle_close.isoformat(),
+                "control": _pred_arm(cp),
+                "variant": _pred_arm(vp),
+            })
+
+        # Equity curves per arm
+        equity_curves = {
+            "control": _build_equity_curve(ctrl_acc, ctrl_trades),
+            "variant": _build_equity_curve(var_acc, var_trades),
+        }
+
+        # Result block
+        result_block = None
+        if result:
+            result_block = {
+                "control_accuracy": round(result.control_accuracy, 4),
+                "variant_accuracy": round(result.variant_accuracy, 4),
+                "control_return": round(result.control_return, 2),
+                "variant_return": round(result.variant_return, 2),
+                "control_sharpe": round(result.control_sharpe, 2),
+                "variant_sharpe": round(result.variant_sharpe, 2),
+                "p_value": round(result.p_value, 4) if result.p_value is not None else None,
+                "is_significant": result.is_significant,
+                "recommended_winner": result.recommended_winner,
+            }
+
+        items.append({
+            "experiment_id": exp.experiment_id,
+            "name": exp.name,
+            "description": exp.description,
+            "status": exp.status,
+            "control_modules": exp.control_modules,
+            "variant_modules": exp.variant_modules,
+            "module_diff": {"added": added, "removed": removed},
+            "min_samples": exp.min_samples,
+            "significance_level": exp.significance_level,
+            "primary_metric": exp.primary_metric,
+            "created_at": exp.created_at.isoformat() if exp.created_at else None,
+            "completed_at": exp.completed_at.isoformat() if exp.completed_at else None,
+            "winner": exp.winner,
+            "sample_size": sample_size,
+            "progress_pct": round(progress_pct, 1),
+            "result": result_block,
+            "accounts": {
+                "control": {
+                    "initial_balance": ctrl_acc.initial_balance if ctrl_acc else 0,
+                    "current_balance": ctrl_acc.current_balance if ctrl_acc else 0,
+                },
+                "variant": {
+                    "initial_balance": var_acc.initial_balance if var_acc else 0,
+                    "current_balance": var_acc.current_balance if var_acc else 0,
+                },
+            },
+            "equity_curves": equity_curves,
+            "prediction_pairs": prediction_pairs,
+        })
+
+    return {"experiments": items}
+
+
+def _pred_arm(p) -> dict:
+    """Extract prediction fields for an experiment arm."""
+    return {
+        "direction": p.direction,
+        "confidence": p.confidence,
+        "leverage": p.leverage,
+        "position_ratio": p.position_ratio,
+        "is_correct": p.is_correct,
+        "actual_direction": p.actual_direction,
+        "actual_price_change": p.actual_price_change,
+    }
+
+
+def _build_equity_curve(account, trades: list) -> list[dict]:
+    """Build equity curve from account + trades for one experiment arm."""
+    sorted_trades = sorted(
+        [t for t in trades if t.balance_after is not None and t.exit_time is not None],
+        key=lambda t: t.exit_time,
+    )
+    curve = []
+    if account:
+        curve.append({
+            "time": datetime.utcnow().isoformat() if not sorted_trades else sorted_trades[0].entry_time.isoformat(),
+            "balance": account.initial_balance,
+        })
+    for t in sorted_trades:
+        curve.append({
+            "time": t.exit_time.isoformat(),
+            "balance": t.balance_after,
+        })
+    return curve
 
 
 def _write_json(path: Path, data: dict) -> None:
