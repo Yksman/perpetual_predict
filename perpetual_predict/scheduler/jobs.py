@@ -203,7 +203,7 @@ async def collect_with_verification(
                 logger.warning(
                     f"Data verification FAILED on attempt {attempt + 1}: "
                     f"missing {last_verification.missing_data} "
-                    f"({last_verification.verified_count}/4)"
+                    f"({last_verification.verified_count}/{last_verification.total_types})"
                 )
 
         except Exception as e:

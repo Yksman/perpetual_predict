@@ -388,11 +388,16 @@ async def verify_data_integrity(
 class LatestDataVerification:
     """각 데이터 타입별 최신화 검증 결과."""
 
-    # 검증 결과
+    # 검증 결과 (필수 — 사이클 블로킹)
     candle_4h: bool = False
     funding_rate_8h: bool = False
     open_interest_4h: bool = False
     long_short_ratio_4h: bool = False
+
+    # 검증 결과 (보조 — 사이클 비블로킹)
+    macro_daily: bool = False
+    macro_indicator_count: int = 0
+    macro_latest_date: str = ""
 
     # 기대 타임스탬프
     expected_candle_time: datetime | None = None
@@ -413,7 +418,7 @@ class LatestDataVerification:
 
     @property
     def all_verified(self) -> bool:
-        """모든 데이터가 검증되었는지 확인."""
+        """필수 데이터가 모두 검증되었는지 확인 (매크로는 보조이므로 제외)."""
         return all([
             self.candle_4h,
             self.funding_rate_8h,
@@ -423,13 +428,19 @@ class LatestDataVerification:
 
     @property
     def verified_count(self) -> int:
-        """검증된 데이터 수."""
+        """검증된 데이터 수 (매크로 포함)."""
         return sum([
             self.candle_4h,
             self.funding_rate_8h,
             self.open_interest_4h,
             self.long_short_ratio_4h,
+            self.macro_daily,
         ])
+
+    @property
+    def total_types(self) -> int:
+        """검증 대상 총 데이터 타입 수."""
+        return 5
 
     @property
     def missing_data(self) -> list[str]:
@@ -443,6 +454,8 @@ class LatestDataVerification:
             missing.append("4H OI")
         if not self.long_short_ratio_4h:
             missing.append("4H LS Ratio")
+        if not self.macro_daily:
+            missing.append("Macro (daily)")
         return missing
 
 
@@ -592,15 +605,29 @@ async def verify_latest_data(
                 result.latest_ls = ls
                 break
 
+    # 5. Macro (daily) 검증 — 최근 3일 이내 데이터 존재 여부
+    macro_snapshot = await db.get_latest_macro_snapshot()
+    if macro_snapshot:
+        result.macro_indicator_count = len(macro_snapshot)
+        # 최신 날짜 확인
+        latest_date = max(m.date for m in macro_snapshot.values())
+        result.macro_latest_date = latest_date.strftime("%Y-%m-%d")
+        # timezone-aware 비교 (DB에서 naive datetime 올 수 있음)
+        latest_aware = latest_date.replace(tzinfo=timezone.utc) if latest_date.tzinfo is None else latest_date
+        days_old = (datetime.now(timezone.utc) - latest_aware).days
+        if days_old <= 3:  # 주말/공휴일 허용
+            result.macro_daily = True
+
     # 로그 출력
     if result.all_verified:
         logger.info(
-            f"All data verified: Candle, Funding, OI, LS Ratio "
-            f"({result.verified_count}/4)"
+            f"All data verified: Candle, Funding, OI, LS Ratio"
+            f"{', Macro' if result.macro_daily else ''} "
+            f"({result.verified_count}/{result.total_types})"
         )
     else:
         logger.warning(
-            f"Data verification incomplete ({result.verified_count}/4): "
+            f"Data verification incomplete ({result.verified_count}/{result.total_types}): "
             f"missing {result.missing_data}"
         )
 

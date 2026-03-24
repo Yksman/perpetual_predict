@@ -119,6 +119,20 @@ class MarketContext:
     support_distance_pct: float = 0.0
     resistance_distance_pct: float = 0.0
 
+    # Macroeconomic indicators
+    treasury_10y: float | None = None
+    treasury_2y: float | None = None
+    treasury_10y_change: float | None = None
+    yield_spread_10y2y: float | None = None
+    fed_funds_rate: float | None = None
+    spx_value: float | None = None
+    spx_change_pct: float | None = None
+    nasdaq_change_pct: float | None = None
+    dxy_value: float | None = None
+    dxy_change_pct: float | None = None
+    gold_value: float | None = None
+    gold_change_pct: float | None = None
+
     # Recent candle summary
     recent_candles_summary: str = ""
 
@@ -173,6 +187,8 @@ class MarketContext:
             sections.append(self._section_divergences())
         if "support_resistance" in modules:
             sections.append(self._section_support_resistance())
+        if "macro" in modules:
+            sections.append(self._section_macro())
         if "recent_candles" in modules:
             sections.append(self._section_recent_candles())
 
@@ -343,6 +359,41 @@ class MarketContext:
             f"{self._format_levels_section()}"
         )
 
+    def _section_macro(self) -> str:
+        """Format macroeconomic environment section with raw data only."""
+        lines = ["### Macroeconomic Environment"]
+
+        # Treasury yields
+        if self.treasury_10y is not None:
+            change_str = f" (prev day: {self.treasury_10y - self.treasury_10y_change:.3f}%, chg: {self.treasury_10y_change:+.3f}%)" if self.treasury_10y_change is not None else ""
+            lines.append(f"- US 10Y Treasury Yield: {self.treasury_10y:.3f}%{change_str}")
+        if self.treasury_2y is not None:
+            lines.append(f"- US 2Y Treasury Yield: {self.treasury_2y:.3f}%")
+        if self.yield_spread_10y2y is not None:
+            lines.append(f"- 10Y-2Y Yield Spread: {self.yield_spread_10y2y:+.3f}%")
+        if self.fed_funds_rate is not None:
+            lines.append(f"- Fed Funds Rate: {self.fed_funds_rate:.2f}%")
+
+        # Equity indices
+        if self.spx_value is not None:
+            change_str = f" ({self.spx_change_pct:+.2f}%)" if self.spx_change_pct is not None else ""
+            lines.append(f"- S&P 500: {self.spx_value:,.2f}{change_str}")
+        if self.nasdaq_change_pct is not None:
+            lines.append(f"- NASDAQ: {self.nasdaq_change_pct:+.2f}%")
+
+        # Dollar and Gold
+        if self.dxy_value is not None:
+            change_str = f" ({self.dxy_change_pct:+.2f}%)" if self.dxy_change_pct is not None else ""
+            lines.append(f"- DXY (USD Index): {self.dxy_value:.2f}{change_str}")
+        if self.gold_value is not None:
+            change_str = f" ({self.gold_change_pct:+.2f}%)" if self.gold_change_pct is not None else ""
+            lines.append(f"- Gold: ${self.gold_value:,.2f}{change_str}")
+
+        if len(lines) == 1:
+            return ""
+
+        return "\n".join(lines)
+
     def _section_recent_candles(self) -> str:
         return (
             f"### Recent Candles (Last 5)\n"
@@ -483,6 +534,7 @@ class MarketContextBuilder:
         long_short = await self.db.get_long_short_ratios(self.symbol, limit=1)
         fear_greed = await self.db.get_fear_greeds(limit=1)
         liquidations = await self.db.get_liquidations(self.symbol, limit=1)
+        macro_snapshot = await self.db.get_latest_macro_snapshot()
 
         # Calculate derived values
         price_change_4h = self._pct_change(latest["close"], prev["close"])
@@ -568,6 +620,20 @@ class MarketContextBuilder:
             resistance_distance_pct=resistance_dist,
 
             recent_candles_summary=recent_summary,
+
+            # Macroeconomic indicators
+            treasury_10y=macro_snapshot["DGS10"].value if "DGS10" in macro_snapshot else None,
+            treasury_2y=macro_snapshot["DGS2"].value if "DGS2" in macro_snapshot else None,
+            treasury_10y_change=macro_snapshot["DGS10"].change if "DGS10" in macro_snapshot else None,
+            yield_spread_10y2y=macro_snapshot["T10Y2Y"].value if "T10Y2Y" in macro_snapshot else None,
+            fed_funds_rate=macro_snapshot["DFF"].value if "DFF" in macro_snapshot else None,
+            spx_value=macro_snapshot["SPX"].value if "SPX" in macro_snapshot else None,
+            spx_change_pct=macro_snapshot["SPX"].change if "SPX" in macro_snapshot else None,
+            nasdaq_change_pct=macro_snapshot["NASDAQ"].change if "NASDAQ" in macro_snapshot else None,
+            dxy_value=macro_snapshot["DXY"].value if "DXY" in macro_snapshot else None,
+            dxy_change_pct=macro_snapshot["DXY"].change if "DXY" in macro_snapshot else None,
+            gold_value=macro_snapshot["GOLD"].value if "GOLD" in macro_snapshot else None,
+            gold_change_pct=macro_snapshot["GOLD"].change if "GOLD" in macro_snapshot else None,
 
             symbol=self.symbol,
             timeframe=self.timeframe,

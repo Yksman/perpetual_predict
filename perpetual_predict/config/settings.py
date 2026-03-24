@@ -142,6 +142,14 @@ class DashboardConfig:
 
 
 @dataclass
+class MacroConfig:
+    """Macroeconomic data configuration."""
+
+    fred_api_key: str = ""
+    enabled: bool = True
+
+
+@dataclass
 class ExperimentConfig:
     """A/B testing experiment configuration."""
 
@@ -167,6 +175,7 @@ class Settings:
     discord: DiscordConfig = field(default_factory=DiscordConfig)
     paper_trading: PaperTradingConfig = field(default_factory=PaperTradingConfig)
     dashboard: DashboardConfig = field(default_factory=DashboardConfig)
+    macro: MacroConfig = field(default_factory=MacroConfig)
     experiment: ExperimentConfig = field(default_factory=ExperimentConfig)
 
     @classmethod
@@ -257,6 +266,10 @@ class Settings:
                 export_dir=os.getenv("DASHBOARD_EXPORT_DIR", "/tmp/perpetual_predict_export"),
                 history_days=int(os.getenv("DASHBOARD_HISTORY_DAYS", "90")),
                 git_data_branch=os.getenv("DASHBOARD_GIT_DATA_BRANCH", "data"),
+            ),
+            macro=MacroConfig(
+                fred_api_key=os.getenv("FRED_API_KEY", ""),
+                enabled=os.getenv("MACRO_ENABLED", "true").lower() == "true",
             ),
             experiment=ExperimentConfig(
                 enabled=os.getenv("EXPERIMENT_ENABLED", "false").lower() == "true",

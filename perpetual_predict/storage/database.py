@@ -19,6 +19,7 @@ from perpetual_predict.storage.models import (
     FundingRate,
     Liquidation,
     LongShortRatio,
+    MacroIndicator,
     OpenInterest,
     Prediction,
     PredictionMetrics,
@@ -196,6 +197,19 @@ CREATE TABLE IF NOT EXISTS paper_trades (
 )
 """
 
+CREATE_MACRO_INDICATORS_TABLE = """
+CREATE TABLE IF NOT EXISTS macro_indicators (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source TEXT NOT NULL,
+    indicator TEXT NOT NULL,
+    date TEXT NOT NULL,
+    value REAL NOT NULL,
+    previous_value REAL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(source, indicator, date)
+)
+"""
+
 CREATE_EXPERIMENTS_TABLE = """
 CREATE TABLE IF NOT EXISTS experiments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -240,6 +254,7 @@ CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_paper_trades_status ON paper_trades(status)",
     "CREATE INDEX IF NOT EXISTS idx_paper_trades_prediction ON paper_trades(prediction_id)",
     "CREATE INDEX IF NOT EXISTS idx_paper_trades_account ON paper_trades(account_id, entry_time DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_macro_source_indicator_date ON macro_indicators(source, indicator, date DESC)",
 ]
 
 # Experiment-related indexes (created after migration adds columns)
@@ -284,6 +299,7 @@ class Database:
         await self._connection.execute(CREATE_PREDICTION_METRICS_TABLE)
         await self._connection.execute(CREATE_PAPER_ACCOUNT_TABLE)
         await self._connection.execute(CREATE_PAPER_TRADES_TABLE)
+        await self._connection.execute(CREATE_MACRO_INDICATORS_TABLE)
         await self._connection.execute(CREATE_EXPERIMENTS_TABLE)
         await self._connection.execute(CREATE_EXPERIMENT_ACCOUNTS_TABLE)
 
@@ -701,6 +717,86 @@ class Database:
         async with self.connection.execute(sql, params) as cursor:
             rows = await cursor.fetchall()
             return [FearGreedIndex.from_dict(dict(row)) for row in rows]
+
+    # Macro indicator operations
+    async def insert_macro_indicator(self, mi: MacroIndicator) -> None:
+        """Insert a macro indicator record."""
+        sql = """
+        INSERT OR REPLACE INTO macro_indicators
+        (source, indicator, date, value, previous_value)
+        VALUES (?, ?, ?, ?, ?)
+        """
+        await self.connection.execute(
+            sql,
+            (mi.source, mi.indicator, mi.date.strftime("%Y-%m-%d"),
+             mi.value, mi.previous_value),
+        )
+        await self.connection.commit()
+
+    async def insert_macro_indicators(self, mis: list[MacroIndicator]) -> None:
+        """Insert multiple macro indicator records."""
+        sql = """
+        INSERT OR REPLACE INTO macro_indicators
+        (source, indicator, date, value, previous_value)
+        VALUES (?, ?, ?, ?, ?)
+        """
+        data = [
+            (m.source, m.indicator, m.date.strftime("%Y-%m-%d"),
+             m.value, m.previous_value)
+            for m in mis
+        ]
+        await self.connection.executemany(sql, data)
+        await self.connection.commit()
+
+    async def get_macro_indicators(
+        self,
+        source: str | None = None,
+        indicator: str | None = None,
+        limit: int | None = None,
+    ) -> list[MacroIndicator]:
+        """Get macro indicator records with optional filters."""
+        sql = "SELECT * FROM macro_indicators WHERE 1=1"
+        params: list[Any] = []
+
+        if source:
+            sql += " AND source = ?"
+            params.append(source)
+        if indicator:
+            sql += " AND indicator = ?"
+            params.append(indicator)
+
+        sql += " ORDER BY date DESC"
+
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+            return [MacroIndicator.from_dict(dict(row)) for row in rows]
+
+    async def get_latest_macro_snapshot(self) -> dict[str, MacroIndicator]:
+        """Get the most recent value for each indicator.
+
+        Returns:
+            Dict mapping indicator name to its latest MacroIndicator.
+        """
+        sql = """
+        SELECT m.* FROM macro_indicators m
+        INNER JOIN (
+            SELECT source, indicator, MAX(date) as max_date
+            FROM macro_indicators
+            GROUP BY source, indicator
+        ) latest ON m.source = latest.source
+            AND m.indicator = latest.indicator
+            AND m.date = latest.max_date
+        """
+        async with self.connection.execute(sql) as cursor:
+            rows = await cursor.fetchall()
+            return {
+                row["indicator"]: MacroIndicator.from_dict(dict(row))
+                for row in rows
+            }
 
     # Liquidation operations
     async def insert_liquidation(self, liq: Liquidation) -> None:

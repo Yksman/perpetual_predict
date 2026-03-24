@@ -181,6 +181,48 @@ class FearGreedIndex:
 
 
 @dataclass
+class MacroIndicator:
+    """Macroeconomic indicator data (daily granularity)."""
+
+    source: str  # "fred" or "yfinance"
+    indicator: str  # e.g., "DGS10", "DXY", "SPX"
+    date: datetime
+    value: float
+    previous_value: float | None = None
+
+    @property
+    def change(self) -> float | None:
+        """Day-over-day change in percent."""
+        if self.previous_value is None or self.previous_value == 0:
+            return None
+        return ((self.value - self.previous_value) / abs(self.previous_value)) * 100
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for database storage."""
+        return {
+            "source": self.source,
+            "indicator": self.indicator,
+            "date": self.date.strftime("%Y-%m-%d"),
+            "value": self.value,
+            "previous_value": self.previous_value,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "MacroIndicator":
+        """Create from dictionary (database row)."""
+        date_val = data["date"]
+        if isinstance(date_val, str):
+            date_val = datetime.strptime(date_val, "%Y-%m-%d")
+        return cls(
+            source=data["source"],
+            indicator=data["indicator"],
+            date=date_val,
+            value=data["value"],
+            previous_value=data.get("previous_value"),
+        )
+
+
+@dataclass
 class Prediction:
     """LLM prediction for price direction."""
 

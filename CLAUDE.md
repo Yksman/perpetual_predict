@@ -49,6 +49,19 @@ uv run python -m perpetual_predict daemon --run-once        # Single collection
 - **Structured LLM output**: Predictions use JSON schema validation with fallback text parsing
 - **Settings singleton**: `get_settings()` lazily loads from env vars, use `reload_settings()` to refresh
 
+## Adding New Seed Data
+
+신규 시드데이터 추가 시 반드시 아래 프로세스를 따른다:
+
+1. **수집**: `collectors/` 에 컬렉터 생성 → `cli/collect.py`의 `asyncio.gather()`에 추가
+2. **저장**: `storage/models.py`에 데이터클래스 → `storage/database.py`에 테이블/CRUD 추가
+3. **무결성 검증**: `reporters/data_integrity.py`의 `LatestDataVerification`에 검증 필드 추가 + `verify_latest_data()`에 검증 로직 추가 (A/B 테스트 여부와 무관하게 항상 적용)
+4. **컨텍스트**: `llm/context/builder.py`의 `MarketContext`에 필드 추가 + `_section_*()` 메서드 + `format_prompt()`에 모듈 체크 + `build()`에서 데이터 로드
+5. **모듈 등록**: `experiment/models.py`의 `SEED_MODULES`에 추가 + **`EXPERIMENTAL_MODULES`에도 추가** (baseline에서 제외)
+6. **알림**: `notifications/scheduler_alerts.py`에 수집 완료/검증 리포트 필드 추가
+
+**중요**: 신규 시드데이터는 `EXPERIMENTAL_MODULES`에 등록하여 baseline 예측에서 제외한다. A/B 테스트(`experiment create --add <module>`)로 효과를 검증한 후, `EXPERIMENTAL_MODULES`에서 제거하면 `DEFAULT_MODULES`에 자동 포함된다. 시드데이터의 `_section_*()` 메서드는 원시 데이터만 제공하고, 해석/시그널은 포함하지 않는다 (에이전트 자율 판단).
+
 ## Environment Variables
 
 Required:

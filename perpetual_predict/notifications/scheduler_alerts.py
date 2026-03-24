@@ -95,6 +95,7 @@ async def send_collection_completed(
         f"• 미결제약정: `{results.get('open_interests', 0)}`개",
         f"• 롱/숏 비율: `{results.get('long_short_ratios', 0)}`개",
         f"• 공포탐욕지수: `{results.get('fear_greed', 0)}`개",
+        f"• 매크로지표: `{results.get('macro_indicators', 0)}`개",
     ]
 
     embed = (
@@ -408,7 +409,7 @@ async def send_verification_report(
         description = "모든 데이터가 최신 상태로 확인되었습니다."
     else:
         color = EmbedColors.WARNING
-        title = f"📊 데이터 검증 ({verification.verified_count}/4)"
+        title = f"📊 데이터 검증 ({verification.verified_count}/{verification.total_types})"
         description = f"일부 데이터 미수집: {', '.join(verification.missing_data)}"
 
     embed = (
@@ -495,6 +496,21 @@ async def send_verification_report(
             f"❌ 데이터 없음"
         )
     embed.add_field(name="", value=ls_text, inline=True)
+
+    # Macro (Daily)
+    macro_status = "✅" if verification.macro_daily else "⚠️"
+    if verification.macro_indicator_count > 0:
+        macro_text = (
+            f"{macro_status} **Macro (Daily)**\n"
+            f"indicators: `{verification.macro_indicator_count}`개\n"
+            f"latest: `{verification.macro_latest_date}`"
+        )
+    else:
+        macro_text = (
+            f"{macro_status} **Macro (Daily)**\n"
+            f"❌ 데이터 없음"
+        )
+    embed.add_field(name="", value=macro_text, inline=True)
 
     try:
         result = await webhook.send_embed(embed)

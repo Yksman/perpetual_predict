@@ -53,6 +53,20 @@ async def collect_data(
     # Fear & Greed has its own session
     fgi_collector = FearGreedCollector()
 
+    # Macro collectors (independent, no shared client)
+    macro_collectors = []
+    if settings.macro.enabled:
+        from perpetual_predict.collectors.macro.market_index_collector import MarketIndexCollector
+
+        macro_collectors.append(MarketIndexCollector())
+
+        if settings.macro.fred_api_key:
+            from perpetual_predict.collectors.macro.fred_collector import FredCollector
+
+            macro_collectors.append(FredCollector(api_key=settings.macro.fred_api_key))
+        else:
+            logger.info("FRED_API_KEY not set, skipping FRED data collection")
+
     try:
         # Initialize collectors
         ohlcv_collector = OHLCVCollector(
@@ -65,18 +79,21 @@ async def collect_data(
         oi_limit = min(days * 6, 500)
         ls_limit = min(days * 6, 500)
 
-        # Run all API calls in parallel
+        # Run all API calls in parallel (including macro collectors)
         logger.info(f"Collecting market data for {symbol} {timeframe} (parallel)...")
+        macro_tasks = [c.collect(days=days) for c in macro_collectors]
         api_results = await asyncio.gather(
             ohlcv_collector.collect(start_time=start_time, end_time=end_time),
             funding_collector.collect(start_time=start_time, end_time=end_time),
             oi_collector.collect(limit=oi_limit),
             ls_collector.collect(limit=ls_limit),
             fgi_collector.collect(limit=days),
+            *macro_tasks,
             return_exceptions=True,
         )
 
-        candles, funding_rates, open_interests, ratios, fgi_data = api_results
+        candles, funding_rates, open_interests, ratios, fgi_data = api_results[:5]
+        macro_results = api_results[5:]
 
         # Process results and save to database using batch inserts
         async with get_database() as db:
@@ -130,9 +147,25 @@ async def collect_data(
                 results["fear_greed"] = len(fgi_data)
                 logger.info(f"Collected {len(fgi_data)} Fear & Greed Index records")
 
+            # Handle macro indicators
+            all_macro: list = []
+            for i, result in enumerate(macro_results):
+                collector_name = macro_collectors[i].__class__.__name__
+                if isinstance(result, Exception):
+                    logger.error(f"Failed to collect macro ({collector_name}): {result}")
+                else:
+                    all_macro.extend(result)
+
+            if all_macro:
+                await db.insert_macro_indicators(all_macro)
+            results["macro_indicators"] = len(all_macro)
+            logger.info(f"Collected {len(all_macro)} macro indicator records")
+
     finally:
         await client.close()
         await fgi_collector.close()
+        for c in macro_collectors:
+            await c.close()
 
     return results
 
@@ -163,6 +196,7 @@ def run_collect(args: argparse.Namespace) -> int:
         print(f"  Open Interests: {results.get('open_interests', 0)}")
         print(f"  Long/Short Ratios: {results.get('long_short_ratios', 0)}")
         print(f"  Fear & Greed: {results.get('fear_greed', 0)}")
+        print(f"  Macro Indicators: {results.get('macro_indicators', 0)}")
 
         total = sum(results.values())
         print(f"\nTotal records collected: {total}")
