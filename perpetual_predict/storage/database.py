@@ -196,6 +196,36 @@ CREATE TABLE IF NOT EXISTS paper_trades (
 )
 """
 
+CREATE_EXPERIMENTS_TABLE = """
+CREATE TABLE IF NOT EXISTS experiments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    experiment_id TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'active',
+    control_modules TEXT NOT NULL,
+    variant_modules TEXT NOT NULL,
+    min_samples INTEGER DEFAULT 30,
+    significance_level REAL DEFAULT 0.05,
+    primary_metric TEXT DEFAULT 'net_return',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    completed_at TEXT,
+    winner TEXT
+)
+"""
+
+CREATE_EXPERIMENT_ACCOUNTS_TABLE = """
+CREATE TABLE IF NOT EXISTS experiment_accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    experiment_id TEXT NOT NULL,
+    arm TEXT NOT NULL,
+    initial_balance REAL DEFAULT 1000.0,
+    current_balance REAL DEFAULT 1000.0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(experiment_id, arm)
+)
+"""
+
 # Index creation for performance
 CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_candles_symbol_time ON candles(symbol, timeframe, open_time)",
@@ -210,6 +240,14 @@ CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_paper_trades_status ON paper_trades(status)",
     "CREATE INDEX IF NOT EXISTS idx_paper_trades_prediction ON paper_trades(prediction_id)",
     "CREATE INDEX IF NOT EXISTS idx_paper_trades_account ON paper_trades(account_id, entry_time DESC)",
+]
+
+# Experiment-related indexes (created after migration adds columns)
+EXPERIMENT_INDEXES = [
+    "CREATE INDEX IF NOT EXISTS idx_experiments_status ON experiments(status)",
+    "CREATE INDEX IF NOT EXISTS idx_predictions_experiment ON predictions(experiment_id, arm)",
+    "CREATE INDEX IF NOT EXISTS idx_paper_trades_experiment ON paper_trades(experiment_id, arm)",
+    "CREATE INDEX IF NOT EXISTS idx_experiment_accounts_exp ON experiment_accounts(experiment_id)",
 ]
 
 
@@ -246,6 +284,8 @@ class Database:
         await self._connection.execute(CREATE_PREDICTION_METRICS_TABLE)
         await self._connection.execute(CREATE_PAPER_ACCOUNT_TABLE)
         await self._connection.execute(CREATE_PAPER_TRADES_TABLE)
+        await self._connection.execute(CREATE_EXPERIMENTS_TABLE)
+        await self._connection.execute(CREATE_EXPERIMENT_ACCOUNTS_TABLE)
 
         # Create indexes
         for index_sql in CREATE_INDEXES:
@@ -253,6 +293,10 @@ class Database:
 
         # Run migrations for existing databases
         await self._run_migrations()
+
+        # Create experiment indexes (after migration adds columns)
+        for index_sql in EXPERIMENT_INDEXES:
+            await self._connection.execute(index_sql)
 
         await self._connection.commit()
 
@@ -279,6 +323,42 @@ class Database:
                 await self._connection.execute(
                     f"ALTER TABLE predictions ADD COLUMN {col} {col_type} DEFAULT {default}"
                 )
+
+        # Migration: Add experiment fields to predictions
+        for col, col_type, default in [
+            ("experiment_id", "TEXT", "NULL"),
+            ("arm", "TEXT", "'baseline'"),
+        ]:
+            if col not in columns:
+                await self._connection.execute(
+                    f"ALTER TABLE predictions ADD COLUMN {col} {col_type} DEFAULT {default}"
+                )
+
+        # Migration: Add experiment fields to paper_trades
+        trades_cursor = await self._connection.execute(
+            "PRAGMA table_info(paper_trades)"
+        )
+        trades_columns = [row[1] for row in await trades_cursor.fetchall()]
+
+        for col, col_type, default in [
+            ("experiment_id", "TEXT", "NULL"),
+            ("arm", "TEXT", "'baseline'"),
+        ]:
+            if col not in trades_columns:
+                await self._connection.execute(
+                    f"ALTER TABLE paper_trades ADD COLUMN {col} {col_type} DEFAULT {default}"
+                )
+
+        # Migration: Update UNIQUE constraint on predictions to allow experiment arms
+        # Drop old unique index and create new one that includes experiment_id and arm
+        await self._connection.execute(
+            "DROP INDEX IF EXISTS idx_predictions_unique_experiment"
+        )
+        await self._connection.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_predictions_unique_experiment "
+            "ON predictions(symbol, timeframe, target_candle_open, "
+            "COALESCE(experiment_id, ''), COALESCE(arm, 'baseline'))"
+        )
 
     async def close(self) -> None:
         """Close database connection."""
@@ -695,7 +775,12 @@ class Database:
             return [Liquidation.from_dict(dict(row)) for row in rows]
 
     # Prediction operations
-    async def insert_prediction(self, prediction: Prediction) -> None:
+    async def insert_prediction(
+        self,
+        prediction: Prediction,
+        experiment_id: str | None = None,
+        arm: str = "baseline",
+    ) -> None:
         """Insert a prediction record."""
         import json
 
@@ -705,8 +790,9 @@ class Database:
          symbol, timeframe, direction, confidence, reasoning, key_factors,
          session_id, duration_ms, model_usage,
          leverage, position_ratio, trading_reasoning,
-         actual_direction, actual_price_change, is_correct, predicted_return, evaluated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         actual_direction, actual_price_change, is_correct, predicted_return, evaluated_at,
+         experiment_id, arm)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         await self.connection.execute(
             sql,
@@ -732,6 +818,8 @@ class Database:
                 prediction.is_correct,
                 prediction.predicted_return,
                 prediction.evaluated_at.isoformat() if prediction.evaluated_at else None,
+                experiment_id,
+                arm,
             ),
         )
         await self.connection.commit()
@@ -1077,6 +1165,182 @@ class Database:
                 "accuracy": 0.0,
                 "avg_confidence": 0.0,
             }
+
+
+    # Experiment operations
+
+    async def insert_experiment(self, experiment: Any) -> None:
+        """Insert an experiment record."""
+        d = experiment.to_dict()
+        sql = """
+        INSERT INTO experiments
+        (experiment_id, name, description, status, control_modules, variant_modules,
+         min_samples, significance_level, primary_metric, created_at, completed_at, winner)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        await self.connection.execute(
+            sql,
+            (
+                d["experiment_id"], d["name"], d["description"], d["status"],
+                d["control_modules"], d["variant_modules"],
+                d["min_samples"], d["significance_level"], d["primary_metric"],
+                d["created_at"], d["completed_at"], d["winner"],
+            ),
+        )
+        await self.connection.commit()
+
+    async def get_experiment(self, experiment_id: str) -> Any:
+        """Get an experiment by ID."""
+        from perpetual_predict.experiment.models import Experiment
+
+        sql = "SELECT * FROM experiments WHERE experiment_id = ?"
+        async with self.connection.execute(sql, (experiment_id,)) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                return Experiment.from_dict(dict(row))
+            return None
+
+    async def get_active_experiments(self) -> list[Any]:
+        """Get all active experiments."""
+        from perpetual_predict.experiment.models import Experiment
+
+        sql = "SELECT * FROM experiments WHERE status = 'active' ORDER BY created_at ASC"
+        async with self.connection.execute(sql) as cursor:
+            rows = await cursor.fetchall()
+            return [Experiment.from_dict(dict(row)) for row in rows]
+
+    async def get_experiments(
+        self, status: str | None = None
+    ) -> list[Any]:
+        """Get experiments with optional status filter."""
+        from perpetual_predict.experiment.models import Experiment
+
+        sql = "SELECT * FROM experiments"
+        params: list[Any] = []
+        if status:
+            sql += " WHERE status = ?"
+            params.append(status)
+        sql += " ORDER BY created_at DESC"
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+            return [Experiment.from_dict(dict(row)) for row in rows]
+
+    async def update_experiment_status(
+        self,
+        experiment_id: str,
+        status: str,
+        winner: str | None = None,
+    ) -> None:
+        """Update experiment status and optionally set winner."""
+        sql = "UPDATE experiments SET status = ?"
+        params: list[Any] = [status]
+
+        if status == "completed":
+            sql += ", completed_at = ?"
+            params.append(datetime.utcnow().isoformat())
+
+        if winner is not None:
+            sql += ", winner = ?"
+            params.append(winner)
+
+        sql += " WHERE experiment_id = ?"
+        params.append(experiment_id)
+
+        await self.connection.execute(sql, params)
+        await self.connection.commit()
+
+    async def insert_experiment_account(
+        self,
+        experiment_id: str,
+        arm: str,
+        initial_balance: float = 1000.0,
+    ) -> None:
+        """Create an experiment arm account."""
+        sql = """
+        INSERT OR IGNORE INTO experiment_accounts
+        (experiment_id, arm, initial_balance, current_balance)
+        VALUES (?, ?, ?, ?)
+        """
+        await self.connection.execute(
+            sql, (experiment_id, arm, initial_balance, initial_balance)
+        )
+        await self.connection.commit()
+
+    async def get_experiment_account(
+        self, experiment_id: str, arm: str
+    ) -> Any:
+        """Get an experiment arm account."""
+        from perpetual_predict.experiment.models import ExperimentAccount
+
+        sql = "SELECT * FROM experiment_accounts WHERE experiment_id = ? AND arm = ?"
+        async with self.connection.execute(sql, (experiment_id, arm)) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                d = dict(row)
+                return ExperimentAccount(
+                    experiment_id=d["experiment_id"],
+                    arm=d["arm"],
+                    initial_balance=d["initial_balance"],
+                    current_balance=d["current_balance"],
+                )
+            return None
+
+    async def update_experiment_account_balance(
+        self, experiment_id: str, arm: str, new_balance: float
+    ) -> None:
+        """Update experiment arm account balance."""
+        sql = """
+        UPDATE experiment_accounts
+        SET current_balance = ?
+        WHERE experiment_id = ? AND arm = ?
+        """
+        await self.connection.execute(sql, (new_balance, experiment_id, arm))
+        await self.connection.commit()
+
+    async def get_predictions_by_experiment(
+        self,
+        experiment_id: str,
+        arm: str | None = None,
+        evaluated_only: bool = False,
+    ) -> list[Prediction]:
+        """Get predictions for a specific experiment."""
+        sql = "SELECT * FROM predictions WHERE experiment_id = ?"
+        params: list[Any] = [experiment_id]
+
+        if arm:
+            sql += " AND arm = ?"
+            params.append(arm)
+
+        if evaluated_only:
+            sql += " AND is_correct IS NOT NULL"
+
+        sql += " ORDER BY prediction_time ASC"
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+            return [Prediction.from_dict(dict(row)) for row in rows]
+
+    async def get_paper_trades_by_experiment(
+        self,
+        experiment_id: str,
+        arm: str | None = None,
+    ) -> list[Any]:
+        """Get paper trades for a specific experiment."""
+        from perpetual_predict.trading.models import PaperTrade
+
+        sql = "SELECT * FROM paper_trades WHERE experiment_id = ?"
+        params: list[Any] = [experiment_id]
+
+        if arm:
+            sql += " AND arm = ?"
+            params.append(arm)
+
+        sql += " ORDER BY entry_time ASC"
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+            return [PaperTrade.from_dict(dict(row)) for row in rows]
 
 
 @asynccontextmanager

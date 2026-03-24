@@ -446,17 +446,118 @@ async def evaluation_job(health_status: HealthStatus) -> list[dict]:
         raise
 
 
+async def _run_single_prediction(
+    market_context,
+    target_open: datetime,
+    target_close: datetime,
+    symbol: str,
+    timeframe: str,
+    enabled_modules: list[str] | None = None,
+    experiment_id: str | None = None,
+    arm: str = "baseline",
+    account_id: str = "default",
+) -> Prediction | None:
+    """Run a single prediction with the given module configuration.
+
+    This is the core prediction logic extracted for reuse across
+    baseline and experiment arms.
+    """
+    from perpetual_predict.llm.agent.runner import run_prediction_agent
+
+    settings = get_settings()
+
+    # Format context with specific modules
+    prompt = market_context.format_prompt(enabled_modules=enabled_modules)
+    log_prefix = f"[{arm}]" if experiment_id else ""
+    logger.debug(f"{log_prefix} Market context prompt:\n{prompt[:500]}...")
+
+    # Run Claude Code prediction agent
+    agent_result = await run_prediction_agent(prompt)
+
+    # Create prediction record
+    prediction = Prediction(
+        prediction_id=str(uuid.uuid4()),
+        prediction_time=datetime.now(timezone.utc),
+        target_candle_open=target_open,
+        target_candle_close=target_close,
+        symbol=symbol,
+        timeframe=timeframe,
+        direction=agent_result.direction,
+        confidence=agent_result.confidence,
+        reasoning=agent_result.reasoning,
+        key_factors=agent_result.key_factors,
+        session_id=agent_result.session_id,
+        duration_ms=agent_result.duration_ms,
+        model_usage=agent_result.model_usage,
+        leverage=agent_result.leverage,
+        position_ratio=agent_result.position_ratio,
+        trading_reasoning=agent_result.trading_reasoning,
+    )
+
+    # Save to database + open paper trade
+    async with get_database() as db:
+        await db.insert_prediction(prediction, experiment_id=experiment_id, arm=arm)
+
+        # Paper trading: open position
+        paper_settings = settings.paper_trading
+        if (
+            paper_settings.enabled
+            and prediction.direction != "NEUTRAL"
+            and prediction.position_ratio > 0
+        ):
+            try:
+                from perpetual_predict.trading.engine import PaperTradingEngine
+                engine = PaperTradingEngine(db, account_id)
+                await engine.ensure_account(paper_settings.initial_balance)
+                candles = await db.get_candles(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    start_time=target_open,
+                    end_time=target_open,
+                    limit=1,
+                )
+                if candles:
+                    trade = await engine.open_position(prediction, candles[0].open)
+                    if trade:
+                        logger.info(
+                            f"{log_prefix} Paper trade opened: {trade.side} "
+                            f"leverage={trade.leverage:.1f}x "
+                            f"ratio={trade.position_ratio:.0%} "
+                            f"notional=${trade.notional_value:.2f}"
+                        )
+                else:
+                    logger.warning(
+                        f"{log_prefix} No candle data for entry price, "
+                        "paper trade skipped"
+                    )
+            except Exception as e:
+                logger.warning(f"{log_prefix} Paper trading open failed (non-fatal): {e}")
+
+    logger.info(
+        f"{log_prefix} Prediction generated: {prediction.direction} "
+        f"(confidence: {prediction.confidence:.0%}, "
+        f"leverage: {prediction.leverage:.1f}x, "
+        f"ratio: {prediction.position_ratio:.0%}) "
+        f"for candle {target_open.isoformat()}"
+    )
+
+    return prediction
+
+
 async def prediction_job(health_status: HealthStatus) -> Prediction | None:
     """Scheduled job to generate LLM prediction for current candle.
 
     Builds market context from collected data and runs Claude Code
     headless agent to predict the direction of the current candle (just started).
 
+    Also runs experiment arm predictions if any active experiments exist
+    and EXPERIMENT_ENABLED=true.
+
     Args:
         health_status: Health status tracker to update.
 
     Returns:
-        Prediction object or None if prediction failed.
+        Baseline prediction object or None if prediction failed.
     """
     job_name = "prediction"
     settings = get_settings()
@@ -469,13 +570,12 @@ async def prediction_job(health_status: HealthStatus) -> Prediction | None:
     health_status.update_job_started(job_name)
 
     try:
-        from perpetual_predict.llm.agent.runner import run_prediction_agent
         from perpetual_predict.llm.context.builder import MarketContextBuilder
 
         # Calculate target candle times
         target_open, target_close = _calculate_target_candle_times(timeframe)
 
-        # Build market context with portfolio state
+        # Build market context (shared across all arms — same market data)
         paper_settings = settings.paper_trading
         async with get_database() as db:
             context_builder = MarketContextBuilder(db, symbol, timeframe)
@@ -494,87 +594,58 @@ async def prediction_job(health_status: HealthStatus) -> Prediction | None:
                 portfolio_context=portfolio_context,
             )
 
-        # Format context as prompt
-        prompt = market_context.format_prompt()
-        logger.debug(f"Market context prompt:\n{prompt[:500]}...")
-
-        # Run Claude Code prediction agent
-        agent_result = await run_prediction_agent(prompt)
-
-        # Create prediction record
-        prediction = Prediction(
-            prediction_id=str(uuid.uuid4()),
-            prediction_time=datetime.now(timezone.utc),
-            target_candle_open=target_open,
-            target_candle_close=target_close,
+        # 1. Baseline prediction (always runs, same as before)
+        prediction = await _run_single_prediction(
+            market_context=market_context,
+            target_open=target_open,
+            target_close=target_close,
             symbol=symbol,
             timeframe=timeframe,
-            direction=agent_result.direction,
-            confidence=agent_result.confidence,
-            reasoning=agent_result.reasoning,
-            key_factors=agent_result.key_factors,
-            session_id=agent_result.session_id,
-            duration_ms=agent_result.duration_ms,
-            model_usage=agent_result.model_usage,
-            leverage=agent_result.leverage,
-            position_ratio=agent_result.position_ratio,
-            trading_reasoning=agent_result.trading_reasoning,
+            enabled_modules=None,  # all modules
+            experiment_id=None,
+            arm="baseline",
+            account_id=paper_settings.account_id,
         )
 
-        # Save to database + open paper trade
-        async with get_database() as db:
-            await db.insert_prediction(prediction)
+        # 2. Experiment arm predictions (only if enabled)
+        if settings.experiment.enabled:
+            async with get_database() as db:
+                active_experiments = await db.get_active_experiments()
 
-            # Paper trading: open position
-            if (
-                paper_settings.enabled
-                and prediction.direction != "NEUTRAL"
-                and prediction.position_ratio > 0
-            ):
-                try:
-                    from perpetual_predict.trading.engine import PaperTradingEngine
-                    engine = PaperTradingEngine(db, paper_settings.account_id)
-                    candles = await db.get_candles(
-                        symbol=symbol,
-                        timeframe=timeframe,
-                        start_time=target_open,
-                        end_time=target_open,
-                        limit=1,
-                    )
-                    if candles:
-                        trade = await engine.open_position(prediction, candles[0].open)
-                        if trade:
-                            logger.info(
-                                f"Paper trade opened: {trade.side} "
-                                f"leverage={trade.leverage:.1f}x "
-                                f"ratio={trade.position_ratio:.0%} "
-                                f"notional=${trade.notional_value:.2f}"
-                            )
-                    else:
-                        logger.warning(
-                            "No candle data for entry price, "
-                            "paper trade skipped"
+            for exp in active_experiments:
+                import json
+                control_modules = json.loads(exp.control_modules) if isinstance(exp.control_modules, str) else exp.control_modules
+                variant_modules = json.loads(exp.variant_modules) if isinstance(exp.variant_modules, str) else exp.variant_modules
+
+                for arm_name, modules in [("control", control_modules), ("variant", variant_modules)]:
+                    try:
+                        await _run_single_prediction(
+                            market_context=market_context,
+                            target_open=target_open,
+                            target_close=target_close,
+                            symbol=symbol,
+                            timeframe=timeframe,
+                            enabled_modules=modules,
+                            experiment_id=exp.experiment_id,
+                            arm=arm_name,
+                            account_id=f"{exp.experiment_id}_{arm_name}",
                         )
-                except Exception as e:
-                    logger.warning(f"Paper trading open failed (non-fatal): {e}")
+                    except Exception as e:
+                        logger.warning(
+                            f"Experiment {exp.experiment_id} {arm_name} "
+                            f"prediction failed (non-fatal): {e}"
+                        )
 
         health_status.update_job_completed(
             job_name,
             success=True,
             details={
-                "direction": prediction.direction,
-                "confidence": prediction.confidence,
+                "direction": prediction.direction if prediction else "N/A",
+                "confidence": prediction.confidence if prediction else 0,
                 "target_candle": target_open.isoformat(),
-                "leverage": prediction.leverage,
-                "position_ratio": prediction.position_ratio,
+                "leverage": prediction.leverage if prediction else 0,
+                "position_ratio": prediction.position_ratio if prediction else 0,
             },
-        )
-        logger.info(
-            f"Prediction generated: {prediction.direction} "
-            f"(confidence: {prediction.confidence:.0%}, "
-            f"leverage: {prediction.leverage:.1f}x, "
-            f"ratio: {prediction.position_ratio:.0%}) "
-            f"for candle {target_open.isoformat()}"
         )
 
         return prediction

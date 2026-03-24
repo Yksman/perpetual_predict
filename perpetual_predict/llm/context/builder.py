@@ -137,30 +137,172 @@ class MarketContext:
     portfolio_total_trades: int = 0
     portfolio_recent_trades: str = ""
 
-    def format_prompt(self) -> str:
-        """Format context as LLM prompt."""
-        # Price position relative to MAs
+    def format_prompt(self, enabled_modules: list[str] | None = None) -> str:
+        """Format context as LLM prompt.
+
+        Args:
+            enabled_modules: List of seed module names to include.
+                None means all modules (default, same as current behavior).
+        """
+        from perpetual_predict.experiment.models import DEFAULT_MODULES
+
+        modules = set(enabled_modules or DEFAULT_MODULES)
+        sections = [self._section_header()]
+
+        if "price_action" in modules:
+            sections.append(self._section_price_action())
+        if "candle_structure" in modules:
+            sections.append(self._section_candle_structure())
+        if "ema_distance" in modules:
+            sections.append(self._section_ema_distance())
+        if "trend" in modules:
+            sections.append(self._section_trend())
+        if "momentum" in modules:
+            sections.append(self._section_momentum())
+        if "volatility" in modules:
+            sections.append(self._section_volatility())
+        if "cvd" in modules:
+            sections.append(self._section_cvd())
+        if "liquidation" in modules:
+            sections.append(self._section_liquidation())
+        if "sentiment" in modules:
+            sections.append(self._section_sentiment())
+        if "market_structure" in modules:
+            sections.append(self._section_market_structure())
+        if "divergences" in modules:
+            sections.append(self._section_divergences())
+        if "support_resistance" in modules:
+            sections.append(self._section_support_resistance())
+        if "recent_candles" in modules:
+            sections.append(self._section_recent_candles())
+
+        sections.append(self._section_footer(
+            include_portfolio="portfolio" in modules,
+        ))
+
+        return "\n\n".join(s for s in sections if s)
+
+    def _section_header(self) -> str:
+        return (
+            f"## {self.symbol} {self.timeframe} Market Analysis\n"
+            f"Time: {self.context_time.strftime('%Y-%m-%d %H:%M UTC')}"
+        )
+
+    def _section_price_action(self) -> str:
+        return (
+            f"### Price Action\n"
+            f"- Current Price: ${self.current_price:,.2f}\n"
+            f"- 4H Change: {self.price_change_4h:+.2f}%\n"
+            f"- 24H Change: {self.price_change_24h:+.2f}%\n"
+            f"- 24H High: ${self.high_24h:,.2f}\n"
+            f"- 24H Low: ${self.low_24h:,.2f}\n"
+            f"- 24H Volume: ${self.volume_24h:,.0f}"
+        )
+
+    def _section_candle_structure(self) -> str:
+        body_interp = interpret_body_ratio(self.body_ratio)
+        close_pos_interp = interpret_close_in_range(self.close_in_range)
+        volume_interp = interpret_volume_ratio(self.volume_ratio)
+        return (
+            f"### Candle Structure (Latest)\n"
+            f"- Body Ratio: {self.body_ratio:.4f} ({body_interp})\n"
+            f"- Upper Wick: {self.upper_wick_ratio:.4f}\n"
+            f"- Lower Wick: {self.lower_wick_ratio:.4f}\n"
+            f"- Close Position: {self.close_in_range:.1%} ({close_pos_interp})\n"
+            f"- Volume vs Prev: {self.volume_ratio:.2f}x ({volume_interp})"
+        )
+
+    def _section_ema_distance(self) -> str:
+        ema9_interp = interpret_ema_distance(self.dist_ema_9, 9)
+        ema200_interp = interpret_ema_distance(self.dist_ema_200, 200)
+        return (
+            f"### EMA Distance (Trend Strength)\n"
+            f"- EMA 9: {self.dist_ema_9:+.2f}% ({ema9_interp})\n"
+            f"- EMA 21: {self.dist_ema_21:+.2f}%\n"
+            f"- EMA 55: {self.dist_ema_55:+.2f}%\n"
+            f"- EMA 200: {self.dist_ema_200:+.2f}% ({ema200_interp})"
+        )
+
+    def _section_trend(self) -> str:
         sma_20_pos = "above" if self.current_price > self.sma_20 else "below"
         sma_50_pos = "above" if self.current_price > self.sma_50 else "below"
         sma_200_pos = "above" if self.current_price > self.sma_200 else "below"
-
-        # RSI interpretation
-        if self.rsi > 70:
-            rsi_interp = "Overbought"
-        elif self.rsi < 30:
-            rsi_interp = "Oversold"
-        else:
-            rsi_interp = "Neutral"
-
-        # ADX interpretation
+        macd_trend = "Bullish" if self.macd > self.macd_signal else "Bearish"
+        macd_momentum = "Increasing" if self.macd_histogram > 0 else "Decreasing"
         if self.adx > 50:
             adx_interp = "Very Strong Trend"
         elif self.adx > 25:
             adx_interp = "Strong Trend"
         else:
             adx_interp = "Weak/No Trend"
+        return (
+            f"### Trend Indicators\n"
+            f"- SMA 20: ${self.sma_20:,.2f} (Price {sma_20_pos})\n"
+            f"- SMA 50: ${self.sma_50:,.2f} (Price {sma_50_pos})\n"
+            f"- SMA 200: ${self.sma_200:,.2f} (Price {sma_200_pos})\n"
+            f"- EMA 12/26: ${self.ema_12:,.2f} / ${self.ema_26:,.2f}\n"
+            f"- MACD: {self.macd:.2f} | Signal: {self.macd_signal:.2f} | Histogram: {self.macd_histogram:.2f}\n"
+            f"- MACD Status: {macd_trend}, momentum {macd_momentum}\n"
+            f"- ADX: {self.adx:.1f} ({adx_interp})"
+        )
 
-        # Funding rate interpretation
+    def _section_momentum(self) -> str:
+        if self.rsi > 70:
+            rsi_interp = "Overbought"
+        elif self.rsi < 30:
+            rsi_interp = "Oversold"
+        else:
+            rsi_interp = "Neutral"
+        return (
+            f"### Momentum Indicators\n"
+            f"- RSI (14): {self.rsi:.1f} ({rsi_interp})\n"
+            f"- Stochastic RSI: K={self.stoch_rsi_k:.1f}, D={self.stoch_rsi_d:.1f}"
+        )
+
+    def _section_volatility(self) -> str:
+        atr_interp = interpret_atr_ratio(self.atr_ratio)
+        squeeze_interp = interpret_bb_squeeze(self.bb_squeeze, self.atr_ratio)
+        bb_range = self.bb_upper - self.bb_lower
+        if bb_range > 0:
+            bb_pct = (self.current_price - self.bb_lower) / bb_range * 100
+            bb_pos = f"{bb_pct:.0f}% from lower band"
+        else:
+            bb_pos = "N/A"
+        return (
+            f"### Volatility\n"
+            f"- ATR (14): ${self.atr:,.2f} ({self.atr / self.current_price * 100:.2f}% of price)\n"
+            f"- ATR Ratio: {self.atr_ratio:.2f} ({atr_interp})\n"
+            f'- BB Squeeze: {"YES" if self.bb_squeeze else "No"} ({squeeze_interp})\n'
+            f"- Bollinger Bands: Upper ${self.bb_upper:,.2f} | Middle ${self.bb_middle:,.2f} | Lower ${self.bb_lower:,.2f}\n"
+            f"- Price Position: {bb_pos}"
+        )
+
+    def _section_cvd(self) -> str:
+        cvd_interp = interpret_cvd(self.cvd, self.volume_24h / 6 if self.volume_24h > 0 else 1)
+        return (
+            f"### CVD (Buy/Sell Pressure)\n"
+            f"- CVD 4H: {self.cvd:+,.2f} BTC\n"
+            f"- CVD Ratio: {self.cvd_ratio:+.2f} ({cvd_interp})"
+        )
+
+    def _section_liquidation(self) -> str:
+        total_liq = self.long_liquidation_volume + self.short_liquidation_volume
+        if total_liq < 1.0:
+            liq_interp = "Low liquidation activity"
+        elif self.liquidation_imbalance > 0.3:
+            liq_interp = "More longs liquidated (bearish)"
+        elif self.liquidation_imbalance < -0.3:
+            liq_interp = "More shorts liquidated (bullish)"
+        else:
+            liq_interp = "Balanced liquidations"
+        return (
+            f"### Liquidation Pressure\n"
+            f"- Long Liquidations: {self.long_liquidation_volume:.4f} BTC\n"
+            f"- Short Liquidations: {self.short_liquidation_volume:.4f} BTC\n"
+            f"- Imbalance: {self.liquidation_imbalance:+.2f} ({liq_interp})"
+        )
+
+    def _section_sentiment(self) -> str:
         if self.funding_rate > 0.03:
             funding_interp = "Extreme Long Bias (reversal risk)"
         elif self.funding_rate > 0.01:
@@ -171,120 +313,50 @@ class MarketContext:
             funding_interp = "Short Bias"
         else:
             funding_interp = "Neutral"
+        ls_desc = "Longs dominate" if self.long_short_ratio > 1 else "Shorts dominate" if self.long_short_ratio < 1 else "Balanced"
+        return (
+            f"### Market Sentiment\n"
+            f"- Funding Rate: {self.funding_rate * 100:.4f}% ({funding_interp})\n"
+            f"- Funding 8H Ago: {self.funding_rate_8h_ago * 100:.4f}%\n"
+            f"- Funding Change: {(self.funding_rate - self.funding_rate_8h_ago) * 100:+.4f}%\n"
+            f"- Open Interest: ${self.open_interest:,.0f}\n"
+            f"- OI 24H Change: {self.oi_change_24h:+.2f}%\n"
+            f"- Long/Short Ratio: {self.long_short_ratio:.2f} ({ls_desc})\n"
+            f"- Fear & Greed Index: {self.fear_greed_value} ({self.fear_greed_classification})"
+        )
 
-        # BB position
-        bb_range = self.bb_upper - self.bb_lower
-        if bb_range > 0:
-            bb_pct = (self.current_price - self.bb_lower) / bb_range * 100
-            bb_pos = f"{bb_pct:.0f}% from lower band"
-        else:
-            bb_pos = "N/A"
+    def _section_market_structure(self) -> str:
+        return (
+            f"### Market Structure (Swing HH/HL/LH/LL)\n"
+            f"{self.market_structure_summary}"
+        )
 
-        # MACD interpretation
-        macd_trend = "Bullish" if self.macd > self.macd_signal else "Bearish"
-        macd_momentum = "Increasing" if self.macd_histogram > 0 else "Decreasing"
+    def _section_divergences(self) -> str:
+        return (
+            f"### Divergences\n"
+            f"{self.divergence_summary}"
+        )
 
-        # New interpretations
-        body_interp = interpret_body_ratio(self.body_ratio)
-        close_pos_interp = interpret_close_in_range(self.close_in_range)
-        volume_interp = interpret_volume_ratio(self.volume_ratio)
-        ema9_interp = interpret_ema_distance(self.dist_ema_9, 9)
-        ema200_interp = interpret_ema_distance(self.dist_ema_200, 200)
-        atr_interp = interpret_atr_ratio(self.atr_ratio)
-        squeeze_interp = interpret_bb_squeeze(self.bb_squeeze, self.atr_ratio)
-        cvd_interp = interpret_cvd(self.cvd, self.volume_24h / 6 if self.volume_24h > 0 else 1)
+    def _section_support_resistance(self) -> str:
+        return (
+            f"### Key Levels (Support/Resistance)\n"
+            f"{self._format_levels_section()}"
+        )
 
-        # Liquidation interpretation
-        total_liq = self.long_liquidation_volume + self.short_liquidation_volume
-        if total_liq < 1.0:
-            liq_interp = "Low liquidation activity"
-        elif self.liquidation_imbalance > 0.3:
-            liq_interp = "More longs liquidated (bearish)"
-        elif self.liquidation_imbalance < -0.3:
-            liq_interp = "More shorts liquidated (bullish)"
-        else:
-            liq_interp = "Balanced liquidations"
+    def _section_recent_candles(self) -> str:
+        return (
+            f"### Recent Candles (Last 5)\n"
+            f"{self.recent_candles_summary}"
+        )
 
-        prompt = f"""## {self.symbol} {self.timeframe} Market Analysis
-Time: {self.context_time.strftime("%Y-%m-%d %H:%M UTC")}
-
-### Price Action
-- Current Price: ${self.current_price:,.2f}
-- 4H Change: {self.price_change_4h:+.2f}%
-- 24H Change: {self.price_change_24h:+.2f}%
-- 24H High: ${self.high_24h:,.2f}
-- 24H Low: ${self.low_24h:,.2f}
-- 24H Volume: ${self.volume_24h:,.0f}
-
-### Candle Structure (Latest)
-- Body Ratio: {self.body_ratio:.4f} ({body_interp})
-- Upper Wick: {self.upper_wick_ratio:.4f}
-- Lower Wick: {self.lower_wick_ratio:.4f}
-- Close Position: {self.close_in_range:.1%} ({close_pos_interp})
-- Volume vs Prev: {self.volume_ratio:.2f}x ({volume_interp})
-
-### EMA Distance (Trend Strength)
-- EMA 9: {self.dist_ema_9:+.2f}% ({ema9_interp})
-- EMA 21: {self.dist_ema_21:+.2f}%
-- EMA 55: {self.dist_ema_55:+.2f}%
-- EMA 200: {self.dist_ema_200:+.2f}% ({ema200_interp})
-
-### Trend Indicators
-- SMA 20: ${self.sma_20:,.2f} (Price {sma_20_pos})
-- SMA 50: ${self.sma_50:,.2f} (Price {sma_50_pos})
-- SMA 200: ${self.sma_200:,.2f} (Price {sma_200_pos})
-- EMA 12/26: ${self.ema_12:,.2f} / ${self.ema_26:,.2f}
-- MACD: {self.macd:.2f} | Signal: {self.macd_signal:.2f} | Histogram: {self.macd_histogram:.2f}
-- MACD Status: {macd_trend}, momentum {macd_momentum}
-- ADX: {self.adx:.1f} ({adx_interp})
-
-### Momentum Indicators
-- RSI (14): {self.rsi:.1f} ({rsi_interp})
-- Stochastic RSI: K={self.stoch_rsi_k:.1f}, D={self.stoch_rsi_d:.1f}
-
-### Volatility
-- ATR (14): ${self.atr:,.2f} ({self.atr / self.current_price * 100:.2f}% of price)
-- ATR Ratio: {self.atr_ratio:.2f} ({atr_interp})
-- BB Squeeze: {"YES" if self.bb_squeeze else "No"} ({squeeze_interp})
-- Bollinger Bands: Upper ${self.bb_upper:,.2f} | Middle ${self.bb_middle:,.2f} | Lower ${self.bb_lower:,.2f}
-- Price Position: {bb_pos}
-
-### CVD (Buy/Sell Pressure)
-- CVD 4H: {self.cvd:+,.2f} BTC
-- CVD Ratio: {self.cvd_ratio:+.2f} ({cvd_interp})
-
-### Liquidation Pressure
-- Long Liquidations: {self.long_liquidation_volume:.4f} BTC
-- Short Liquidations: {self.short_liquidation_volume:.4f} BTC
-- Imbalance: {self.liquidation_imbalance:+.2f} ({liq_interp})
-
-### Market Sentiment
-- Funding Rate: {self.funding_rate * 100:.4f}% ({funding_interp})
-- Funding 8H Ago: {self.funding_rate_8h_ago * 100:.4f}%
-- Funding Change: {(self.funding_rate - self.funding_rate_8h_ago) * 100:+.4f}%
-- Open Interest: ${self.open_interest:,.0f}
-- OI 24H Change: {self.oi_change_24h:+.2f}%
-- Long/Short Ratio: {self.long_short_ratio:.2f} ({"Longs dominate" if self.long_short_ratio > 1 else "Shorts dominate" if self.long_short_ratio < 1 else "Balanced"})
-- Fear & Greed Index: {self.fear_greed_value} ({self.fear_greed_classification})
-
-### Market Structure (Swing HH/HL/LH/LL)
-{self.market_structure_summary}
-
-### Divergences
-{self.divergence_summary}
-
-### Key Levels (Support/Resistance)
-{self._format_levels_section()}
-
-### Recent Candles (Last 5)
-{self.recent_candles_summary}
-
----
-Based on this analysis, predict the direction of the CURRENT {self.timeframe} candle (just started).
-{self._format_portfolio_section()}
-**중요: 모든 응답(reasoning, key_factors, trading_reasoning)은 반드시 한국어로 작성하세요.**"""
-
-        return prompt
+    def _section_footer(self, include_portfolio: bool = True) -> str:
+        portfolio = self._format_portfolio_section() if include_portfolio else ""
+        return (
+            f"---\n"
+            f"Based on this analysis, predict the direction of the CURRENT {self.timeframe} candle (just started).\n"
+            f"{portfolio}"
+            f"**중요: 모든 응답(reasoning, key_factors, trading_reasoning)은 반드시 한국어로 작성하세요.**"
+        )
 
     def _format_levels_section(self) -> str:
         """Format support/resistance levels section."""

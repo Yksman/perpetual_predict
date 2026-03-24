@@ -142,6 +142,16 @@ class DashboardConfig:
 
 
 @dataclass
+class ExperimentConfig:
+    """A/B testing experiment configuration."""
+
+    enabled: bool = False
+    default_min_samples: int = 30
+    default_significance_level: float = 0.05
+    default_primary_metric: str = "net_return"  # accuracy | net_return | sharpe
+
+
+@dataclass
 class Settings:
     """Application settings container."""
 
@@ -157,6 +167,7 @@ class Settings:
     discord: DiscordConfig = field(default_factory=DiscordConfig)
     paper_trading: PaperTradingConfig = field(default_factory=PaperTradingConfig)
     dashboard: DashboardConfig = field(default_factory=DashboardConfig)
+    experiment: ExperimentConfig = field(default_factory=ExperimentConfig)
 
     @classmethod
     def from_env(cls, env_file: str | Path | None = None) -> "Settings":
@@ -246,6 +257,12 @@ class Settings:
                 export_dir=os.getenv("DASHBOARD_EXPORT_DIR", "/tmp/perpetual_predict_export"),
                 history_days=int(os.getenv("DASHBOARD_HISTORY_DAYS", "90")),
                 git_data_branch=os.getenv("DASHBOARD_GIT_DATA_BRANCH", "data"),
+            ),
+            experiment=ExperimentConfig(
+                enabled=os.getenv("EXPERIMENT_ENABLED", "false").lower() == "true",
+                default_min_samples=int(os.getenv("EXPERIMENT_MIN_SAMPLES", "30")),
+                default_significance_level=float(os.getenv("EXPERIMENT_SIGNIFICANCE", "0.05")),
+                default_primary_metric=os.getenv("EXPERIMENT_PRIMARY_METRIC", "net_return"),
             ),
         )
 
