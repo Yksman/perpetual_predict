@@ -76,18 +76,41 @@
       "equity_curves": {
         "control": [
           {
-            "time": "2026-03-24T12:03:07.258245",
+            "time": "2026-03-24T12:06:28.268593",
             "balance": 1000.0
           }
         ],
         "variant": [
           {
-            "time": "2026-03-24T12:03:07.258251",
+            "time": "2026-03-24T12:06:28.268601",
             "balance": 1000.0
           }
         ]
       },
-      "prediction_pairs": []
+      "prediction_pairs": [
+        {
+          "target_candle_open": "2026-03-24T12:00:00+00:00",
+          "target_candle_close": "2026-03-24T16:00:00+00:00",
+          "control": {
+            "direction": "DOWN",
+            "confidence": 0.55,
+            "leverage": 1.0,
+            "position_ratio": 0.05,
+            "is_correct": null,
+            "actual_direction": null,
+            "actual_price_change": null
+          },
+          "variant": {
+            "direction": "DOWN",
+            "confidence": 0.42,
+            "leverage": 1.0,
+            "position_ratio": 0.05,
+            "is_correct": null,
+            "actual_direction": null,
+            "actual_price_change": null
+          }
+        }
+      ]
     }
   ]
 }
