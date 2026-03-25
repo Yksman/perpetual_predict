@@ -55,10 +55,10 @@
       "result": {
         "control_accuracy": 0.6667,
         "variant_accuracy": 0.6667,
-        "control_return": 0,
-        "variant_return": 0,
-        "control_sharpe": 0.0,
-        "variant_sharpe": 0.0,
+        "control_return": 0.2,
+        "variant_return": 0.66,
+        "control_sharpe": 1.77,
+        "variant_sharpe": 4.61,
         "p_value": null,
         "is_significant": false,
         "recommended_winner": null
@@ -66,24 +66,56 @@
       "accounts": {
         "control": {
           "initial_balance": 1000.0,
-          "current_balance": 1000.0
+          "current_balance": 999.0482148059058
         },
         "variant": {
           "initial_balance": 1000.0,
-          "current_balance": 1000.0
+          "current_balance": 999.0482148059058
         }
       },
       "equity_curves": {
         "control": [
           {
-            "time": "2026-03-25T01:01:48.457166",
+            "time": "2026-03-24T12:05:12.786271+00:00",
             "balance": 1000.0
+          },
+          {
+            "time": "2026-03-24T16:00:17.225675+00:00",
+            "balance": 1000.7990190729564
+          },
+          {
+            "time": "2026-03-24T20:00:27.976959+00:00",
+            "balance": 1000.2543936217739
+          },
+          {
+            "time": "2026-03-25T00:00:21.028228+00:00",
+            "balance": 999.0482148059058
           }
         ],
         "variant": [
           {
-            "time": "2026-03-25T01:01:48.457171",
+            "time": "2026-03-24T04:03:58.813933+00:00",
             "balance": 1000.0
+          },
+          {
+            "time": "2026-03-24T08:15:03.482552+00:00",
+            "balance": 1000.4269308388206
+          },
+          {
+            "time": "2026-03-24T12:00:24.168001+00:00",
+            "balance": 999.8026035994566
+          },
+          {
+            "time": "2026-03-24T16:00:17.228291+00:00",
+            "balance": 1000.7990190729564
+          },
+          {
+            "time": "2026-03-24T20:00:27.985996+00:00",
+            "balance": 1000.2543936217739
+          },
+          {
+            "time": "2026-03-25T00:00:21.033604+00:00",
+            "balance": 999.0482148059058
           }
         ]
       },
