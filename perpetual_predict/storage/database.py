@@ -1176,6 +1176,18 @@ class Database:
     async def insert_paper_trade(self, trade: PaperTrade) -> None:
         """Insert a paper trade record."""
         d = trade.to_dict()
+
+        # Derive experiment_id and arm from account_id convention
+        experiment_id = None
+        arm = "baseline"
+        account_id = d["account_id"]
+        for arm_name in ("control", "variant"):
+            suffix = f"_{arm_name}"
+            if account_id.endswith(suffix):
+                experiment_id = account_id[: -len(suffix)]
+                arm = arm_name
+                break
+
         sql = """
         INSERT INTO paper_trades
         (trade_id, account_id, prediction_id, symbol,
@@ -1185,8 +1197,9 @@ class Database:
          entry_fee, exit_fee, total_fees,
          gross_pnl, net_pnl, return_pct,
          balance_before, balance_after,
-         status, confidence, trading_reasoning)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         status, confidence, trading_reasoning,
+         experiment_id, arm)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         await self.connection.execute(
             sql,
@@ -1200,6 +1213,7 @@ class Database:
                 d["gross_pnl"], d["net_pnl"], d["return_pct"],
                 d["balance_before"], d["balance_after"],
                 d["status"], d["confidence"], d["trading_reasoning"],
+                experiment_id, arm,
             ),
         )
         await self.connection.commit()

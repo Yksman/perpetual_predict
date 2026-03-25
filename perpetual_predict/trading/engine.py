@@ -149,7 +149,10 @@ class PaperTradingEngine:
         trade.status = "CLOSED"
 
         await self.db.update_paper_trade_close(trade)
-        await self.db.update_paper_account_balance(self.account_id, balance_after)
+        await self.db.update_paper_account_balance(trade.account_id, balance_after)
+
+        # Sync experiment account balance if this is an experiment trade
+        await self._sync_experiment_account(trade.account_id, balance_after)
 
         if balance_after <= 0:
             logger.warning("Paper account liquidated! Balance reached $0.")
@@ -160,6 +163,20 @@ class PaperTradingEngine:
         )
 
         return trade
+
+    async def _sync_experiment_account(
+        self, account_id: str, balance: float
+    ) -> None:
+        """Update experiment_accounts if this is an experiment trade."""
+        # Convention: experiment account_id = "{experiment_id}_{arm}"
+        for arm in ("control", "variant"):
+            suffix = f"_{arm}"
+            if account_id.endswith(suffix):
+                experiment_id = account_id[: -len(suffix)]
+                await self.db.update_experiment_account_balance(
+                    experiment_id, arm, balance
+                )
+                return
 
     async def get_portfolio_context(self) -> dict:
         """Build portfolio context for the LLM prompt.
