@@ -105,7 +105,7 @@ def _sharpe_ratio(returns: list[float], risk_free: float = 0.0) -> float:
     if len(returns) < 2:
         return 0.0
     mean = sum(returns) / len(returns) - risk_free
-    variance = sum((r - mean - risk_free) ** 2 for r in returns) / (len(returns) - 1)
+    variance = sum((r - mean) ** 2 for r in returns) / (len(returns) - 1)
     std = math.sqrt(variance) if variance > 0 else 0.0001
     # Annualize: ~6 trades/day (4H) * 365
     return (mean / std) * math.sqrt(6 * 365)

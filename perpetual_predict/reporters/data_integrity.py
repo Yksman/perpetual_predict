@@ -485,11 +485,9 @@ def calculate_expected_timestamps(
 
     # 캔들 마감 후 첫 10분 내에 실행 시, 방금 마감된 캔들 = 4시간 전
     # 예: 04:00:30 실행 → 00:00~04:00 캔들 (open_time=00:00)
-    minutes_into_slot = (reference_time - current_4h_boundary).total_seconds() / 60
-    if minutes_into_slot <= 10:
-        expected_4h = current_4h_boundary - timedelta(hours=4)
-    else:
-        expected_4h = current_4h_boundary - timedelta(hours=4)
+    # 슬롯 시작 직후(≤10분)든 중간이든, 방금 마감된 캔들은 항상 이전 4H 슬롯
+    # 예: 04:05 실행 → 00:00~04:00 캔들, 05:30 실행 → 00:00~04:00 캔들
+    expected_4h = current_4h_boundary - timedelta(hours=4)
 
     # 8H Funding Rate
     # 00:00, 08:00, 16:00 UTC

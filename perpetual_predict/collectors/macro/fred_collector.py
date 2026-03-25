@@ -47,7 +47,7 @@ class FredCollector(BaseCollector):
         Returns:
             List of MacroIndicator objects.
         """
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self._collect_sync, days)
 
     def _collect_sync(self, days: int) -> list[MacroIndicator]:

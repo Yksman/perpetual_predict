@@ -25,6 +25,18 @@ uv run python -m perpetual_predict report                   # Generate analysis 
 uv run python -m perpetual_predict cycle                    # Full cycle: evaluate → collect → predict
 uv run python -m perpetual_predict cycle --phase predict    # Run single phase
 uv run python -m perpetual_predict daemon --run-once        # Single collection
+
+# A/B experiment management
+uv run python -m perpetual_predict experiment create --name "test_macro" --add macro
+uv run python -m perpetual_predict experiment list                                    # List experiments
+uv run python -m perpetual_predict experiment status <experiment_id>                  # Show results
+uv run python -m perpetual_predict experiment pause <experiment_id>
+uv run python -m perpetual_predict experiment resume <experiment_id>
+uv run python -m perpetual_predict experiment merge <experiment_id>                   # Promote winner
+
+# Dashboard data export
+uv run python -m perpetual_predict export                    # Export to JSON
+uv run python -m perpetual_predict export --push             # Export and push to git data branch
 ```
 
 ## Architecture
@@ -32,11 +44,15 @@ uv run python -m perpetual_predict daemon --run-once        # Single collection
 **Data Flow**: Binance API → Collectors → SQLite → LLM Context Builder → Claude CLI → Predictions → Evaluator → Discord
 
 **Key Modules**:
-- `cli/` - Command entry points: `collect.py`, `cycle.py`, `daemon.py`, `report.py`
+- `cli/` - Command entry points: `collect.py`, `cycle.py`, `daemon.py`, `report.py`, `experiment.py`, `export.py`
 - `collectors/binance/` - Async collectors sharing a `BinanceClient` session
+- `collectors/macro/` - Macroeconomic data: `fred_collector.py` (FRED API), `market_index_collector.py` (yfinance: SPX, NASDAQ, DXY, GOLD)
 - `llm/agent/runner.py` - Invokes `claude -p --output-format json --json-schema` for structured predictions
 - `llm/context/builder.py` - Builds market context prompt from collected data
 - `llm/evaluation/evaluator.py` - Compares predictions against actual candle outcomes
+- `experiment/` - A/B testing framework: `models.py` (SEED_MODULES, EXPERIMENTAL_MODULES, DEFAULT_MODULES), `analyzer.py` (statistical significance)
+- `trading/` - Paper trading engine: `engine.py` (positions from predictions), `metrics.py` (accuracy, PnL, Sharpe)
+- `export/exporter.py` - Exports predictions, trades, metrics to JSON for dashboard consumption
 - `scheduler/scheduler.py` - APScheduler-based cron (4H intervals)
 - `storage/database.py` - Async SQLite via `aiosqlite`, context manager pattern: `async with get_database() as db:`
 - `notifications/discord_webhook.py` - Discord embeds for scheduler status and predictions
@@ -62,6 +78,22 @@ uv run python -m perpetual_predict daemon --run-once        # Single collection
 
 **중요**: 신규 시드데이터는 `EXPERIMENTAL_MODULES`에 등록하여 baseline 예측에서 제외한다. A/B 테스트(`experiment create --add <module>`)로 효과를 검증한 후, `EXPERIMENTAL_MODULES`에서 제거하면 `DEFAULT_MODULES`에 자동 포함된다. 시드데이터의 `_section_*()` 메서드는 원시 데이터만 제공하고, 해석/시그널은 포함하지 않는다 (에이전트 자율 판단).
 
+## A/B Testing Framework
+
+실험 시스템은 control(baseline 모듈) vs variant(+신규 모듈) 구성을 비교한다.
+
+**모듈 라이프사이클**:
+1. 신규 모듈 → `EXPERIMENTAL_MODULES` 등록 → `DEFAULT_MODULES`에서 자동 제외
+2. `experiment create --add <module>` → control/variant arm 생성, 각 arm별 독립 paper trading 계좌
+3. `min_samples`(기본 30) 이상 예측 누적 후 통계적 유의성 검정 (p-value < 0.05)
+4. `experiment merge` → 승리 variant의 모듈을 `EXPERIMENTAL_MODULES`에서 제거하여 baseline에 포함
+
+**Control 재사용 최적화**: baseline 예측은 모든 활성 실험의 control arm으로 공유된다. 동일 control 구성의 실험이 여러 개여도 `claude -p` 호출은 1회만 실행.
+
+**평가 지표**: `accuracy` (방향 적중률), `net_return` (누적 수익률%), `sharpe` (위험 조정 수익률)
+
+**현재 실험 모듈**: `macro` (FRED + yfinance 거시경제지표)
+
 ## Environment Variables
 
 Required:
@@ -71,6 +103,14 @@ Optional (see `config/settings.py` for defaults):
 - `DISCORD_WEBHOOK_URL`, `DISCORD_ENABLED` - Discord notifications
 - `SCHEDULER_CRON_HOUR=0,4,8,12,16,20` - 4H candle close times
 - `DATABASE_PATH=data/perpetual_predict.db`
+- `FRED_API_KEY` - FRED API key for macroeconomic data (fred.stlouisfed.org)
+- `MACRO_ENABLED=true` - Enable/disable macro data collection
+- `EXPERIMENT_ENABLED=false` - Enable A/B experiment arms in cycle
+- `EXPERIMENT_MIN_SAMPLES=30` - Minimum samples before significance test
+- `EXPERIMENT_SIGNIFICANCE=0.05` - p-value threshold
+- `EXPERIMENT_PRIMARY_METRIC=net_return` - Primary metric: `accuracy | net_return | sharpe`
+- `PAPER_TRADING_ENABLED=true`, `PAPER_TRADING_INITIAL_BALANCE=1000.0`, `PAPER_TRADING_MAX_LEVERAGE=3.0`
+- `DASHBOARD_EXPORT_ENABLED=false`, `DASHBOARD_AUTO_PUSH=false`, `DASHBOARD_GIT_DATA_BRANCH=data`
 
 ## Database Tables
 

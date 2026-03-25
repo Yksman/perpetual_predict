@@ -115,7 +115,7 @@ async def run_prediction_agent(
 
     try:
         # Run in thread pool to avoid blocking
-        result = await asyncio.get_event_loop().run_in_executor(
+        result = await asyncio.get_running_loop().run_in_executor(
             None,
             lambda: subprocess.run(
                 cmd,

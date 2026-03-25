@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from perpetual_predict.config.settings import get_settings
@@ -37,7 +37,7 @@ async def export_dashboard_data(
     symbol = settings.trading.symbol
     timeframe = settings.trading.timeframe
     account_id = settings.paper_trading.account_id
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
     async with get_database() as db:
         # 1. Predictions (all within date range)
