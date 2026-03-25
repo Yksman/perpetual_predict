@@ -76,13 +76,13 @@
       "equity_curves": {
         "control": [
           {
-            "time": "2026-03-25T00:42:24.366459",
+            "time": "2026-03-25T01:01:48.457166",
             "balance": 1000.0
           }
         ],
         "variant": [
           {
-            "time": "2026-03-25T00:42:24.366464",
+            "time": "2026-03-25T01:01:48.457171",
             "balance": 1000.0
           }
         ]
@@ -93,9 +93,9 @@
           "target_candle_close": "2026-03-25T04:00:00+00:00",
           "control": {
             "direction": "DOWN",
-            "confidence": 0.45,
-            "leverage": 1.5,
-            "position_ratio": 0.25,
+            "confidence": 0.55,
+            "leverage": 1.0,
+            "position_ratio": 0.1,
             "is_correct": null,
             "actual_direction": null,
             "actual_price_change": null
