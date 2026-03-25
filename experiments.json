@@ -76,13 +76,13 @@
       "equity_curves": {
         "control": [
           {
-            "time": "2026-03-25T00:03:07.235048",
+            "time": "2026-03-25T00:42:24.366459",
             "balance": 1000.0
           }
         ],
         "variant": [
           {
-            "time": "2026-03-25T00:03:07.235053",
+            "time": "2026-03-25T00:42:24.366464",
             "balance": 1000.0
           }
         ]
@@ -94,8 +94,8 @@
           "control": {
             "direction": "DOWN",
             "confidence": 0.45,
-            "leverage": 1.2,
-            "position_ratio": 0.08,
+            "leverage": 1.5,
+            "position_ratio": 0.25,
             "is_correct": null,
             "actual_direction": null,
             "actual_price_change": null
@@ -103,8 +103,8 @@
           "variant": {
             "direction": "DOWN",
             "confidence": 0.62,
-            "leverage": 1.5,
-            "position_ratio": 0.15,
+            "leverage": 1.0,
+            "position_ratio": 0.08,
             "is_correct": null,
             "actual_direction": null,
             "actual_price_change": null
