@@ -1,6 +1,79 @@
 {
   "predictions": [
     {
+      "id": "1f9a6d9d-04dd-42d2-ab28-8829fe8da19c",
+      "time": "2026-03-25T00:03:06.811784+00:00",
+      "target_open": "2026-03-25T00:00:00+00:00",
+      "target_close": "2026-03-25T04:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.62,
+      "key_factors": [
+        "RSI·MACD 히든 베어리시 다이버전스 — 하락 추세 지속 신호",
+        "시장 구조 베어리시 (LH/LL 반복, 5회 구조 붕괴)",
+        "SMA 50 저항 부근 도지 캔들 — 반등 피로감",
+        "극단적 공포(F&G 14) + 매크로 리스크오프(골드↑ 주식↓ DXY↑)",
+        "OI -2.13% 감소 — 포지션 청산 진행 중, 확신 매수 아님"
+      ],
+      "reasoning": "시장 구조가 명확히 하락세(LH/LL 패턴, 5회 구조 붕괴)이며, RSI와 MACD 모두에서 히든 베어리시 다이버전스가 확인됨. $68,884에서 반등했으나 SMA 50($70,837) 저항 부근에서 도지 캔들로 매수 피로감 노출. 극단적 공포(F&G 14), OI 감소(-2.13%), 골드 급등(+3.32%)과 주식 약세 등 매크로 리스크오프 환경이 하방 압력 지속을 시사. 다만 SMA 200 위에서 거래 중이고 MACD 히스토그램이 증가세여서 급락보다는 점진적 하락 가능성이 높음.",
+      "leverage": 1.5,
+      "position_ratio": 0.15,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "0022fcfd-3864-4b7c-a9ca-44d72960787c",
+      "time": "2026-03-25T00:01:42.766266+00:00",
+      "target_open": "2026-03-25T00:00:00+00:00",
+      "target_close": "2026-03-25T04:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.45,
+      "key_factors": [
+        "약세 시장 구조 지속 (5회 구조 이탈, LH→LL 패턴)",
+        "RSI·MACD 히든 약세 다이버전스 (추세 지속 시그널)",
+        "저항대 $71,161 근접 (0.87%) + SMA 50 오버헤드 저항",
+        "도지 캔들 + 0.00x 거래량 = 매수 탈진/무관심",
+        "MACD 골든크로스 + 히스토그램 증가 (반대 시그널, 신뢰도 저하 요인)",
+        "Fear & Greed 14 극도의 공포 (역발상 가능성 존재)",
+        "OI -2.13% 감소 및 CVD -2.25 BTC 매도 우위"
+      ],
+      "reasoning": "약세 시장 구조(5회 구조 이탈)가 지속되는 가운데, 최근 +1.70% 반등은 $71,161 저항대 부근(73% 위치)에서 도지 캔들로 매수 탈진 조짐을 보임. RSI와 MACD 모두에서 히든 약세 다이버전스가 확인되어 기존 하락 추세 지속 가능성이 높음. MACD 골든크로스와 히스토그램 증가가 단기 모멘텀 회복을 시사하나, ADX 20.8(약한 추세)과 극도의 공포(14) 환경에서 반등의 지속력이 제한적. OI -2.13% 감소는 포지션 정리 흐름을 나타내며, SMA 50($70,837)이 상방 저항으로 작용. CVD -2.25 BTC로 매도 압력이 소폭 우세.",
+      "leverage": 1.2,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "adbf4c98-5788-4fd0-b288-a4a1261b022d",
+      "time": "2026-03-25T00:01:42.766266+00:00",
+      "target_open": "2026-03-25T00:00:00+00:00",
+      "target_close": "2026-03-25T04:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.45,
+      "key_factors": [
+        "약세 시장 구조 지속 (5회 구조 이탈, LH→LL 패턴)",
+        "RSI·MACD 히든 약세 다이버전스 (추세 지속 시그널)",
+        "저항대 $71,161 근접 (0.87%) + SMA 50 오버헤드 저항",
+        "도지 캔들 + 0.00x 거래량 = 매수 탈진/무관심",
+        "MACD 골든크로스 + 히스토그램 증가 (반대 시그널, 신뢰도 저하 요인)",
+        "Fear & Greed 14 극도의 공포 (역발상 가능성 존재)",
+        "OI -2.13% 감소 및 CVD -2.25 BTC 매도 우위"
+      ],
+      "reasoning": "약세 시장 구조(5회 구조 이탈)가 지속되는 가운데, 최근 +1.70% 반등은 $71,161 저항대 부근(73% 위치)에서 도지 캔들로 매수 탈진 조짐을 보임. RSI와 MACD 모두에서 히든 약세 다이버전스가 확인되어 기존 하락 추세 지속 가능성이 높음. MACD 골든크로스와 히스토그램 증가가 단기 모멘텀 회복을 시사하나, ADX 20.8(약한 추세)과 극도의 공포(14) 환경에서 반등의 지속력이 제한적. OI -2.13% 감소는 포지션 정리 흐름을 나타내며, SMA 50($70,837)이 상방 저항으로 작용. CVD -2.25 BTC로 매도 압력이 소폭 우세.",
+      "leverage": 1.2,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "54a7fab8-abe4-4454-8edb-f69715a86abd",
       "time": "2026-03-24T20:02:55.712413+00:00",
       "target_open": "2026-03-24T20:00:00+00:00",
@@ -18,11 +91,11 @@
       "reasoning": "베어리시 마켓 구조(LH-LL 패턴, 5회 구조 이탈)가 지속되고 있으며, 최근 3개 캔들이 연속 하락세를 보이고 있다. RSI와 MACD 모두 히든 베어리시 다이버전스를 형성 중이다. 가격은 SMA 20($69,495)과 SMA 50($70,881) 아래에 위치하며, SMA 200($69,069) 바로 위에서 거래 중이다. 직전 캔들이 도지(몸통 -0.02%)로 매우 약한 반등 시도를 보였으나 거래량이 극히 낮아 의미 있는 반전 신호로 보기 어렵다. 다만 MACD 히스토그램이 양전환(86.59)하며 하락 모멘텀 둔화를 시사하고, Fear & Greed 지수 11(극단적 공포)은 과매도 반등 가능성을 내포한다. SMA 200 지지선 근접과 DXY 하락(-0.70%)이 하방 압력을 일부 상쇄하나, 전반적인 구조는 여전히 하락 우위이다.",
       "leverage": 1.0,
       "position_ratio": 0.05,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 1.703570388188485,
+      "predicted_return": -1.903570388188485,
+      "evaluated_at": "2026-03-25T00:00:21.032080+00:00"
     },
     {
       "id": "9b966b99-2fe5-4d71-9073-4ca08046dda2",
@@ -42,11 +115,11 @@
       "reasoning": "현재 시장은 약세 구조가 지속되고 있으며, 최근 5개 캔들 중 4개가 약세입니다. 마지막 캔들은 도지(거의 무변동)로 극도로 낮은 거래량과 함께 매수세 부재를 시사합니다. SMA 20/50 아래에서 거래 중이며, 히든 베어리시 다이버전스(RSI, MACD 모두)가 감지되어 하방 압력이 우세합니다. 다만 MACD 히스토그램이 양전환하며 모멘텀 개선 조짐이 있고, 공포탐욕지수 11(극단적 공포)은 역발상 관점에서 바닥 근접 신호일 수 있어 확신도를 낮게 설정합니다. SMA 200($69,069) 바로 위에서 지지를 받고 있어 급락보다는 소폭 하락 가능성이 높습니다.",
       "leverage": 1.0,
       "position_ratio": 0.05,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 1.703570388188485,
+      "predicted_return": -1.903570388188485,
+      "evaluated_at": "2026-03-25T00:00:20.987943+00:00"
     },
     {
       "id": "f29b136d-78ca-4f52-ab05-d6a342e8ed3e",
@@ -66,11 +139,11 @@
       "reasoning": "현재 시장은 약세 구조가 지속되고 있으며, 최근 5개 캔들 중 4개가 약세입니다. 마지막 캔들은 도지(거의 무변동)로 극도로 낮은 거래량과 함께 매수세 부재를 시사합니다. SMA 20/50 아래에서 거래 중이며, 히든 베어리시 다이버전스(RSI, MACD 모두)가 감지되어 하방 압력이 우세합니다. 다만 MACD 히스토그램이 양전환하며 모멘텀 개선 조짐이 있고, 공포탐욕지수 11(극단적 공포)은 역발상 관점에서 바닥 근접 신호일 수 있어 확신도를 낮게 설정합니다. SMA 200($69,069) 바로 위에서 지지를 받고 있어 급락보다는 소폭 하락 가능성이 높습니다.",
       "leverage": 1.0,
       "position_ratio": 0.05,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 1.703570388188485,
+      "predicted_return": -1.903570388188485,
+      "evaluated_at": "2026-03-25T00:00:21.025823+00:00"
     },
     {
       "id": "7375954c-3bac-4ceb-ad5f-5651aec5ef40",
