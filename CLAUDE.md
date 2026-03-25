@@ -57,11 +57,35 @@ uv run python -m perpetual_predict export --push             # Export and push t
 - `storage/database.py` - Async SQLite via `aiosqlite`, context manager pattern: `async with get_database() as db:`
 - `notifications/discord_webhook.py` - Discord embeds for scheduler status and predictions
 
+## Prediction Cycle (`scheduler/jobs.py`)
+
+`cycle` 명령은 3단계를 순차 실행하며, `fcntl.flock()`으로 동시 실행을 방지한다:
+
+1. **Evaluate**: 대상 캔들이 마감된 미평가 예측(is_correct=NULL)을 찾아 실제 방향과 비교. NEUTRAL 임계값 ±0.2% (수수료 손익분기)
+2. **Collect + Verify**: `collect_with_verification()` — 수집 후 데이터 무결성 검증. 실패 시 5회 재시도 (2s~10s 지수 백오프). 각 재시도마다 Discord 알림
+3. **Predict**: baseline 예측 실행 → 활성 실험이 있으면 variant arm 별도 실행 (10초 쿨다운). 예측 결과로 paper trade 자동 오픈
+
+## Context Builder Module System
+
+`llm/context/builder.py`의 `MarketContextBuilder.build()`:
+1. Binance에서 250개 캔들 fetch → pandas DataFrame 변환
+2. `analyzers/technical/` 8개 모듈로 지표 계산 (trend, momentum, volatility, price_structure, volume, market_structure, divergence, support_resistance)
+3. 추가 데이터 fetch: funding_rates, OI, long_short, fear_greed, liquidations, macro
+4. `MarketContext` dataclass (~126 fields) 조립
+5. `format_prompt(enabled_modules)`: 모듈 이름 → `_section_*()` 매핑으로 프롬프트 생성. `None`이면 `DEFAULT_MODULES` 사용
+
+## Dashboard (`dashboard/`)
+
+React 19 + Vite + TypeScript 정적 앱. 백엔드 API 없이 `export` 명령이 생성한 JSON 파일(`dashboard/data/*.json`)을 fetch하여 렌더링. Vercel 배포.
+
+- `predictions.json`, `trades.json`, `metrics.json`, `meta.json`, `experiments.json`
+- Tabs: Predictions (적중률, 신뢰도), Trading (PnL, 승률, 드로다운), Experiments (control vs variant)
+
 ## Key Patterns
 
 - **Async context managers**: Database uses `async with get_database() as db:` pattern
 - **Parallel API calls**: Collectors use `asyncio.gather(..., return_exceptions=True)` for concurrent requests
-- **File locking**: `cycle` command uses `fcntl.flock()` to prevent concurrent execution
+- **Sync library wrapping**: yfinance, fredapi 등 동기 라이브러리는 `asyncio.get_running_loop().run_in_executor(None, sync_method, args)` 패턴으로 래핑
 - **Structured LLM output**: Predictions use JSON schema validation with fallback text parsing
 - **Settings singleton**: `get_settings()` lazily loads from env vars, use `reload_settings()` to refresh
 
