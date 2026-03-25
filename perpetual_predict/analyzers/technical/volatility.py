@@ -121,45 +121,6 @@ def calculate_atr_ratio(
     return atr / atr_avg.replace(0, float("nan"))
 
 
-def interpret_bb_squeeze(is_squeeze: bool, atr_ratio: float) -> str:
-    """Interpret BB squeeze for LLM context.
-
-    Args:
-        is_squeeze: Whether squeeze is detected.
-        atr_ratio: ATR ratio value.
-
-    Returns:
-        Human-readable interpretation.
-    """
-    if is_squeeze:
-        return "SQUEEZE DETECTED - Expect volatility expansion"
-    elif atr_ratio < 0.7:
-        return "Low volatility - potential squeeze forming"
-    elif atr_ratio > 1.5:
-        return "High volatility"
-    else:
-        return "Normal volatility"
-
-
-def interpret_atr_ratio(atr_ratio: float) -> str:
-    """Interpret ATR ratio for LLM context.
-
-    Args:
-        atr_ratio: ATR ratio value.
-
-    Returns:
-        Human-readable interpretation.
-    """
-    if atr_ratio > 2.0:
-        return "Extreme volatility"
-    elif atr_ratio > 1.5:
-        return "High volatility"
-    elif atr_ratio > 1.0:
-        return "Above average"
-    elif atr_ratio > 0.7:
-        return "Below average"
-    else:
-        return "Low volatility"
 
 
 def add_volatility_indicators(

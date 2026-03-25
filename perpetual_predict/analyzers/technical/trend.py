@@ -105,31 +105,6 @@ def calculate_ema_distance(df: pd.DataFrame, ema_period: int) -> pd.Series:
     return result.fillna(0.0)
 
 
-def interpret_ema_distance(distance: float, period: int) -> str:
-    """Interpret EMA distance for LLM context.
-
-    Args:
-        distance: EMA distance percentage.
-        period: EMA period for context.
-
-    Returns:
-        Human-readable interpretation.
-    """
-    # Shorter EMAs tolerate larger deviations
-    threshold_strong = 3.0 if period <= 21 else 5.0 if period <= 55 else 8.0
-    threshold_moderate = 1.5 if period <= 21 else 2.5 if period <= 55 else 4.0
-
-    if distance > threshold_strong:
-        return "Strongly Above (Overextended)"
-    elif distance > threshold_moderate:
-        return "Above"
-    elif distance < -threshold_strong:
-        return "Strongly Below (Oversold)"
-    elif distance < -threshold_moderate:
-        return "Below"
-    else:
-        return "Near EMA"
-
 
 def add_trend_indicators(
     df: pd.DataFrame,

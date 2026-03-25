@@ -73,32 +73,6 @@ def calculate_cvd_ratio(df: pd.DataFrame) -> pd.Series:
     return cvd / df["volume"].replace(0, float("nan"))
 
 
-def interpret_cvd(cvd_value: float, volume: float) -> str:
-    """Interpret CVD value for LLM context.
-
-    Args:
-        cvd_value: Raw CVD value.
-        volume: Total volume for context.
-
-    Returns:
-        Human-readable interpretation.
-    """
-    if volume == 0:
-        return "No Volume"
-
-    cvd_ratio = cvd_value / volume
-
-    if cvd_ratio > 0.3:
-        return "Strong Buy Pressure"
-    elif cvd_ratio > 0.1:
-        return "Buy Pressure"
-    elif cvd_ratio < -0.3:
-        return "Strong Sell Pressure"
-    elif cvd_ratio < -0.1:
-        return "Sell Pressure"
-    else:
-        return "Balanced"
-
 
 def add_volume_indicators(
     df: pd.DataFrame,

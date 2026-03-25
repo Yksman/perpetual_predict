@@ -4,52 +4,56 @@ import pandas as pd
 
 
 def calculate_body_ratio(df: pd.DataFrame) -> pd.Series:
-    """Calculate candle body ratio (close - open) / open.
+    """Calculate candle body ratio abs(close - open) / (high - low).
 
-    Positive = bullish candle, negative = bearish candle.
-    Magnitude indicates strength of the move.
+    Measures what fraction of the candle range is body vs wicks.
+    0.0 = doji (no body), 1.0 = marubozu (all body, no wicks).
 
     Args:
-        df: DataFrame with open and close columns.
+        df: DataFrame with OHLC columns.
 
     Returns:
-        Series with body ratio values.
+        Series with body ratio values (0.0 to 1.0).
     """
-    return (df["close"] - df["open"]) / df["open"]
+    candle_range = df["high"] - df["low"]
+    body = (df["close"] - df["open"]).abs()
+    return body / candle_range.replace(0, float("nan"))
 
 
 def calculate_upper_wick_ratio(df: pd.DataFrame) -> pd.Series:
-    """Calculate upper wick ratio relative to close price.
+    """Calculate upper wick ratio relative to candle range.
 
     Upper wick = high - max(open, close)
-    Large upper wick suggests selling pressure / rejection.
+    Fraction of the candle range that is upper wick.
 
     Args:
         df: DataFrame with OHLC data.
 
     Returns:
-        Series with upper wick ratio values.
+        Series with upper wick ratio values (0.0 to 1.0).
     """
+    candle_range = df["high"] - df["low"]
     body_top = df[["open", "close"]].max(axis=1)
     upper_wick = df["high"] - body_top
-    return upper_wick / df["close"]
+    return upper_wick / candle_range.replace(0, float("nan"))
 
 
 def calculate_lower_wick_ratio(df: pd.DataFrame) -> pd.Series:
-    """Calculate lower wick ratio relative to close price.
+    """Calculate lower wick ratio relative to candle range.
 
     Lower wick = min(open, close) - low
-    Large lower wick suggests buying pressure / support.
+    Fraction of the candle range that is lower wick.
 
     Args:
         df: DataFrame with OHLC data.
 
     Returns:
-        Series with lower wick ratio values.
+        Series with lower wick ratio values (0.0 to 1.0).
     """
+    candle_range = df["high"] - df["low"]
     body_bottom = df[["open", "close"]].min(axis=1)
     lower_wick = body_bottom - df["low"]
-    return lower_wick / df["close"]
+    return lower_wick / candle_range.replace(0, float("nan"))
 
 
 def calculate_close_in_range(df: pd.DataFrame) -> pd.Series:
@@ -123,43 +127,3 @@ def add_price_structure_indicators(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
-def interpret_body_ratio(body_ratio: float) -> str:
-    """Interpret body ratio value for LLM context."""
-    if body_ratio > 0.02:
-        return "Strong Bullish"
-    elif body_ratio > 0.005:
-        return "Bullish"
-    elif body_ratio < -0.02:
-        return "Strong Bearish"
-    elif body_ratio < -0.005:
-        return "Bearish"
-    else:
-        return "Doji/Indecision"
-
-
-def interpret_close_in_range(close_in_range: float) -> str:
-    """Interpret close position for LLM context."""
-    if close_in_range > 0.8:
-        return "Near High (Bullish Control)"
-    elif close_in_range > 0.6:
-        return "Upper Half"
-    elif close_in_range < 0.2:
-        return "Near Low (Bearish Control)"
-    elif close_in_range < 0.4:
-        return "Lower Half"
-    else:
-        return "Middle (Indecision)"
-
-
-def interpret_volume_ratio(volume_ratio: float) -> str:
-    """Interpret volume ratio for LLM context."""
-    if volume_ratio > 2.0:
-        return "Very High Volume"
-    elif volume_ratio > 1.5:
-        return "High Volume"
-    elif volume_ratio > 1.0:
-        return "Increasing Volume"
-    elif volume_ratio > 0.7:
-        return "Decreasing Volume"
-    else:
-        return "Low Volume"

@@ -10,9 +10,6 @@ from perpetual_predict.analyzers.technical.market_structure import analyze_marke
 from perpetual_predict.analyzers.technical.momentum import add_momentum_indicators
 from perpetual_predict.analyzers.technical.price_structure import (
     add_price_structure_indicators,
-    interpret_body_ratio,
-    interpret_close_in_range,
-    interpret_volume_ratio,
 )
 from perpetual_predict.analyzers.technical.support_resistance import (
     calculate_nearest_levels,
@@ -20,12 +17,9 @@ from perpetual_predict.analyzers.technical.support_resistance import (
 )
 from perpetual_predict.analyzers.technical.trend import (
     add_trend_indicators,
-    interpret_ema_distance,
 )
 from perpetual_predict.analyzers.technical.volatility import (
     add_volatility_indicators,
-    interpret_atr_ratio,
-    interpret_bb_squeeze,
 )
 from perpetual_predict.analyzers.technical.volume import add_volume_indicators
 from perpetual_predict.storage.database import Database
@@ -213,27 +207,22 @@ class MarketContext:
         )
 
     def _section_candle_structure(self) -> str:
-        body_interp = interpret_body_ratio(self.body_ratio)
-        close_pos_interp = interpret_close_in_range(self.close_in_range)
-        volume_interp = interpret_volume_ratio(self.volume_ratio)
         return (
             f"### Candle Structure (Latest)\n"
-            f"- Body Ratio: {self.body_ratio:.4f} ({body_interp})\n"
+            f"- Body Ratio: {self.body_ratio:.4f}\n"
             f"- Upper Wick: {self.upper_wick_ratio:.4f}\n"
             f"- Lower Wick: {self.lower_wick_ratio:.4f}\n"
-            f"- Close Position: {self.close_in_range:.1%} ({close_pos_interp})\n"
-            f"- Volume vs Prev: {self.volume_ratio:.2f}x ({volume_interp})"
+            f"- Close Position: {self.close_in_range:.1%}\n"
+            f"- Volume vs Prev: {self.volume_ratio:.2f}x"
         )
 
     def _section_ema_distance(self) -> str:
-        ema9_interp = interpret_ema_distance(self.dist_ema_9, 9)
-        ema200_interp = interpret_ema_distance(self.dist_ema_200, 200)
         return (
             f"### EMA Distance (Trend Strength)\n"
-            f"- EMA 9: {self.dist_ema_9:+.2f}% ({ema9_interp})\n"
+            f"- EMA 9: {self.dist_ema_9:+.2f}%\n"
             f"- EMA 21: {self.dist_ema_21:+.2f}%\n"
             f"- EMA 55: {self.dist_ema_55:+.2f}%\n"
-            f"- EMA 200: {self.dist_ema_200:+.2f}% ({ema200_interp})"
+            f"- EMA 200: {self.dist_ema_200:+.2f}%"
         )
 
     def _section_trend(self) -> str:
@@ -258,8 +247,6 @@ class MarketContext:
         )
 
     def _section_volatility(self) -> str:
-        atr_interp = interpret_atr_ratio(self.atr_ratio)
-        squeeze_interp = interpret_bb_squeeze(self.bb_squeeze, self.atr_ratio)
         bb_range = self.bb_upper - self.bb_lower
         if bb_range > 0:
             bb_pct = (self.current_price - self.bb_lower) / bb_range * 100
@@ -269,8 +256,8 @@ class MarketContext:
         return (
             f"### Volatility\n"
             f"- ATR (14): ${self.atr:,.2f} ({self.atr / self.current_price * 100:.2f}% of price)\n"
-            f"- ATR Ratio: {self.atr_ratio:.2f} ({atr_interp})\n"
-            f'- BB Squeeze: {"YES" if self.bb_squeeze else "No"} ({squeeze_interp})\n'
+            f"- ATR Ratio: {self.atr_ratio:.2f}\n"
+            f'- BB Squeeze: {"YES" if self.bb_squeeze else "No"}\n'
             f"- Bollinger Bands: Upper ${self.bb_upper:,.2f} | Middle ${self.bb_middle:,.2f} | Lower ${self.bb_lower:,.2f}\n"
             f"- Price Position: {bb_pos}"
         )
