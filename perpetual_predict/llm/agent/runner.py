@@ -104,6 +104,7 @@ async def run_prediction_agent(
     cmd = [
         "claude",
         "-p",  # headless/print mode
+        "--agent", "predictor",
         "--output-format", "json",
         "--json-schema", PREDICTION_SCHEMA,
         market_context,

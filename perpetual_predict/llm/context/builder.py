@@ -27,10 +27,7 @@ from perpetual_predict.analyzers.technical.volatility import (
     interpret_atr_ratio,
     interpret_bb_squeeze,
 )
-from perpetual_predict.analyzers.technical.volume import (
-    add_volume_indicators,
-    interpret_cvd,
-)
+from perpetual_predict.analyzers.technical.volume import add_volume_indicators
 from perpetual_predict.storage.database import Database
 from perpetual_predict.storage.models import (
     Candle,
@@ -243,14 +240,6 @@ class MarketContext:
         sma_20_pos = "above" if self.current_price > self.sma_20 else "below"
         sma_50_pos = "above" if self.current_price > self.sma_50 else "below"
         sma_200_pos = "above" if self.current_price > self.sma_200 else "below"
-        macd_trend = "Bullish" if self.macd > self.macd_signal else "Bearish"
-        macd_momentum = "Increasing" if self.macd_histogram > 0 else "Decreasing"
-        if self.adx > 50:
-            adx_interp = "Very Strong Trend"
-        elif self.adx > 25:
-            adx_interp = "Strong Trend"
-        else:
-            adx_interp = "Weak/No Trend"
         return (
             f"### Trend Indicators\n"
             f"- SMA 20: ${self.sma_20:,.2f} (Price {sma_20_pos})\n"
@@ -258,20 +247,13 @@ class MarketContext:
             f"- SMA 200: ${self.sma_200:,.2f} (Price {sma_200_pos})\n"
             f"- EMA 12/26: ${self.ema_12:,.2f} / ${self.ema_26:,.2f}\n"
             f"- MACD: {self.macd:.2f} | Signal: {self.macd_signal:.2f} | Histogram: {self.macd_histogram:.2f}\n"
-            f"- MACD Status: {macd_trend}, momentum {macd_momentum}\n"
-            f"- ADX: {self.adx:.1f} ({adx_interp})"
+            f"- ADX: {self.adx:.1f}"
         )
 
     def _section_momentum(self) -> str:
-        if self.rsi > 70:
-            rsi_interp = "Overbought"
-        elif self.rsi < 30:
-            rsi_interp = "Oversold"
-        else:
-            rsi_interp = "Neutral"
         return (
             f"### Momentum Indicators\n"
-            f"- RSI (14): {self.rsi:.1f} ({rsi_interp})\n"
+            f"- RSI (14): {self.rsi:.1f}\n"
             f"- Stochastic RSI: K={self.stoch_rsi_k:.1f}, D={self.stoch_rsi_d:.1f}"
         )
 
@@ -294,50 +276,29 @@ class MarketContext:
         )
 
     def _section_cvd(self) -> str:
-        cvd_interp = interpret_cvd(self.cvd, self.volume_24h / 6 if self.volume_24h > 0 else 1)
         return (
-            f"### CVD (Buy/Sell Pressure)\n"
+            f"### CVD (Cumulative Volume Delta)\n"
             f"- CVD 4H: {self.cvd:+,.2f} BTC\n"
-            f"- CVD Ratio: {self.cvd_ratio:+.2f} ({cvd_interp})"
+            f"- CVD Ratio: {self.cvd_ratio:+.2f}"
         )
 
     def _section_liquidation(self) -> str:
-        total_liq = self.long_liquidation_volume + self.short_liquidation_volume
-        if total_liq < 1.0:
-            liq_interp = "Low liquidation activity"
-        elif self.liquidation_imbalance > 0.3:
-            liq_interp = "More longs liquidated (bearish)"
-        elif self.liquidation_imbalance < -0.3:
-            liq_interp = "More shorts liquidated (bullish)"
-        else:
-            liq_interp = "Balanced liquidations"
         return (
-            f"### Liquidation Pressure\n"
+            f"### Liquidations\n"
             f"- Long Liquidations: {self.long_liquidation_volume:.4f} BTC\n"
             f"- Short Liquidations: {self.short_liquidation_volume:.4f} BTC\n"
-            f"- Imbalance: {self.liquidation_imbalance:+.2f} ({liq_interp})"
+            f"- Imbalance: {self.liquidation_imbalance:+.2f}"
         )
 
     def _section_sentiment(self) -> str:
-        if self.funding_rate > 0.03:
-            funding_interp = "Extreme Long Bias (reversal risk)"
-        elif self.funding_rate > 0.01:
-            funding_interp = "Long Bias"
-        elif self.funding_rate < -0.03:
-            funding_interp = "Extreme Short Bias (reversal risk)"
-        elif self.funding_rate < -0.01:
-            funding_interp = "Short Bias"
-        else:
-            funding_interp = "Neutral"
-        ls_desc = "Longs dominate" if self.long_short_ratio > 1 else "Shorts dominate" if self.long_short_ratio < 1 else "Balanced"
         return (
             f"### Market Sentiment\n"
-            f"- Funding Rate: {self.funding_rate * 100:.4f}% ({funding_interp})\n"
+            f"- Funding Rate: {self.funding_rate * 100:.4f}%\n"
             f"- Funding 8H Ago: {self.funding_rate_8h_ago * 100:.4f}%\n"
             f"- Funding Change: {(self.funding_rate - self.funding_rate_8h_ago) * 100:+.4f}%\n"
             f"- Open Interest: ${self.open_interest:,.0f}\n"
             f"- OI 24H Change: {self.oi_change_24h:+.2f}%\n"
-            f"- Long/Short Ratio: {self.long_short_ratio:.2f} ({ls_desc})\n"
+            f"- Long/Short Ratio: {self.long_short_ratio:.2f}\n"
             f"- Fear & Greed Index: {self.fear_greed_value} ({self.fear_greed_classification})"
         )
 
@@ -402,12 +363,7 @@ class MarketContext:
 
     def _section_footer(self, include_portfolio: bool = True) -> str:
         portfolio = self._format_portfolio_section() if include_portfolio else ""
-        return (
-            f"---\n"
-            f"Based on this analysis, predict the direction of the CURRENT {self.timeframe} candle (just started).\n"
-            f"{portfolio}"
-            f"**중요: 모든 응답(reasoning, key_factors, trading_reasoning)은 반드시 한국어로 작성하세요.**"
-        )
+        return f"---\n{portfolio}" if portfolio else ""
 
     def _format_levels_section(self) -> str:
         """Format support/resistance levels section."""
@@ -450,11 +406,6 @@ class MarketContext:
 - Consecutive Losses: {self.portfolio_consecutive_losses}
 - Recent Trades:
 {self.portfolio_recent_trades}
-
-위 포트폴리오 상태를 고려하여 leverage(1.0~3.0)와 position_ratio(0.0~1.0)를 결정하세요.
-- 연속 손실 중이면 포지션을 줄이는 것을 고려
-- 높은 확신도에서만 높은 레버리지 사용
-- MDD가 클 때는 보수적으로 접근
 """
 
 
