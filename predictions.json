@@ -1,6 +1,77 @@
 {
   "predictions": [
     {
+      "id": "50b03fcb-5218-468f-999d-b306c407b06c",
+      "time": "2026-03-25T12:03:24.131237+00:00",
+      "target_open": "2026-03-25T12:00:00+00:00",
+      "target_close": "2026-03-25T16:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.42,
+      "key_factors": [
+        "저항선($71,769) 0.13% 근접 — 레인지 97% 위치에서 매물 압력 예상",
+        "StochRSI K=94.6 극단적 과매수 — 단기 되돌림 가능성 높음",
+        "RSI·MACD Hidden Bearish 다이버전스 — 상승 모멘텀 약화 시그널",
+        "CVD -31.49 BTC 음수 — 가격 상승에도 순매도 흐름 지속",
+        "ADX 18.4 약한 추세 강도 — 돌파보다 반전 확률 우세",
+        "5연속 양봉 및 전 SMA 상회 — 하방 확신 제한 요인",
+        "Fear & Greed 14 극단적 공포 vs 가격 상승 — 센티먼트 괴리"
+      ],
+      "reasoning": "가격이 주요 저항선($71,769)에 0.13% 거리로 근접해 있으며 레인지 내 97% 위치에 도달했다. StochRSI가 K=94.6으로 극단적 과매수 상태이고, RSI와 MACD 모두 Hidden Bearish 다이버전스를 보이고 있다(가격 LH에 지표 HH). CVD -31.49 BTC로 매도 압력이 존재하며, ADX 18.4로 현재 상승 추세의 힘이 약하다. 다만 5연속 양봉과 모든 SMA 위 가격, 양의 MACD 히스토그램이 하방 확신을 제한한다. Fear & Greed 14(극단적 공포)와 가격 상승의 괴리도 주목할 부분이다. DXY 강세(+0.49%)와 미 증시 약세도 단기 하방 압력 요인이다.",
+      "leverage": 1.0,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "d74f0fc0-59f6-4380-8303-b75ba9ca0d00",
+      "time": "2026-03-25T12:02:03.340927+00:00",
+      "target_open": "2026-03-25T12:00:00+00:00",
+      "target_close": "2026-03-25T16:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.45,
+      "key_factors": [
+        "저항선 $71,769 직전 도달 (범위 내 97%), 상단 꼬리 51.6% 소진형 캔들",
+        "Stoch RSI K=94.6 과매수 극단 + RSI/MACD Hidden Bearish Divergence",
+        "CVD -31.49 BTC 순매도 — 가격 상승 속 분배 징후",
+        "ADX 18.4 약세 추세 강도로 저항 돌파 모멘텀 부족",
+        "5연속 양봉 + 전 EMA 상향배열로 하방 리스크 제한"
+      ],
+      "reasoning": "5연속 양봉으로 $69,343→$71,677까지 강하게 반등했으나, 다음 4H 캔들에서는 단기 조정 가능성이 우세하다.\n\n핵심 약세 근거:\n1) 최근 캔들이 저항선 $71,769 바로 아래에서 body ratio 0.48, 상단 꼬리 51.6%의 소진형 패턴을 형성 — 매수세 약화 신호\n2) Stochastic RSI K=94.6/D=87.5로 과매수 극단 영역 진입\n3) RSI·MACD 모두 Hidden Bearish Divergence 확인 — 가격은 LH인데 지표는 HH로 추세 피로 시사\n4) CVD -31.49 BTC — 가격 상승에도 순매도 우위, 분배(distribution) 징후\n5) 지지/저항 범위 내 97% 위치로 저항대 직전 밀집\n\n강세 요인 (리스크):\n- EMA/SMA 전 구간 상향 배열, MACD 히스토그램 +242로 모멘텀 건재\n- Fear & Greed 14 (극단적 공포)는 역발상 매수 시그널\n- Funding rate 하락 중 (롱 포지션 과밀 해소)\n- 5연속 양봉 모멘텀이 저항 돌파로 이어질 가능성 잔존\n\nADX 18.4로 추세 강도 자체가 약하여, 저항대 근접 + 과매수 + 다이버전스 조합은 단기 되돌림에 무게를 실어준다. 다만 반등 추세가 강력하므로 확신도는 낮게 설정.",
+      "leverage": 1.0,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "39073ccf-d750-47b4-9d96-89f8505dcff3",
+      "time": "2026-03-25T12:02:03.340927+00:00",
+      "target_open": "2026-03-25T12:00:00+00:00",
+      "target_close": "2026-03-25T16:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.45,
+      "key_factors": [
+        "저항선 $71,769 직전 도달 (범위 내 97%), 상단 꼬리 51.6% 소진형 캔들",
+        "Stoch RSI K=94.6 과매수 극단 + RSI/MACD Hidden Bearish Divergence",
+        "CVD -31.49 BTC 순매도 — 가격 상승 속 분배 징후",
+        "ADX 18.4 약세 추세 강도로 저항 돌파 모멘텀 부족",
+        "5연속 양봉 + 전 EMA 상향배열로 하방 리스크 제한"
+      ],
+      "reasoning": "5연속 양봉으로 $69,343→$71,677까지 강하게 반등했으나, 다음 4H 캔들에서는 단기 조정 가능성이 우세하다.\n\n핵심 약세 근거:\n1) 최근 캔들이 저항선 $71,769 바로 아래에서 body ratio 0.48, 상단 꼬리 51.6%의 소진형 패턴을 형성 — 매수세 약화 신호\n2) Stochastic RSI K=94.6/D=87.5로 과매수 극단 영역 진입\n3) RSI·MACD 모두 Hidden Bearish Divergence 확인 — 가격은 LH인데 지표는 HH로 추세 피로 시사\n4) CVD -31.49 BTC — 가격 상승에도 순매도 우위, 분배(distribution) 징후\n5) 지지/저항 범위 내 97% 위치로 저항대 직전 밀집\n\n강세 요인 (리스크):\n- EMA/SMA 전 구간 상향 배열, MACD 히스토그램 +242로 모멘텀 건재\n- Fear & Greed 14 (극단적 공포)는 역발상 매수 시그널\n- Funding rate 하락 중 (롱 포지션 과밀 해소)\n- 5연속 양봉 모멘텀이 저항 돌파로 이어질 가능성 잔존\n\nADX 18.4로 추세 강도 자체가 약하여, 저항대 근접 + 과매수 + 다이버전스 조합은 단기 되돌림에 무게를 실어준다. 다만 반등 추세가 강력하므로 확신도는 낮게 설정.",
+      "leverage": 1.0,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "822431e9-e10e-425a-ad46-6a817e7768c8",
       "time": "2026-03-25T08:02:43.403387+00:00",
       "target_open": "2026-03-25T08:00:00+00:00",
@@ -18,11 +89,11 @@
       "reasoning": "저항선 근접($71,161, +0.36%)에서 최근 캔들의 상단 윅이 63.25%로 매우 크고 하단 윅이 0%인 점은 고점 매도 압력을 시사한다. RSI와 MACD 모두 히든 베어리시 다이버전스(가격 LH $71,790→$71,378 vs RSI/MACD HH)를 형성하고 있어 추세 반전 가능성이 높아졌다. ADX 18.2로 현재 추세 강도가 매우 약하며, 볼린저밴드 중앙(50%) 위치에서 방향성 부재. DXY 강세(+0.49%)와 S&P(-0.37%), NASDAQ(-0.84%) 약세가 위험자산에 부정적이다. 롱숏비 1.67로 롱 포지션이 과밀한 상태에서 펀딩비는 하락 중(-0.0012%), Fear & Greed 14(극심한 공포)와 상충되어 시장 혼조. 거래량이 전 캔들 대비 0.00x로 매수 모멘텀 부재. 다만 가격이 모든 주요 SMA 위에 있고 MACD 히스토그램이 양수(+175.97)인 점이 급락을 제한할 수 있어 확신도는 중간 수준.",
       "leverage": 1.0,
       "position_ratio": 0.08,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 1.0583935943492286,
+      "predicted_return": -1.2583935943492286,
+      "evaluated_at": "2026-03-25T12:00:20.058343+00:00"
     },
     {
       "id": "b6afa752-f48c-480e-9102-2a40586a3820",
@@ -43,11 +114,11 @@
       "reasoning": "복합적 약세 신호가 우세하나 확신도는 낮음. 주요 근거: (1) 히든 베어리시 다이버전스 - RSI와 MACD 모두 가격 LH에서 지표 HH를 형성, 이는 하락 추세 지속 신호. (2) 시장 구조 Bearish 판정, 5회 구조 이탈 발생으로 불안정. (3) Fear & Greed 14 극단적 공포 구간 — 단기 추가 하락 가능하나 반등 트리거도 될 수 있음. (4) 현재 가격이 레인지 89% 위치로 저항대($71,161) 바로 아래, 상승 여력 제한적. (5) ADX 18.2로 추세 강도 매우 약함 — 명확한 방향성 부재. 반면 상승 요인: EMA 전구간 위 포지션, 최근 4봉 연속 양봉, CVD +12.61 BTC 매수 우위, 펀딩레이트 하락(-0.0012%)으로 숏 포지션 정리 조짐, L/S 비율 1.67 롱 과잉은 오히려 숏 스퀴즈 가능성도 내포.",
       "leverage": 1.0,
       "position_ratio": 0.05,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 1.0583935943492286,
+      "predicted_return": -1.2583935943492286,
+      "evaluated_at": "2026-03-25T12:00:20.000330+00:00"
     },
     {
       "id": "1fe143ed-91b9-4634-880e-942a78339df6",
@@ -68,11 +139,11 @@
       "reasoning": "복합적 약세 신호가 우세하나 확신도는 낮음. 주요 근거: (1) 히든 베어리시 다이버전스 - RSI와 MACD 모두 가격 LH에서 지표 HH를 형성, 이는 하락 추세 지속 신호. (2) 시장 구조 Bearish 판정, 5회 구조 이탈 발생으로 불안정. (3) Fear & Greed 14 극단적 공포 구간 — 단기 추가 하락 가능하나 반등 트리거도 될 수 있음. (4) 현재 가격이 레인지 89% 위치로 저항대($71,161) 바로 아래, 상승 여력 제한적. (5) ADX 18.2로 추세 강도 매우 약함 — 명확한 방향성 부재. 반면 상승 요인: EMA 전구간 위 포지션, 최근 4봉 연속 양봉, CVD +12.61 BTC 매수 우위, 펀딩레이트 하락(-0.0012%)으로 숏 포지션 정리 조짐, L/S 비율 1.67 롱 과잉은 오히려 숏 스퀴즈 가능성도 내포.",
       "leverage": 1.0,
       "position_ratio": 0.05,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 1.0583935943492286,
+      "predicted_return": -1.2583935943492286,
+      "evaluated_at": "2026-03-25T12:00:20.044306+00:00"
     },
     {
       "id": "df059884-bdeb-433f-9cfa-c01cb31aedce",

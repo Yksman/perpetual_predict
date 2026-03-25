@@ -1,6 +1,22 @@
 {
   "trades": [
     {
+      "id": "f04c93e7-29a0-4549-a6d7-f428814d2cb8",
+      "prediction_id": "b6afa752-f48c-480e-9102-2a40586a3820",
+      "side": "SHORT",
+      "leverage": 1.0,
+      "position_size": 49.910811341719835,
+      "position_ratio": 0.05,
+      "entry_price": 70899.9,
+      "entry_time": "2026-03-25T08:01:17.438614+00:00",
+      "exit_price": 71650.3,
+      "exit_time": "2026-03-25T12:00:20.038514+00:00",
+      "net_pnl": -0.6280744528119308,
+      "return_pct": -1.2583935943492286,
+      "balance_after": 997.5881523815847,
+      "confidence": 0.45
+    },
+    {
       "id": "94767077-4705-4be2-bb2f-dfcf6de82025",
       "prediction_id": "565620ae-fad1-4eb1-90ae-96bf3127f347",
       "side": "SHORT",
