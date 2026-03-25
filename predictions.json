@@ -1,6 +1,80 @@
 {
   "predictions": [
     {
+      "id": "e0cb6503-083a-4a70-b6d1-961627ee03c7",
+      "time": "2026-03-25T20:03:15.336759+00:00",
+      "target_open": "2026-03-25T20:00:00+00:00",
+      "target_close": "2026-03-26T00:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.42,
+      "key_factors": [
+        "MACD Regular Bearish + Hidden Bearish + RSI Hidden Bearish 3중 다이버전스 — 상승 모멘텀 고갈",
+        "$72,000 저항 거부 후 횡보, 레인지 87% 위치로 상방 여력 제한",
+        "ADX 16.9 추세 부재 + 최근 캔들 거래량 0.00x — 방향성 결여",
+        "DXY 강세(+0.49%), 미국 증시 약세(SPX -0.37%, NASDAQ -0.84%) — 위험자산 비우호적 매크로",
+        "Fear & Greed 14 극단적 공포 — 역발상 매수 가능성으로 하락 폭 제한 요인",
+        "Stoch RSI K(58.3)가 D(70.0) 하회, 단기 모멘텀 하락 전환 신호"
+      ],
+      "reasoning": "다중 베어리시 다이버전스가 핵심 하락 시그널이다. RSI Hidden Bearish(가격 LH vs RSI HH), MACD Hidden Bearish, MACD Regular Bearish 3개가 동시에 포착되어 상승 모멘텀 소진을 시사한다. $72,000 고점 터치 후 급락(-1.20%)하고 현재 $70,869에서 극도로 낮은 거래량(0.00x)으로 횡보 중이며, 최근 캔들이 Doji → 미세 양봉으로 매수세 부재를 보여준다. 저항선 $71,161까지 0.41%밖에 남지 않았고 지지-저항 레인지의 87% 위치로 상방 여력이 제한적이다. 매크로 환경도 부정적: DXY +0.49% 강세, S&P -0.37%, NASDAQ -0.84%로 위험자산 선호 약화. ADX 16.9로 추세 부재 상태에서 Stoch RSI K가 D를 하향 돌파하며 단기 약세 전환 신호. 다만 Fear & Greed 14(극단적 공포)가 역발상 매수 트리거가 될 수 있고, 펀딩레이트 상승(+0.0036%)과 OI +3.13% 증가는 롱 포지션 축적을 나타내어 하방 압력을 제한할 가능성이 있다.",
+      "leverage": 1.0,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "c15b5fcb-5df1-4ac1-800b-bc226abf538f",
+      "time": "2026-03-25T20:01:50.376805+00:00",
+      "target_open": "2026-03-25T20:00:00+00:00",
+      "target_close": "2026-03-26T00:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.42,
+      "key_factors": [
+        "MACD 정규 약세 다이버전스: 가격 HH($72,000) vs MACD LH(224) — 상승 모멘텀 약화 확인",
+        "$72,000 고점 거부 후 횡보 — 최근 5캔들 중 -1.20% 급락 뒤 회복 실패",
+        "3중 약세 다이버전스(RSI Hidden + MACD Hidden + MACD Regular) 동시 발생",
+        "S/R 범위 87% 위치로 저항 근접(+0.41%), 지지까지 -2.84% — 비대칭 리스크",
+        "펀딩 레이트 +0.0036%p 급등 + OI +3.13% — 레버리지 롱 과열 징후",
+        "ADX 16.9 극저로 무추세 환경 — 방향성 베팅 신뢰도 제한",
+        "Fear&Greed 14 극단적 공포 — 역발상 매수 압력 가능성 상존"
+      ],
+      "reasoning": "$72,000 고점에서 강한 거부(-1.20%) 후 두 캔들 연속 횡보(도지 + 미미한 양봉)로, 상승 모멘텀 소진 패턴을 보인다. MACD 정규 약세 다이버전스(가격 HH $71,378→$72,000 vs MACD LH 357→224)가 가장 핵심 신호이며, RSI·MACD 히든 약세 다이버전스까지 3중으로 확인된다. ADX 16.9로 추세 부재 상태에서 가격이 S/R 범위 87% 지점(저항 $71,161 불과 +0.41%)에 위치해 상방 여력이 제한적이다. Stoch RSI K(58.3)가 D(70.0) 하방 교차 중이며, 펀딩 레이트가 +0.0036%p 급등하면서 레버리지 롱 포지션이 쌓이고 있어 숏 스퀴즈 리스크보다는 롱 청산 압력이 더 우려된다. 다만 Fear&Greed 14(극단적 공포)는 역발상 매수 시그널이 될 수 있고, 가격이 모든 주요 이평선(SMA 20/50/200) 위에 있어 구조적 하방 전환은 아직 아니므로 확신도를 낮게 설정한다.",
+      "leverage": 1.0,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "fa503323-1ab4-4cf3-be78-94839e100f58",
+      "time": "2026-03-25T20:01:50.376805+00:00",
+      "target_open": "2026-03-25T20:00:00+00:00",
+      "target_close": "2026-03-26T00:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.42,
+      "key_factors": [
+        "MACD 정규 약세 다이버전스: 가격 HH($72,000) vs MACD LH(224) — 상승 모멘텀 약화 확인",
+        "$72,000 고점 거부 후 횡보 — 최근 5캔들 중 -1.20% 급락 뒤 회복 실패",
+        "3중 약세 다이버전스(RSI Hidden + MACD Hidden + MACD Regular) 동시 발생",
+        "S/R 범위 87% 위치로 저항 근접(+0.41%), 지지까지 -2.84% — 비대칭 리스크",
+        "펀딩 레이트 +0.0036%p 급등 + OI +3.13% — 레버리지 롱 과열 징후",
+        "ADX 16.9 극저로 무추세 환경 — 방향성 베팅 신뢰도 제한",
+        "Fear&Greed 14 극단적 공포 — 역발상 매수 압력 가능성 상존"
+      ],
+      "reasoning": "$72,000 고점에서 강한 거부(-1.20%) 후 두 캔들 연속 횡보(도지 + 미미한 양봉)로, 상승 모멘텀 소진 패턴을 보인다. MACD 정규 약세 다이버전스(가격 HH $71,378→$72,000 vs MACD LH 357→224)가 가장 핵심 신호이며, RSI·MACD 히든 약세 다이버전스까지 3중으로 확인된다. ADX 16.9로 추세 부재 상태에서 가격이 S/R 범위 87% 지점(저항 $71,161 불과 +0.41%)에 위치해 상방 여력이 제한적이다. Stoch RSI K(58.3)가 D(70.0) 하방 교차 중이며, 펀딩 레이트가 +0.0036%p 급등하면서 레버리지 롱 포지션이 쌓이고 있어 숏 스퀴즈 리스크보다는 롱 청산 압력이 더 우려된다. 다만 Fear&Greed 14(극단적 공포)는 역발상 매수 시그널이 될 수 있고, 가격이 모든 주요 이평선(SMA 20/50/200) 위에 있어 구조적 하방 전환은 아직 아니므로 확신도를 낮게 설정한다.",
+      "leverage": 1.0,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "398fdd3b-ea0a-4691-8ee5-5474b7504cb2",
       "time": "2026-03-25T16:03:01.718430+00:00",
       "target_open": "2026-03-25T16:00:00+00:00",
@@ -20,11 +94,11 @@
       "reasoning": "$72,000 저항대에서 강하게 밀린 후 극히 작은 바디(+0.03%)의 doji 캔들이 형성되었다. 이전 캔들이 -1.20% 하락한 직후 거래량 거의 제로 수준의 반등 실패는 매수 추종이 약하다는 신호다.\n\n핵심 약세 근거: (1) RSI·MACD 모두 Hidden Bearish Divergence 감지 — 가격은 LH를 만들며 모멘텀은 HH, 이는 하락 추세 지속 시그널. (2) 시장 구조가 Bearish로 분류되며 5회 구조 이탈 발생 — 방향성 혼란. (3) 가격이 레인지 85% 위치(저항 근접)에서 $71,161 저항까지 0.49%밖에 남지 않았고, 지지까지는 2.77% — 리스크/리워드 비대칭. (4) Stoch RSI K(71.2)가 D(79.7) 아래로 하향 교차 — 단기 하락 모멘텀. (5) DXY +0.49% 강세, S&P/NASDAQ 하락 — 매크로 역풍.\n\n약세 상쇄 요인: Fear & Greed 14(극단적 공포)는 역발상 매수 시그널이며, 가격이 SMA 20/50/200 모두 상회, MACD 히스토그램 양수(153.25). ADX 17.5로 추세 강도가 약해 급격한 하락보다는 완만한 조정 가능성이 높다.",
       "leverage": 1.0,
       "position_ratio": 0.08,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "NEUTRAL",
+      "actual_price_change": 0.08588492550048157,
+      "predicted_return": -0.2858849255004816,
+      "evaluated_at": "2026-03-25T20:00:31.991843+00:00"
     },
     {
       "id": "7db296b1-433a-474d-af29-71f10f874054",
@@ -43,11 +117,11 @@
       "reasoning": "시장이 혼조세를 보이고 있으나 단기적으로 하방 압력이 우세하다. 핵심 근거: (1) RSI와 MACD 모두 히든 베어리시 다이버전스 — 가격은 LH($71,790→$71,378)인데 RSI/MACD는 HH를 기록, 상승 모멘텀 약화 시그널. (2) 직전 캔들이 -1.20% 강한 음봉 후 +0.03% 거의 무변동 캔들(거래량 0.00x) — 반등 실패 가능성. (3) ADX 17.5로 추세 부재, 저항선($71,161)까지 0.49%밖에 안 남아 상방 여력 제한. (4) 마켓 스트럭처 Bearish 판정, 5회 구조 이탈. 다만 가격이 SMA 20/50/200 위에 있고, Fear&Greed 14(극단적 공포)는 역발상 매수 시그널이 될 수 있어 강한 하락보다는 약세 조정을 예상한다. 스토캐스틱 RSI K(71.2)가 D(79.7) 아래로 교차하며 과매수 영역에서 하락 전환 중이다.",
       "leverage": 1.0,
       "position_ratio": 0.05,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "NEUTRAL",
+      "actual_price_change": 0.08588492550048157,
+      "predicted_return": -0.2858849255004816,
+      "evaluated_at": "2026-03-25T20:00:31.909556+00:00"
     },
     {
       "id": "1885ccd1-ca43-477a-913b-244b0fbddd58",
@@ -66,11 +140,11 @@
       "reasoning": "시장이 혼조세를 보이고 있으나 단기적으로 하방 압력이 우세하다. 핵심 근거: (1) RSI와 MACD 모두 히든 베어리시 다이버전스 — 가격은 LH($71,790→$71,378)인데 RSI/MACD는 HH를 기록, 상승 모멘텀 약화 시그널. (2) 직전 캔들이 -1.20% 강한 음봉 후 +0.03% 거의 무변동 캔들(거래량 0.00x) — 반등 실패 가능성. (3) ADX 17.5로 추세 부재, 저항선($71,161)까지 0.49%밖에 안 남아 상방 여력 제한. (4) 마켓 스트럭처 Bearish 판정, 5회 구조 이탈. 다만 가격이 SMA 20/50/200 위에 있고, Fear&Greed 14(극단적 공포)는 역발상 매수 시그널이 될 수 있어 강한 하락보다는 약세 조정을 예상한다. 스토캐스틱 RSI K(71.2)가 D(79.7) 아래로 교차하며 과매수 영역에서 하락 전환 중이다.",
       "leverage": 1.0,
       "position_ratio": 0.05,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "NEUTRAL",
+      "actual_price_change": 0.08588492550048157,
+      "predicted_return": -0.2858849255004816,
+      "evaluated_at": "2026-03-25T20:00:31.977684+00:00"
     },
     {
       "id": "50b03fcb-5218-468f-999d-b306c407b06c",
