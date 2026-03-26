@@ -122,7 +122,7 @@ async def _run_cycle_async(args: argparse.Namespace) -> int:
 
     elif args.phase == "predict":
         logger.info("Running prediction only...")
-        prediction = await prediction_job(health_status)
+        prediction, _variant_results = await prediction_job(health_status)
         if prediction:
             logger.info(
                 f"Prediction: {prediction.direction} "

@@ -150,23 +150,6 @@ async def collect_with_verification(
                 delay = retry_delays[min(attempt - 1, len(retry_delays) - 1)]
                 logger.info(f"Retry {attempt}/{max_retries}: waiting {delay:.0f}s...")
 
-                # 재시도 알림 (첫 재시도만)
-                if webhook and attempt == 1 and last_verification:
-                    try:
-                        from perpetual_predict.notifications.scheduler_alerts import (
-                            send_verification_retry,
-                        )
-                        await send_verification_retry(
-                            webhook,
-                            last_verification,
-                            attempt,
-                            max_retries,
-                            delay,
-                            symbol,
-                        )
-                    except Exception as e:
-                        logger.warning(f"Failed to send retry notification: {e}")
-
                 await asyncio.sleep(delay)
 
             # 데이터 수집
@@ -218,23 +201,6 @@ async def collect_with_verification(
     )
     logger.error(error_msg)
 
-    # 최종 실패 알림
-    if webhook and last_verification:
-        try:
-            from perpetual_predict.notifications.scheduler_alerts import (
-                send_verification_failed,
-            )
-            await send_verification_failed(
-                webhook,
-                last_verification,
-                max_retries,
-                symbol,
-            )
-        except Exception as e:
-            logger.warning(f"Failed to send verification failed notification: {e}")
-        finally:
-            await webhook.close()
-
     raise DataIntegrityError(error_msg, last_verification)
 
 
@@ -275,7 +241,6 @@ async def collection_job(health_status: HealthStatus) -> dict[str, int]:
     symbol = settings.trading.symbol
     timeframe = settings.trading.timeframe
 
-    start_time = time.time()
     webhook = await _get_discord_webhook()
 
     logger.info(
@@ -302,61 +267,15 @@ async def collection_job(health_status: HealthStatus) -> dict[str, int]:
             days=1,  # Only collect recent data for scheduled runs
         )
 
-        duration = time.time() - start_time
         health_status.update_job_completed(job_name, success=True, details=results)
         logger.info(f"Collection completed: {results}")
-
-        # Send completion notification with integrity report
-        if webhook:
-            try:
-                from perpetual_predict.notifications.scheduler_alerts import (
-                    send_collection_completed,
-                )
-                from perpetual_predict.reporters.data_integrity import (
-                    verify_data_integrity,
-                )
-                from perpetual_predict.storage.database import get_database
-
-                # Run data integrity verification
-                integrity_report = None
-                try:
-                    async with get_database() as db:
-                        integrity_report = await verify_data_integrity(
-                            db, symbol, timeframe, hours=24
-                        )
-                except Exception as integrity_error:
-                    logger.warning(
-                        f"Failed to verify data integrity: {integrity_error}"
-                    )
-
-                await send_collection_completed(
-                    webhook, results, duration, health_status, symbol,
-                    integrity_report=integrity_report,
-                )
-            except Exception as e:
-                logger.warning(f"Failed to send completion notification: {e}")
 
         return results
 
     except Exception as e:
-        duration = time.time() - start_time
         error_msg = str(e)
         health_status.update_job_completed(job_name, success=False, error=error_msg)
         logger.error(f"Collection failed: {e}")
-
-        # Send failure notification
-        if webhook:
-            try:
-                from perpetual_predict.notifications.scheduler_alerts import (
-                    send_collection_failed,
-                )
-
-                await send_collection_failed(
-                    webhook, error_msg, duration, health_status, symbol
-                )
-            except Exception as ex:
-                logger.warning(f"Failed to send failure notification: {ex}")
-
         raise
     finally:
         # Clean up webhook session
@@ -544,7 +463,9 @@ async def _run_single_prediction(
     return prediction
 
 
-async def prediction_job(health_status: HealthStatus) -> Prediction | None:
+async def prediction_job(
+    health_status: HealthStatus,
+) -> tuple[Prediction | None, list[tuple]]:
     """Scheduled job to generate LLM prediction for current candle.
 
     Builds market context from collected data and runs Claude Code
@@ -557,7 +478,8 @@ async def prediction_job(health_status: HealthStatus) -> Prediction | None:
         health_status: Health status tracker to update.
 
     Returns:
-        Baseline prediction object or None if prediction failed.
+        Tuple of (baseline_prediction, variant_results).
+        variant_results is a list of (experiment, variant_prediction) tuples.
     """
     job_name = "prediction"
     settings = get_settings()
@@ -608,6 +530,8 @@ async def prediction_job(health_status: HealthStatus) -> Prediction | None:
         )
 
         # 2. Experiment arm predictions (only if enabled)
+        variant_results: list[tuple] = []
+
         if settings.experiment.enabled:
             async with get_database() as db:
                 active_experiments = await db.get_active_experiments()
@@ -680,7 +604,7 @@ async def prediction_job(health_status: HealthStatus) -> Prediction | None:
 
                 # Run variant prediction (different modules = needs its own claude -p call)
                 try:
-                    await _run_single_prediction(
+                    variant_pred = await _run_single_prediction(
                         market_context=market_context,
                         target_open=target_open,
                         target_close=target_close,
@@ -691,6 +615,8 @@ async def prediction_job(health_status: HealthStatus) -> Prediction | None:
                         arm="variant",
                         account_id=f"{exp.experiment_id}_variant",
                     )
+                    if variant_pred:
+                        variant_results.append((exp, variant_pred))
                 except Exception as e:
                     logger.warning(
                         f"Experiment {exp.experiment_id} variant "
@@ -709,7 +635,7 @@ async def prediction_job(health_status: HealthStatus) -> Prediction | None:
             },
         )
 
-        return prediction
+        return prediction, variant_results
 
     except Exception as e:
         error_msg = str(e)
@@ -800,7 +726,7 @@ async def full_cycle_job(health_status: HealthStatus) -> dict:
 
         # Phase 3: Generate prediction
         logger.info("Phase 3/3: Generating prediction...")
-        prediction = await prediction_job(health_status)
+        prediction, variant_results = await prediction_job(health_status)
         if prediction:
             results["prediction"] = {
                 "id": prediction.prediction_id,
@@ -829,15 +755,25 @@ async def full_cycle_job(health_status: HealthStatus) -> dict:
         if webhook and prediction:
             try:
                 from perpetual_predict.notifications.scheduler_alerts import (
+                    send_no_experiment,
                     send_prediction_completed,
+                    send_variant_prediction,
                 )
 
+                # Base prediction message
                 await send_prediction_completed(
                     webhook,
                     prediction,
                     results.get("evaluation", {}),
                     health_status,
                 )
+
+                # Variant predictions as separate messages
+                if variant_results:
+                    for exp, variant_pred in variant_results:
+                        await send_variant_prediction(webhook, variant_pred, exp)
+                else:
+                    await send_no_experiment(webhook)
             except Exception as e:
                 logger.warning(f"Failed to send prediction notification: {e}")
 

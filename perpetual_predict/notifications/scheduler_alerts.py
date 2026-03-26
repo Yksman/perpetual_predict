@@ -14,6 +14,7 @@ from perpetual_predict.scheduler.health import HealthStatus
 from perpetual_predict.utils import get_logger
 
 if TYPE_CHECKING:
+    from perpetual_predict.experiment.models import Experiment
     from perpetual_predict.reporters.data_integrity import (
         IntegrityReport,
         LatestDataVerification,
@@ -270,6 +271,14 @@ async def send_prediction_completed(
             value=f"`{_format_datetime_kst(prediction.target_candle_close)}`",
             inline=False,
         )
+        .add_field(
+            name="💰 트레이딩 파라미터",
+            value=(
+                f"• 레버리지: `{prediction.leverage:.1f}x`\n"
+                f"• 투입 비중: `{prediction.position_ratio:.0%}`"
+            ),
+            inline=True,
+        )
         .add_field(name="📝 주요 판단 요소", value=factors_text, inline=False)
         .set_timestamp()
     )
@@ -279,6 +288,17 @@ async def send_prediction_completed(
     if len(reasoning) > 500:
         reasoning = reasoning[:497] + "..."
     embed.add_field(name="💭 분석 근거", value=reasoning, inline=False)
+
+    # Add full trading reasoning
+    if prediction.trading_reasoning:
+        trading_reasoning = prediction.trading_reasoning
+        if len(trading_reasoning) > 1024:
+            trading_reasoning = trading_reasoning[:1021] + "..."
+        embed.add_field(
+            name="📈 트레이딩 판단 근거",
+            value=trading_reasoning,
+            inline=False,
+        )
 
     # Add previous prediction evaluation summary if available
     if evaluation_results and evaluation_results.get("results"):
@@ -646,4 +666,125 @@ async def send_verification_failed(
         return result is not None
     except Exception as e:
         logger.error(f"Failed to send verification failed notification: {e}")
+        return False
+
+
+async def send_variant_prediction(
+    webhook: DiscordWebhook,
+    prediction: Prediction,
+    experiment: Experiment,
+) -> bool:
+    """Send variant experiment prediction as a separate Discord message.
+
+    Args:
+        webhook: DiscordWebhook instance.
+        prediction: The variant prediction object.
+        experiment: The experiment this variant belongs to.
+
+    Returns:
+        True if sent successfully.
+    """
+    import json
+
+    direction_emoji = _get_direction_emoji(prediction.direction)
+    confidence_display = _format_confidence(prediction.confidence)
+
+    # Parse variant modules for display
+    variant_modules = experiment.variant_modules
+    if isinstance(variant_modules, str):
+        variant_modules = json.loads(variant_modules)
+    added_modules = set(variant_modules) - set(
+        experiment.control_modules
+        if isinstance(experiment.control_modules, list)
+        else json.loads(experiment.control_modules)
+    )
+    modules_display = ", ".join(f"`{m}`" for m in sorted(added_modules)) or "없음"
+
+    factors_text = "\n".join(f"• {factor}" for factor in prediction.key_factors[:5])
+    if not factors_text:
+        factors_text = "없음"
+
+    embed = (
+        DiscordEmbed(
+            title=f"🧪 Variant 예측 — {experiment.name}",
+            description=f"실험 `{experiment.experiment_id}` variant arm 예측 결과",
+            color=EmbedColors.INFO,
+        )
+        .add_field(
+            name="추가 모듈",
+            value=modules_display,
+            inline=True,
+        )
+        .add_field(
+            name="예측 방향",
+            value=f"{direction_emoji} **{prediction.direction}**",
+            inline=True,
+        )
+        .add_field(name="신뢰도", value=confidence_display, inline=True)
+        .add_field(
+            name="💰 트레이딩 파라미터",
+            value=(
+                f"• 레버리지: `{prediction.leverage:.1f}x`\n"
+                f"• 투입 비중: `{prediction.position_ratio:.0%}`"
+            ),
+            inline=True,
+        )
+        .add_field(name="📝 주요 판단 요소", value=factors_text, inline=False)
+    )
+
+    # Reasoning
+    reasoning = prediction.reasoning
+    if len(reasoning) > 500:
+        reasoning = reasoning[:497] + "..."
+    embed.add_field(name="💭 분석 근거", value=reasoning, inline=False)
+
+    # Trading reasoning
+    if prediction.trading_reasoning:
+        trading_reasoning = prediction.trading_reasoning
+        if len(trading_reasoning) > 1024:
+            trading_reasoning = trading_reasoning[:1021] + "..."
+        embed.add_field(
+            name="📈 트레이딩 판단 근거",
+            value=trading_reasoning,
+            inline=False,
+        )
+
+    embed.set_timestamp()
+
+    if prediction.duration_ms > 0:
+        embed.footer = f"🤖 Claude Code Headless | {prediction.duration_ms / 1000:.1f}s"
+
+    try:
+        result = await webhook.send_embed(embed)
+        return result is not None
+    except Exception as e:
+        logger.error(f"Failed to send variant prediction notification: {e}")
+        return False
+
+
+async def send_no_experiment(
+    webhook: DiscordWebhook,
+) -> bool:
+    """Send notification indicating no active experiments.
+
+    Args:
+        webhook: DiscordWebhook instance.
+
+    Returns:
+        True if sent successfully.
+    """
+    embed = (
+        DiscordEmbed(
+            title="🧪 실험 없음",
+            description="현재 활성화된 A/B 실험이 없습니다.",
+            color=0x808080,  # gray
+        )
+        .set_timestamp()
+    )
+
+    try:
+        result = await webhook.send_embed(embed)
+        return result is not None
+    except Exception as e:
+        logger.error(f"Failed to send no experiment notification: {e}")
         return False
