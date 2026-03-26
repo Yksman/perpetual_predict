@@ -368,37 +368,48 @@ def _pred_arm(p) -> dict:
     }
 
 
+def _snap_to_4h(dt: datetime) -> str:
+    """Snap a datetime to the nearest 4H candle boundary (UTC) as ISO string.
+
+    Candle boundaries: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC.
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    utc = dt.astimezone(timezone.utc)
+    snapped_hour = (utc.hour // 4) * 4
+    return utc.replace(hour=snapped_hour, minute=0, second=0, microsecond=0).isoformat()
+
+
 def _build_equity_curve(account, trades: list) -> list[dict]:
-    """Build equity curve from account + trades for one experiment arm."""
+    """Build equity curve from account + trades for one experiment arm.
+
+    Timestamps are snapped to 4H candle boundaries (UTC) so that
+    control and variant curves share identical time keys.
+    """
     closed_trades = sorted(
         [t for t in trades if t.balance_after is not None and t.exit_time is not None],
         key=lambda t: t.exit_time,
     )
     curve = []
     if account:
-        # Use account creation time as the initial equity point
-        initial_time = (
-            account.created_at.isoformat()
-            if account.created_at
-            else closed_trades[0].entry_time.isoformat()
-            if closed_trades
-            else datetime.now(timezone.utc).isoformat()
+        initial_dt = account.created_at or (
+            closed_trades[0].entry_time if closed_trades else datetime.now(timezone.utc)
         )
         curve.append({
-            "time": initial_time,
+            "time": _snap_to_4h(initial_dt),
             "balance": account.initial_balance,
         })
     for t in closed_trades:
         curve.append({
-            "time": t.exit_time.isoformat(),
+            "time": _snap_to_4h(t.exit_time),
             "balance": t.balance_after,
         })
-    # Append current balance as the latest point if it differs from the last trade
+    # Append current balance if it differs from the last closed trade
     if account and account.current_balance is not None:
         last_balance = curve[-1]["balance"] if curve else None
         if last_balance != account.current_balance:
             curve.append({
-                "time": datetime.now(timezone.utc).isoformat(),
+                "time": _snap_to_4h(datetime.now(timezone.utc)),
                 "balance": account.current_balance,
             })
     return curve

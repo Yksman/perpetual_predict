@@ -12,32 +12,27 @@ export function ExperimentEquityCurve({ experiment }: ExperimentEquityCurveProps
   const isMobile = useIsMobile();
   const { control, variant } = experiment.equity_curves;
 
-  // Collect all unique timestamps and sort chronologically
-  const timeSet = new Set<string>();
-  for (const p of control) timeSet.add(p.time);
-  for (const p of variant) timeSet.add(p.time);
-
-  const sortedTimes = Array.from(timeSet).sort();
-
-  // Build lookup maps
+  // Build lookup maps keyed by ISO timestamp (already snapped to 4H UTC candle)
   const controlMap = new Map(control.map(p => [p.time, p.balance]));
   const variantMap = new Map(variant.map(p => [p.time, p.balance]));
 
-  // Merge into unified timeline — forward-fill gaps so lines stay connected
+  // Collect all unique timestamps and sort chronologically
+  const allTimes = Array.from(
+    new Set([...control.map(p => p.time), ...variant.map(p => p.time)]),
+  ).sort();
+
+  // Merge into unified timeline with forward-fill
   let lastControl: number | undefined;
   let lastVariant: number | undefined;
-  const data = sortedTimes.map(time => {
+  const data = allTimes.map(time => {
     if (controlMap.has(time)) lastControl = controlMap.get(time);
     if (variantMap.has(time)) lastVariant = variantMap.get(time);
 
-    const dt = new Date(time);
-    const date = `${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+    // Format as UTC date label (MM-DD HH:mm)
+    const m = time.match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    const date = m ? `${m[2]}-${m[3]} ${m[4]}:${m[5]}` : time.slice(5, 16);
 
-    return {
-      date,
-      control: lastControl,
-      variant: lastVariant,
-    };
+    return { date, control: lastControl, variant: lastVariant };
   });
 
   if (data.length < 2) {
@@ -72,7 +67,7 @@ export function ExperimentEquityCurve({ experiment }: ExperimentEquityCurveProps
             tick={{ fill: 'var(--text-muted)', fontSize: tickFontSize, fontFamily: 'var(--font-mono)' }}
             axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}
-            interval={isMobile ? Math.max(0, Math.floor(data.length / 5) - 1) : 'equidistantPreserveStart'}
+            interval={isMobile ? Math.max(0, Math.floor(data.length / 4) - 1) : 'preserveStartEnd'}
           />
           <YAxis
             domain={[min - padding, max + padding]}
