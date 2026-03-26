@@ -11,49 +11,55 @@ from perpetual_predict.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-# JSON schema for structured prediction output
-PREDICTION_SCHEMA = json.dumps({
-    "type": "object",
-    "properties": {
-        "direction": {
-            "type": "string",
-            "enum": ["UP", "DOWN", "NEUTRAL"],
-            "description": "예측 방향 (UP: 상승, DOWN: 하락, NEUTRAL: 횡보)"
+
+def _build_prediction_schema(max_leverage: float = 3.0) -> str:
+    """Build JSON schema for structured prediction output.
+
+    Args:
+        max_leverage: Maximum leverage from settings.
+    """
+    return json.dumps({
+        "type": "object",
+        "properties": {
+            "direction": {
+                "type": "string",
+                "enum": ["UP", "DOWN", "NEUTRAL"],
+                "description": "예측 방향 (UP: 상승, DOWN: 하락, NEUTRAL: 횡보)"
+            },
+            "confidence": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "description": "예측 신뢰도 (0.0 ~ 1.0)"
+            },
+            "reasoning": {
+                "type": "string",
+                "description": "예측 근거를 한국어로 상세히 설명"
+            },
+            "key_factors": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "주요 판단 요소 목록 (한국어로 작성)"
+            },
+            "leverage": {
+                "type": "number",
+                "minimum": 1.0,
+                "maximum": max_leverage,
+                "description": f"사용할 레버리지 배수 (1.0~{max_leverage}). 시장 확신도와 리스크에 따라 자유롭게 결정. NEUTRAL이면 1.0"
+            },
+            "position_ratio": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "description": "잔고 대비 포지션 비율 (0.0~1.0). 0.0=진입 안함, 1.0=전액 투입. NEUTRAL이면 0.0"
+            },
+            "trading_reasoning": {
+                "type": "string",
+                "description": "레버리지와 포지션 비율 결정 근거를 한국어로 설명"
+            }
         },
-        "confidence": {
-            "type": "number",
-            "minimum": 0.0,
-            "maximum": 1.0,
-            "description": "예측 신뢰도 (0.0 ~ 1.0)"
-        },
-        "reasoning": {
-            "type": "string",
-            "description": "예측 근거를 한국어로 상세히 설명"
-        },
-        "key_factors": {
-            "type": "array",
-            "items": {"type": "string"},
-            "description": "주요 판단 요소 목록 (한국어로 작성)"
-        },
-        "leverage": {
-            "type": "number",
-            "minimum": 1.0,
-            "maximum": 3.0,
-            "description": "사용할 레버리지 배수 (1.0~3.0). 시장 확신도와 리스크에 따라 결정. NEUTRAL이면 1.0"
-        },
-        "position_ratio": {
-            "type": "number",
-            "minimum": 0.0,
-            "maximum": 1.0,
-            "description": "잔고 대비 포지션 비율 (0.0~1.0). 0.0=진입 안함, 1.0=전액 투입. NEUTRAL이면 0.0"
-        },
-        "trading_reasoning": {
-            "type": "string",
-            "description": "레버리지와 포지션 비율 결정 근거를 한국어로 설명"
-        }
-    },
-    "required": ["direction", "confidence", "reasoning", "key_factors", "leverage", "position_ratio", "trading_reasoning"]
-})
+        "required": ["direction", "confidence", "reasoning", "key_factors", "leverage", "position_ratio", "trading_reasoning"]
+    })
 
 
 @dataclass
@@ -96,17 +102,23 @@ async def run_prediction_agent(
     Raises:
         ClaudeAgentError: If agent execution fails
     """
+    from perpetual_predict.config.settings import get_settings
+
+    settings = get_settings()
+    max_leverage = settings.paper_trading.max_leverage
+
     if working_dir is None:
         # Default to llm-analysis directory
         working_dir = Path(__file__).parent.parent.parent.parent
 
-    # Build command
+    # Build command with dynamic schema
+    prediction_schema = _build_prediction_schema(max_leverage)
     cmd = [
         "claude",
         "-p",  # headless/print mode
         "--agent", "predictor",
         "--output-format", "json",
-        "--json-schema", PREDICTION_SCHEMA,
+        "--json-schema", prediction_schema,
         market_context,
     ]
 
@@ -167,9 +179,9 @@ async def run_prediction_agent(
         confidence = float(prediction.get("confidence", 0.5))
         confidence = max(0.0, min(1.0, confidence))  # Clamp to [0, 1]
 
-        # Parse trading parameters (agent-driven)
+        # Parse trading parameters (agent-driven, clamped to configured max)
         leverage = float(prediction.get("leverage", 1.0))
-        leverage = max(1.0, min(3.0, leverage))
+        leverage = max(1.0, min(max_leverage, leverage))
 
         position_ratio = float(prediction.get("position_ratio", 0.0))
         position_ratio = max(0.0, min(1.0, position_ratio))
