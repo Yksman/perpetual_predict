@@ -12,25 +12,33 @@ export function ExperimentEquityCurve({ experiment }: ExperimentEquityCurveProps
   const isMobile = useIsMobile();
   const { control, variant } = experiment.equity_curves;
 
-  // Merge both curves by time
-  const timeMap = new Map<string, { date: string; control?: number; variant?: number }>();
+  // Collect all unique timestamps and sort chronologically
+  const timeSet = new Set<string>();
+  for (const p of control) timeSet.add(p.time);
+  for (const p of variant) timeSet.add(p.time);
 
-  for (const p of control) {
-    const date = p.time.slice(5, 10);
-    const existing = timeMap.get(p.time) ?? { date };
-    existing.control = p.balance;
-    timeMap.set(p.time, existing);
-  }
-  for (const p of variant) {
-    const date = p.time.slice(5, 10);
-    const existing = timeMap.get(p.time) ?? { date };
-    existing.variant = p.balance;
-    timeMap.set(p.time, existing);
-  }
+  const sortedTimes = Array.from(timeSet).sort();
 
-  const data = Array.from(timeMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, v]) => v);
+  // Build lookup maps
+  const controlMap = new Map(control.map(p => [p.time, p.balance]));
+  const variantMap = new Map(variant.map(p => [p.time, p.balance]));
+
+  // Merge into unified timeline — forward-fill gaps so lines stay connected
+  let lastControl: number | undefined;
+  let lastVariant: number | undefined;
+  const data = sortedTimes.map(time => {
+    if (controlMap.has(time)) lastControl = controlMap.get(time);
+    if (variantMap.has(time)) lastVariant = variantMap.get(time);
+
+    const dt = new Date(time);
+    const date = `${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+
+    return {
+      date,
+      control: lastControl,
+      variant: lastVariant,
+    };
+  });
 
   if (data.length < 2) {
     return (
@@ -64,7 +72,7 @@ export function ExperimentEquityCurve({ experiment }: ExperimentEquityCurveProps
             tick={{ fill: 'var(--text-muted)', fontSize: tickFontSize, fontFamily: 'var(--font-mono)' }}
             axisLine={{ stroke: 'var(--border)' }}
             tickLine={false}
-            interval={isMobile ? Math.max(0, Math.floor(data.length / 5) - 1) : 'preserveStartEnd'}
+            interval={isMobile ? Math.max(0, Math.floor(data.length / 5) - 1) : 'equidistantPreserveStart'}
           />
           <YAxis
             domain={[min - padding, max + padding]}
@@ -99,6 +107,7 @@ export function ExperimentEquityCurve({ experiment }: ExperimentEquityCurveProps
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 3 }}
+            connectNulls
           />
           <Line
             type="monotone"
@@ -108,6 +117,7 @@ export function ExperimentEquityCurve({ experiment }: ExperimentEquityCurveProps
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 3 }}
+            connectNulls
           />
         </LineChart>
       </ResponsiveContainer>

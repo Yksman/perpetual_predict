@@ -109,6 +109,7 @@ class ExperimentAccount:
     arm: str  # 'control' | 'variant'
     initial_balance: float = 1000.0
     current_balance: float = 1000.0
+    created_at: datetime | None = None
 
 
 @dataclass

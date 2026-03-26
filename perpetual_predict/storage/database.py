@@ -1449,11 +1449,18 @@ class Database:
             row = await cursor.fetchone()
             if row:
                 d = dict(row)
+                created_at = None
+                if d.get("created_at"):
+                    try:
+                        created_at = datetime.fromisoformat(d["created_at"])
+                    except (ValueError, TypeError):
+                        pass
                 return ExperimentAccount(
                     experiment_id=d["experiment_id"],
                     arm=d["arm"],
                     initial_balance=d["initial_balance"],
                     current_balance=d["current_balance"],
+                    created_at=created_at,
                 )
             return None
 

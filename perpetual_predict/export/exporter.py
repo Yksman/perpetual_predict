@@ -370,21 +370,37 @@ def _pred_arm(p) -> dict:
 
 def _build_equity_curve(account, trades: list) -> list[dict]:
     """Build equity curve from account + trades for one experiment arm."""
-    sorted_trades = sorted(
+    closed_trades = sorted(
         [t for t in trades if t.balance_after is not None and t.exit_time is not None],
         key=lambda t: t.exit_time,
     )
     curve = []
     if account:
+        # Use account creation time as the initial equity point
+        initial_time = (
+            account.created_at.isoformat()
+            if account.created_at
+            else closed_trades[0].entry_time.isoformat()
+            if closed_trades
+            else datetime.now(timezone.utc).isoformat()
+        )
         curve.append({
-            "time": datetime.utcnow().isoformat() if not sorted_trades else sorted_trades[0].entry_time.isoformat(),
+            "time": initial_time,
             "balance": account.initial_balance,
         })
-    for t in sorted_trades:
+    for t in closed_trades:
         curve.append({
             "time": t.exit_time.isoformat(),
             "balance": t.balance_after,
         })
+    # Append current balance as the latest point if it differs from the last trade
+    if account and account.current_balance is not None:
+        last_balance = curve[-1]["balance"] if curve else None
+        if last_balance != account.current_balance:
+            curve.append({
+                "time": datetime.now(timezone.utc).isoformat(),
+                "balance": account.current_balance,
+            })
     return curve
 
 
