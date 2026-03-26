@@ -1,6 +1,82 @@
 {
   "predictions": [
     {
+      "id": "a3cec88b-1cd7-4be8-8dbb-388209e03c33",
+      "time": "2026-03-26T12:01:48.393141+00:00",
+      "target_open": "2026-03-26T12:00:00+00:00",
+      "target_close": "2026-03-26T16:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.62,
+      "key_factors": [
+        "3연속 베어리시 캔들 + SMA 20/50/200 전부 하회하는 다중 시간대 약세 구조",
+        "MACD Regular Bearish Divergence (가격 HH $72,000 vs MACD LH 223.6)",
+        "Fear & Greed 10 극단적 공포 — 패닉 매도 지속 가능성",
+        "Stoch RSI K=5.6 과매도이나 추세 하락 중 추가 하락 가능",
+        "BB Squeeze + 하단 밴드 접근 — 변동성 확대 시 하방 이탈 우려",
+        "CVD -45 BTC 매도 우위 + OI -1.35% 감소 (롱 청산)",
+        "EMA200 (-0.09%) 및 $68,856 지지선 근접으로 반등 가능성 존재 — 확신도 제한 요인",
+        "골드 +3.42% 강세 + DXY 약보합 — 안전자산 선호 심리가 BTC에 혼합 영향"
+      ],
+      "reasoning": "3연속 베어리시 캔들 후 극소 음봉(-0.04%)으로 하락 모멘텀이 소진 중이나, 반전 시그널은 아직 부재. 핵심 근거: (1) 가격이 SMA 20/50/200 모두 하회 — 단기·중기·장기 추세 모두 약세. (2) MACD 히스토그램 -134로 음전환 확대, 시그널선 대비 깊은 하방 괴리. (3) MACD Regular Bearish Divergence 확인 — 가격 HH vs MACD LH. (4) Fear & Greed 10(Extreme Fear)으로 극단적 공포 구간. (5) Stoch RSI K=5.6으로 과매도 진입했으나, 추세 하락 중 과매도는 반등보다 추가 하락의 선행지표가 될 수 있음. (6) BB Squeeze 상태에서 가격이 하단 밴드 쪽으로 치우침 — 변동성 확대 시 하방 이탈 가능성. (7) CVD -45 BTC로 매도 우위, OI -1.35% 감소는 롱 청산 흐름 시사. 다만 EMA200 근접(-0.09%), $68,856 지지선 접근, 극단적 공포지수가 단기 반등 가능성도 열어두고 있어 확신도를 중간 수준으로 설정.",
+      "leverage": 1.0,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "0b929cc3-50bf-4da2-bee6-de957f27442d",
+      "time": "2026-03-26T12:00:56.345775+00:00",
+      "target_open": "2026-03-26T12:00:00+00:00",
+      "target_close": "2026-03-26T16:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.62,
+      "key_factors": [
+        "최근 캔들 4/5 약세, 연속 하락 추세 진행 중",
+        "MACD 정규 베어리시 다이버전스 + 히스토그램 -134 심화",
+        "Stochastic RSI K=5.6 과매도 근접 — 반등 가능성 제한적 상승 여지",
+        "Fear & Greed 10 극단적 공포 — 패닉 매도 연장 가능",
+        "EMA 200 ($69,228) 바로 아래 위치 — 주요 지지/저항 테스트 중",
+        "OI -1.35% 감소 + 펀딩 하락 — 롱 청산 압력",
+        "볼린저 스퀴즈 + ADX 16.1 저변동성 — 방향성 돌파 임박"
+      ],
+      "reasoning": "시장이 명확한 단기 하락 구조를 보이고 있다. 최근 5개 캔들 중 4개가 약세이며, 가격은 SMA 20/50/200 모두 하회. MACD 히스토그램 -134로 약세 전환, RSI 42.1로 중립 하단, Stochastic RSI K=5.6으로 과매도 근접. 볼린저 밴드 스퀴즈 상태에서 하방 압력이 우세. CVD -45 BTC로 매도 우위. Fear & Greed 10(극단적 공포)은 추가 하락 가능성과 반등 가능성을 동시에 시사. MACD 정규 베어리시 다이버전스 확인. 다만 EMA 200 근접(-0.09%)과 지지선 $68,856 근접(0.52%)이 하방을 제한할 수 있어 확신도는 중간 수준.",
+      "leverage": 1.0,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "ada6eee1-5c10-4e91-aa82-e056f2fc9d8b",
+      "time": "2026-03-26T12:00:56.345775+00:00",
+      "target_open": "2026-03-26T12:00:00+00:00",
+      "target_close": "2026-03-26T16:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.62,
+      "key_factors": [
+        "최근 캔들 4/5 약세, 연속 하락 추세 진행 중",
+        "MACD 정규 베어리시 다이버전스 + 히스토그램 -134 심화",
+        "Stochastic RSI K=5.6 과매도 근접 — 반등 가능성 제한적 상승 여지",
+        "Fear & Greed 10 극단적 공포 — 패닉 매도 연장 가능",
+        "EMA 200 ($69,228) 바로 아래 위치 — 주요 지지/저항 테스트 중",
+        "OI -1.35% 감소 + 펀딩 하락 — 롱 청산 압력",
+        "볼린저 스퀴즈 + ADX 16.1 저변동성 — 방향성 돌파 임박"
+      ],
+      "reasoning": "시장이 명확한 단기 하락 구조를 보이고 있다. 최근 5개 캔들 중 4개가 약세이며, 가격은 SMA 20/50/200 모두 하회. MACD 히스토그램 -134로 약세 전환, RSI 42.1로 중립 하단, Stochastic RSI K=5.6으로 과매도 근접. 볼린저 밴드 스퀴즈 상태에서 하방 압력이 우세. CVD -45 BTC로 매도 우위. Fear & Greed 10(극단적 공포)은 추가 하락 가능성과 반등 가능성을 동시에 시사. MACD 정규 베어리시 다이버전스 확인. 다만 EMA 200 근접(-0.09%)과 지지선 $68,856 근접(0.52%)이 하방을 제한할 수 있어 확신도는 중간 수준.",
+      "leverage": 1.0,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "1951e038-2e77-4b9c-b204-4d4a81b1dad0",
       "time": "2026-03-26T08:02:03.450148+00:00",
       "target_open": "2026-03-26T08:00:00+00:00",
@@ -19,11 +95,11 @@
       "reasoning": "단기 하락 편향이 우세하나 혼조 신호로 확신도가 제한적이다. 핵심 하락 근거: (1) MACD 정규 베어리시 다이버전스 — 가격은 HH($72,000)를 만들었으나 MACD는 LH(357→223), (2) 최근 5개 캔들 중 2개 연속 음봉(-0.58%, -1.17%) 이후 Hanging Man 출현, (3) 가격이 저항선 $70,070 바로 아래(0.03%)에 위치하며 range 내 98% 지점, (4) CVD -3.69 BTC로 매도 압력 확인, (5) MACD 히스토그램 음전환(-16.33). 반면 제한 요소: Extreme Fear(10)는 역발상적 매수 신호, SMA200 위 유지, BB Squeeze 발생 중이라 방향성 폭발 가능성 양방향 열려있음. ADX 15.3으로 추세력 극도로 약해 강한 방향성 움직임보다는 레인지 내 하방 테스트 가능성이 높다.",
       "leverage": 1.5,
       "position_ratio": 0.3,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -1.162677827612492,
+      "predicted_return": 0.9626778276124921,
+      "evaluated_at": "2026-03-26T12:00:19.996485+00:00"
     },
     {
       "id": "d55c6cc6-f3af-4be9-a75a-042399b2edd7",
@@ -43,11 +119,11 @@
       "reasoning": "단기 하락 모멘텀이 우세한 상황. MACD 히스토그램이 음전환(-16.33)하며 베어리시 크로스오버 진행 중이고, 가격이 SMA 20/50 모두 하회. 특히 MACD 정규 베어리시 다이버전스(가격 HH $71,378→$72,000 vs MACD LH 357.4→223.6)가 확인되어 상승 모멘텀 약화를 시사. 최근 5개 캔들 중 2개 연속 음봉(-0.58%, -1.17%) 후 Hanging Man 패턴 출현은 추가 하락 가능성을 높임. 볼린저밴드 스퀴즈 상태에서 변동성 확대가 임박했으며, CVD 음수(-3.69 BTC), OI 감소(-1.35%), 펀딩레이트 하락(-0.0011%) 등 파생 지표도 약세 정렬. Fear & Greed 10(극단적 공포)은 역추세 반등 가능성을 내포하지만, ADX 15.3의 극히 약한 추세 강도와 전환기(Transition) 구조에서는 하방 이탈 시나리오가 더 유력. 다만 EMA 200 위(+1.08%)에 위치하고 Stoch RSI K=29.8 과매도 접근 구간이라 급락보다는 점진적 하락 예상.",
       "leverage": 1.0,
       "position_ratio": 0.08,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -1.162677827612492,
+      "predicted_return": 0.9626778276124921,
+      "evaluated_at": "2026-03-26T12:00:19.946341+00:00"
     },
     {
       "id": "91d9c2cd-7166-48d1-9a3c-2c5613b0eaaa",
@@ -67,11 +143,11 @@
       "reasoning": "단기 하락 모멘텀이 우세한 상황. MACD 히스토그램이 음전환(-16.33)하며 베어리시 크로스오버 진행 중이고, 가격이 SMA 20/50 모두 하회. 특히 MACD 정규 베어리시 다이버전스(가격 HH $71,378→$72,000 vs MACD LH 357.4→223.6)가 확인되어 상승 모멘텀 약화를 시사. 최근 5개 캔들 중 2개 연속 음봉(-0.58%, -1.17%) 후 Hanging Man 패턴 출현은 추가 하락 가능성을 높임. 볼린저밴드 스퀴즈 상태에서 변동성 확대가 임박했으며, CVD 음수(-3.69 BTC), OI 감소(-1.35%), 펀딩레이트 하락(-0.0011%) 등 파생 지표도 약세 정렬. Fear & Greed 10(극단적 공포)은 역추세 반등 가능성을 내포하지만, ADX 15.3의 극히 약한 추세 강도와 전환기(Transition) 구조에서는 하방 이탈 시나리오가 더 유력. 다만 EMA 200 위(+1.08%)에 위치하고 Stoch RSI K=29.8 과매도 접근 구간이라 급락보다는 점진적 하락 예상.",
       "leverage": 1.0,
       "position_ratio": 0.08,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -1.162677827612492,
+      "predicted_return": 0.9626778276124921,
+      "evaluated_at": "2026-03-26T12:00:19.986245+00:00"
     },
     {
       "id": "0b4ebfa6-4635-4a90-8f63-b257fd61f443",
