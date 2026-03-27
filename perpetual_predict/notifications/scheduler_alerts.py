@@ -751,6 +751,25 @@ async def send_variant_prediction(
         .add_field(name="📝 주요 판단 요소", value=factors_text, inline=False)
     )
 
+    # Bull/Bear case probabilities
+    bull_prob = prediction.bull_case.get("probability") if prediction.bull_case else None
+    bear_prob = prediction.bear_case.get("probability") if prediction.bear_case else None
+    if bull_prob is not None and bear_prob is not None:
+        bull_reasoning = prediction.bull_case.get("reasoning", "")
+        bear_reasoning = prediction.bear_case.get("reasoning", "")
+        if len(bull_reasoning) > 200:
+            bull_reasoning = bull_reasoning[:197] + "..."
+        if len(bear_reasoning) > 200:
+            bear_reasoning = bear_reasoning[:197] + "..."
+        embed.add_field(
+            name="📊 시나리오 분석",
+            value=(
+                f"🟢 **상승**: {bull_prob:.0%}\n{bull_reasoning}\n\n"
+                f"🔴 **하락**: {bear_prob:.0%}\n{bear_reasoning}"
+            ),
+            inline=False,
+        )
+
     # Reasoning
     reasoning = prediction.reasoning
     if len(reasoning) > 500:
