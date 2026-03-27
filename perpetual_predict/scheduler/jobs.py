@@ -411,6 +411,8 @@ async def _run_single_prediction(
         leverage=agent_result.leverage,
         position_ratio=agent_result.position_ratio,
         trading_reasoning=agent_result.trading_reasoning,
+        bull_case=agent_result.bull_case,
+        bear_case=agent_result.bear_case,
     )
 
     # Save to database + open paper trade
