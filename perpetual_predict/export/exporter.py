@@ -40,11 +40,12 @@ async def export_dashboard_data(
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
     async with get_database() as db:
-        # 1. Predictions (all within date range)
+        # 1. Predictions (baseline only — experiment arms are in experiments.json)
         predictions = await db.get_predictions(
             symbol=symbol,
             timeframe=timeframe,
             start_time=cutoff,
+            baseline_only=True,
         )
 
         # 2. Paper trades (all closed)
@@ -59,10 +60,11 @@ async def export_dashboard_data(
         # 4. Performance metrics
         metrics = await compute_metrics(db, account_id)
 
-        # 5. Prediction accuracy stats
+        # 5. Prediction accuracy stats (baseline only)
         accuracy = await db.get_prediction_accuracy(
             symbol=symbol,
             days=days,
+            baseline_only=True,
         )
 
         # 6. Experiment data

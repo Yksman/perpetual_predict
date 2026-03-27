@@ -1034,11 +1034,14 @@ class Database:
         end_time: datetime | None = None,
         evaluated_only: bool = False,
         limit: int | None = None,
+        baseline_only: bool = False,
     ) -> list[Prediction]:
         """Get predictions with optional filters."""
         sql = "SELECT * FROM predictions WHERE 1=1"
         params: list[Any] = []
 
+        if baseline_only:
+            sql += " AND (experiment_id IS NULL OR arm = 'baseline')"
         if symbol:
             sql += " AND symbol = ?"
             params.append(symbol)
@@ -1299,6 +1302,7 @@ class Database:
         self,
         symbol: str | None = None,
         days: int = 30,
+        baseline_only: bool = False,
     ) -> dict[str, Any]:
         """Calculate prediction accuracy for the last N days."""
         from datetime import timedelta
@@ -1322,6 +1326,8 @@ class Database:
         """
         params: list[Any] = [cutoff.isoformat()]
 
+        if baseline_only:
+            sql += " AND (experiment_id IS NULL OR arm = 'baseline')"
         if symbol:
             sql += " AND symbol = ?"
             params.append(symbol)
