@@ -381,6 +381,14 @@ class Database:
                     "UPDATE paper_trades SET position_pct = leverage * position_ratio"
                 )
 
+        # Migration: Backfill return_pct using balance_before denominator
+        # (previously used position_size which no longer exists)
+        if "balance_before" in paper_columns:
+            await self._connection.execute(
+                "UPDATE paper_trades SET return_pct = (net_pnl / balance_before) * 100 "
+                "WHERE balance_before > 0 AND net_pnl IS NOT NULL AND status = 'CLOSED'"
+            )
+
         # Migration: Add experiment fields to paper_trades
         trades_cursor = await self._connection.execute(
             "PRAGMA table_info(paper_trades)"
@@ -433,7 +441,22 @@ class Database:
                 ")"
             )
             await self._connection.execute(
-                "INSERT INTO predictions_new SELECT * FROM predictions"
+                "INSERT INTO predictions_new "
+                "(prediction_id, prediction_time, target_candle_open, target_candle_close, "
+                "symbol, timeframe, direction, confidence, reasoning, key_factors, "
+                "session_id, duration_ms, model_usage, "
+                "actual_direction, actual_price_change, is_correct, predicted_return, "
+                "evaluated_at, created_at, "
+                "position_pct, trading_reasoning, "
+                "experiment_id, arm) "
+                "SELECT prediction_id, prediction_time, target_candle_open, target_candle_close, "
+                "symbol, timeframe, direction, confidence, reasoning, key_factors, "
+                "session_id, duration_ms, model_usage, "
+                "actual_direction, actual_price_change, is_correct, predicted_return, "
+                "evaluated_at, created_at, "
+                "position_pct, trading_reasoning, "
+                "experiment_id, arm "
+                "FROM predictions"
             )
             await self._connection.execute("DROP TABLE predictions")
             await self._connection.execute(
@@ -467,6 +490,35 @@ class Database:
             "ON predictions(symbol, timeframe, target_candle_open, "
             "COALESCE(experiment_id, ''), COALESCE(arm, 'baseline'))"
         )
+
+        # Migration: Drop dead columns (leverage, position_ratio, position_size)
+        # Only available in SQLite >= 3.35.0
+        import sqlite3
+
+        sqlite_version = tuple(int(x) for x in sqlite3.sqlite_version.split("."))
+        if sqlite_version >= (3, 35, 0):
+            # Re-read columns after all migrations
+            pred_cursor = await self._connection.execute(
+                "PRAGMA table_info(predictions)"
+            )
+            pred_cols = {row[1] for row in await pred_cursor.fetchall()}
+            for dead_col in ("leverage", "position_ratio"):
+                if dead_col in pred_cols:
+                    await self._connection.execute(
+                        f"ALTER TABLE predictions DROP COLUMN {dead_col}"
+                    )
+
+            trade_cursor = await self._connection.execute(
+                "PRAGMA table_info(paper_trades)"
+            )
+            trade_cols = {row[1] for row in await trade_cursor.fetchall()}
+            for dead_col in ("leverage", "position_size", "position_ratio"):
+                if dead_col in trade_cols:
+                    await self._connection.execute(
+                        f"ALTER TABLE paper_trades DROP COLUMN {dead_col}"
+                    )
+
+            await self._connection.commit()
 
     async def close(self) -> None:
         """Close database connection."""
