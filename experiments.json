@@ -221,7 +221,7 @@
           "target_candle_close": "2026-03-27T04:00:00+00:00",
           "control": {
             "direction": "DOWN",
-            "confidence": 0.55,
+            "confidence": 0.65,
             "leverage": 1.0,
             "position_ratio": 0.08,
             "is_correct": null,
@@ -230,9 +230,9 @@
           },
           "variant": {
             "direction": "DOWN",
-            "confidence": 0.62,
-            "leverage": 1.5,
-            "position_ratio": 0.12,
+            "confidence": 0.6,
+            "leverage": 1.0,
+            "position_ratio": 0.08,
             "is_correct": null,
             "actual_direction": null,
             "actual_price_change": null
