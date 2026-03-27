@@ -18,28 +18,53 @@ def _build_prediction_schema(max_leverage: float = 3.0) -> str:
     Args:
         max_leverage: Maximum leverage from settings.
     """
+    bull_bear_case = {
+        "type": "object",
+        "properties": {
+            "probability": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "description": "이 시나리오의 확률 (0.0 ~ 1.0). bull_case + bear_case 합계는 1.0이어야 함"
+            },
+            "reasoning": {
+                "type": "string",
+                "description": "이 시나리오를 뒷받침하는 근거를 한국어로 설명"
+            }
+        },
+        "required": ["probability", "reasoning"]
+    }
+
     return json.dumps({
         "type": "object",
         "properties": {
+            "bull_case": {
+                **bull_bear_case,
+                "description": "상승 시나리오: 확률과 근거. 데이터에서 상승을 시사하는 요인을 모두 분석"
+            },
+            "bear_case": {
+                **bull_bear_case,
+                "description": "하락 시나리오: 확률과 근거. 데이터에서 하락을 시사하는 요인을 모두 분석"
+            },
             "direction": {
                 "type": "string",
                 "enum": ["UP", "DOWN", "NEUTRAL"],
-                "description": "예측 방향 (UP: 상승, DOWN: 하락, NEUTRAL: 횡보)"
+                "description": "최종 예측 방향. bull_case와 bear_case 분석 결과 더 높은 확률 쪽을 선택. 확률 차이가 작으면 NEUTRAL"
             },
             "confidence": {
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
-                "description": "예측 신뢰도 (0.0 ~ 1.0)"
+                "description": "예측 신뢰도 — 선택한 방향의 확률과 동일해야 함"
             },
             "reasoning": {
                 "type": "string",
-                "description": "예측 근거를 한국어로 상세히 설명"
+                "description": "bull_case와 bear_case를 종합한 최종 판단 근거를 한국어로 설명"
             },
             "key_factors": {
                 "type": "array",
                 "items": {"type": "string"},
-                "description": "주요 판단 요소 목록 (한국어로 작성)"
+                "description": "최종 방향을 결정한 주요 판단 요소 목록 (한국어로 작성)"
             },
             "leverage": {
                 "type": "number",
@@ -58,7 +83,7 @@ def _build_prediction_schema(max_leverage: float = 3.0) -> str:
                 "description": "레버리지와 포지션 비율 결정 근거를 한국어로 설명"
             }
         },
-        "required": ["direction", "confidence", "reasoning", "key_factors", "leverage", "position_ratio", "trading_reasoning"]
+        "required": ["bull_case", "bear_case", "direction", "confidence", "reasoning", "key_factors", "leverage", "position_ratio", "trading_reasoning"]
     })
 
 
@@ -73,6 +98,8 @@ class AgentResult:
     leverage: float = 1.0
     position_ratio: float = 0.0
     trading_reasoning: str = ""
+    bull_case: dict[str, Any] = field(default_factory=dict)
+    bear_case: dict[str, Any] = field(default_factory=dict)
     session_id: str = ""
     duration_ms: int = 0
     model_usage: dict[str, Any] = field(default_factory=dict)
@@ -82,6 +109,64 @@ class AgentResult:
 class ClaudeAgentError(Exception):
     """Error running Claude Code agent."""
     pass
+
+
+_NEUTRAL_PROBABILITY_GAP = 0.10
+
+
+def _validate_bull_bear_consistency(prediction: dict[str, Any]) -> dict[str, Any]:
+    """Validate and reconcile bull/bear case probabilities with direction.
+
+    Ensures:
+    1. If bull_case/bear_case missing, synthesize from direction + confidence
+    2. Probabilities are normalized to sum to 1.0
+    3. Direction matches the higher-probability case
+    4. Close probabilities (gap < 0.10) -> NEUTRAL
+    """
+    bull = prediction.get("bull_case")
+    bear = prediction.get("bear_case")
+
+    if not bull or not bear:
+        confidence = float(prediction.get("confidence", 0.5))
+        direction = prediction.get("direction", "NEUTRAL")
+        if direction == "UP":
+            bull_prob, bear_prob = confidence, 1.0 - confidence
+        elif direction == "DOWN":
+            bull_prob, bear_prob = 1.0 - confidence, confidence
+        else:
+            bull_prob, bear_prob = 0.5, 0.5
+        prediction["bull_case"] = {
+            "probability": round(bull_prob, 4),
+            "reasoning": prediction.get("reasoning", ""),
+        }
+        prediction["bear_case"] = {
+            "probability": round(bear_prob, 4),
+            "reasoning": prediction.get("reasoning", ""),
+        }
+        return prediction
+
+    bull_prob = float(bull.get("probability", 0.5))
+    bear_prob = float(bear.get("probability", 0.5))
+
+    total = bull_prob + bear_prob
+    if total > 0 and abs(total - 1.0) > 0.01:
+        bull_prob = bull_prob / total
+        bear_prob = bear_prob / total
+        prediction["bull_case"]["probability"] = round(bull_prob, 4)
+        prediction["bear_case"]["probability"] = round(bear_prob, 4)
+
+    gap = abs(bull_prob - bear_prob)
+    if gap < _NEUTRAL_PROBABILITY_GAP:
+        prediction["direction"] = "NEUTRAL"
+        prediction["confidence"] = max(bull_prob, bear_prob)
+    elif bull_prob > bear_prob:
+        prediction["direction"] = "UP"
+        prediction["confidence"] = bull_prob
+    else:
+        prediction["direction"] = "DOWN"
+        prediction["confidence"] = bear_prob
+
+    return prediction
 
 
 async def run_prediction_agent(
@@ -171,6 +256,9 @@ async def run_prediction_agent(
                 logger.warning("Could not parse prediction as JSON, attempting extraction")
                 prediction = _extract_prediction_from_text(prediction_text)
 
+        # Validate bull/bear consistency (reconcile direction with probabilities)
+        prediction = _validate_bull_bear_consistency(prediction)
+
         # Validate required fields
         direction = prediction.get("direction", "NEUTRAL").upper()
         if direction not in ("UP", "DOWN", "NEUTRAL"):
@@ -199,6 +287,8 @@ async def run_prediction_agent(
             leverage=leverage,
             position_ratio=position_ratio,
             trading_reasoning=prediction.get("trading_reasoning", ""),
+            bull_case=prediction.get("bull_case", {}),
+            bear_case=prediction.get("bear_case", {}),
             session_id=response.get("session_id", ""),
             duration_ms=response.get("duration_ms", 0),
             model_usage=response.get("modelUsage", {}),
