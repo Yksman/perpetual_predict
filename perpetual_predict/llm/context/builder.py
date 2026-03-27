@@ -226,14 +226,14 @@ class MarketContext:
         )
 
     def _section_trend(self) -> str:
-        sma_20_pos = "above" if self.current_price > self.sma_20 else "below"
-        sma_50_pos = "above" if self.current_price > self.sma_50 else "below"
-        sma_200_pos = "above" if self.current_price > self.sma_200 else "below"
+        sma_20_dist = ((self.current_price - self.sma_20) / self.sma_20) * 100
+        sma_50_dist = ((self.current_price - self.sma_50) / self.sma_50) * 100
+        sma_200_dist = ((self.current_price - self.sma_200) / self.sma_200) * 100
         return (
             f"### Trend Indicators\n"
-            f"- SMA 20: ${self.sma_20:,.2f} (Price {sma_20_pos})\n"
-            f"- SMA 50: ${self.sma_50:,.2f} (Price {sma_50_pos})\n"
-            f"- SMA 200: ${self.sma_200:,.2f} (Price {sma_200_pos})\n"
+            f"- SMA 20: ${self.sma_20:,.2f} ({sma_20_dist:+.2f}%)\n"
+            f"- SMA 50: ${self.sma_50:,.2f} ({sma_50_dist:+.2f}%)\n"
+            f"- SMA 200: ${self.sma_200:,.2f} ({sma_200_dist:+.2f}%)\n"
             f"- EMA 12/26: ${self.ema_12:,.2f} / ${self.ema_26:,.2f}\n"
             f"- MACD: {self.macd:.2f} | Signal: {self.macd_signal:.2f} | Histogram: {self.macd_histogram:.2f}\n"
             f"- ADX: {self.adx:.1f}"
@@ -633,14 +633,12 @@ class MarketContextBuilder:
         return float(val)
 
     def _summarize_recent_candles(self, df: pd.DataFrame) -> str:
-        """Generate human-readable summary of recent candles."""
+        """Generate human-readable summary of recent candles with neutral labels."""
         lines = []
         for i, (_, row) in enumerate(df.iterrows(), 1):
             change = self._pct_change(row["close"], row["open"])
             direction = "+" if change >= 0 else ""
-            candle_type = "Bullish" if change >= 0 else "Bearish"
 
-            # Simple pattern detection
             body = abs(row["close"] - row["open"])
             upper_wick = row["high"] - max(row["close"], row["open"])
             lower_wick = min(row["close"], row["open"]) - row["low"]
@@ -651,11 +649,11 @@ class MarketContextBuilder:
                 if body_pct < 20:
                     pattern = "Doji"
                 elif upper_wick > body * 2:
-                    pattern = "Shooting Star" if change < 0 else "Inverted Hammer"
+                    pattern = "Long Upper Wick"
                 elif lower_wick > body * 2:
-                    pattern = "Hammer" if change >= 0 else "Hanging Man"
+                    pattern = "Long Lower Wick"
                 else:
-                    pattern = candle_type
+                    pattern = "Full Body"
             else:
                 pattern = "Flat"
 
