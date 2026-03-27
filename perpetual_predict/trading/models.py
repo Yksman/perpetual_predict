@@ -48,9 +48,7 @@ class PaperTrade:
 
     # Position details
     side: Literal["LONG", "SHORT"]
-    leverage: float
-    position_size: float
-    position_ratio: float
+    position_pct: float
     notional_value: float
 
     # Entry
@@ -84,9 +82,7 @@ class PaperTrade:
             "prediction_id": self.prediction_id,
             "symbol": self.symbol,
             "side": self.side,
-            "leverage": self.leverage,
-            "position_size": self.position_size,
-            "position_ratio": self.position_ratio,
+            "position_pct": self.position_pct,
             "notional_value": self.notional_value,
             "entry_price": self.entry_price,
             "entry_time": self.entry_time.isoformat(),
@@ -114,9 +110,7 @@ class PaperTrade:
             prediction_id=data["prediction_id"],
             symbol=data["symbol"],
             side=data["side"],
-            leverage=data["leverage"],
-            position_size=data["position_size"],
-            position_ratio=data.get("position_ratio", 1.0),
+            position_pct=data.get("position_pct", 0.0),
             notional_value=data["notional_value"],
             entry_price=data["entry_price"],
             entry_time=datetime.fromisoformat(data["entry_time"]),

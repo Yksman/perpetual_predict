@@ -245,8 +245,7 @@ class Prediction:
     model_usage: dict[str, Any] = field(default_factory=dict)
 
     # Trading parameters (decided by agent)
-    leverage: float = 1.0
-    position_ratio: float = 0.0
+    position_pct: float = 0.0
     trading_reasoning: str = ""
 
     # Bull/Bear case analysis
@@ -278,8 +277,7 @@ class Prediction:
             "session_id": self.session_id,
             "duration_ms": self.duration_ms,
             "model_usage": json.dumps(self.model_usage),
-            "leverage": self.leverage,
-            "position_ratio": self.position_ratio,
+            "position_pct": self.position_pct,
             "trading_reasoning": self.trading_reasoning,
             "bull_case": json.dumps(self.bull_case),
             "bear_case": json.dumps(self.bear_case),
@@ -325,8 +323,7 @@ class Prediction:
             session_id=data.get("session_id", ""),
             duration_ms=data.get("duration_ms", 0),
             model_usage=model_usage,
-            leverage=data.get("leverage", 1.0),
-            position_ratio=data.get("position_ratio", 0.0),
+            position_pct=data.get("position_pct", 0.0),
             trading_reasoning=data.get("trading_reasoning", ""),
             bull_case=bull_case,
             bear_case=bear_case,
