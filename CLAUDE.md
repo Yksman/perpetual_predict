@@ -63,7 +63,7 @@ uv run python -m perpetual_predict export --push             # Export and push t
 
 1. **Evaluate**: 대상 캔들이 마감된 미평가 예측(is_correct=NULL)을 찾아 실제 방향과 비교. NEUTRAL 임계값 ±0.2% (수수료 손익분기)
 2. **Collect + Verify**: `collect_with_verification()` — 수집 후 데이터 무결성 검증. 실패 시 5회 재시도 (2s~10s 지수 백오프). 각 재시도마다 Discord 알림
-3. **Predict**: baseline 예측 실행 → 활성 실험이 있으면 variant arm 별도 실행 (10초 쿨다운). 예측 결과로 paper trade 자동 오픈
+3. **Predict**: baseline 예측 실행 → 활성 실험이 있으면 variant arm 별도 실행 (10초 쿨다운). 에이전트는 `position_pct`(0.0~max_leverage)로 투자금 대비 진입 비율을 결정. 예측 결과로 paper trade 자동 오픈
 
 ## Context Builder Module System
 
@@ -88,6 +88,7 @@ React 19 + Vite + TypeScript 정적 앱. 백엔드 API 없이 `export` 명령이
 - **Sync library wrapping**: yfinance, fredapi 등 동기 라이브러리는 `asyncio.get_running_loop().run_in_executor(None, sync_method, args)` 패턴으로 래핑
 - **Structured LLM output**: Predictions use JSON schema validation with fallback text parsing
 - **Settings singleton**: `get_settings()` lazily loads from env vars, use `reload_settings()` to refresh
+- **Unified position sizing**: Agent outputs single `position_pct` (0.0~max_leverage). Values >1.0 imply leverage (e.g., 1.5 = 150% of balance = 1.5x leverage). Trading engine derives `notional_value = balance × position_pct` directly.
 
 ## Adding New Seed Data
 
