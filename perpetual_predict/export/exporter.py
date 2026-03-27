@@ -359,8 +359,7 @@ def _pred_arm(p) -> dict:
     return {
         "direction": p.direction,
         "confidence": p.confidence,
-        "leverage": p.leverage,
-        "position_ratio": p.position_ratio,
+        "position_pct": p.position_pct,
         "is_correct": p.is_correct,
         "actual_direction": p.actual_direction,
         "actual_price_change": p.actual_price_change,
