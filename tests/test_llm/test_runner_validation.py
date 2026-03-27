@@ -134,5 +134,5 @@ class TestAgentResultFields:
     def test_agent_result_position_pct_default(self):
         result = AgentResult(direction="UP", confidence=0.7, reasoning="test")
         assert result.position_pct == 0.0
-        assert not hasattr(result, "leverage") or True  # leverage field removed
-        assert not hasattr(result, "position_ratio") or True  # position_ratio field removed
+        assert not hasattr(result, "leverage")  # leverage field removed
+        assert not hasattr(result, "position_ratio")  # position_ratio field removed
