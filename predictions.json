@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "c7afb79e-4870-4654-bad9-d9fe330e17d1",
+      "time": "2026-03-27T16:01:38.090687+00:00",
+      "target_open": "2026-03-27T16:00:00+00:00",
+      "target_close": "2026-03-27T20:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.7,
+      "key_factors": [
+        "모든 EMA/SMA 대비 -2.5%~-5.6% 괴리율 — 강한 하락 추세",
+        "RSI 27.5 + StochRSI K=0.0 극단적 과매도이나 추세장에서 추가 하락 가능",
+        "MACD 히스토그램 -457 하락 가속",
+        "Fear & Greed 13 극단적 공포 — 역발상 반등 가능성은 있으나 추세 우선",
+        "CVD -13.62 BTC 매도 압력 우세, Long/Short 2.48 롱 과밀로 청산 위험",
+        "지지선까지 -0.75% vs 저항선까지 +3.32% 비대칭 구간"
+      ],
+      "reasoning": "기술적 지표가 압도적으로 하락을 지지. EMA 전 구간 음의 괴리, MACD 하락 가속, RSI 과매도이나 추세 하락장에서 과매도는 추가 하락의 전조가 될 수 있음. 시장 구조 Transition 상태에서 6회 이탈은 기존 상승 구조 붕괴를 의미. 극단적 공포와 과매도로 단기 반등 가능성은 있으나, 모든 이동평균선이 위에서 저항으로 작용하여 의미있는 반등은 어려울 것으로 판단. 최근 5개 캔들의 지속적 하락과 CVD 매도 우위가 하락 지속을 뒷받침.",
+      "position_pct": 0.5,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "a6b8f1ef-a0f8-4720-8438-a9bbff8fe0b4",
       "time": "2026-03-27T12:01:24.663580+00:00",
       "target_open": "2026-03-27T12:00:00+00:00",
@@ -17,11 +40,11 @@
       ],
       "reasoning": "모든 주요 이동평균선 아래에서 거래되는 명확한 하락 구조. MACD 히스토그램 확대, RSI 과매도 진입에도 불구하고 추세 반전 신호 부재. 직전 -2.68% 대형 음봉 후 미미한 반등(+0.06%)은 매수세 부족을 시사. 시장 구조의 빈번한 이탈(6회)과 Transition 상태는 방향성 불확실성 속 하방 우위를 나타냄. 다만 RSI 극단적 과매도와 음수 펀딩레이트로 단기 반등 가능성이 있어 확신도를 0.65로 제한.\"",
       "position_pct": 0.5,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -0.8569932781605514,
+      "predicted_return": 0.6569932781605514,
+      "evaluated_at": "2026-03-27T16:00:19.428990+00:00"
     },
     {
       "id": "7d91f00f-ef7e-4b56-a7c4-53632ff3fc65",
