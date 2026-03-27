@@ -408,8 +408,7 @@ async def _run_single_prediction(
         session_id=agent_result.session_id,
         duration_ms=agent_result.duration_ms,
         model_usage=agent_result.model_usage,
-        leverage=agent_result.leverage,
-        position_ratio=agent_result.position_ratio,
+        position_pct=agent_result.position_pct,
         trading_reasoning=agent_result.trading_reasoning,
         bull_case=agent_result.bull_case,
         bear_case=agent_result.bear_case,
@@ -424,7 +423,7 @@ async def _run_single_prediction(
         if (
             paper_settings.enabled
             and prediction.direction != "NEUTRAL"
-            and prediction.position_ratio > 0
+            and prediction.position_pct > 0
         ):
             try:
                 from perpetual_predict.trading.engine import PaperTradingEngine
@@ -442,8 +441,7 @@ async def _run_single_prediction(
                     if trade:
                         logger.info(
                             f"{log_prefix} Paper trade opened: {trade.side} "
-                            f"leverage={trade.leverage:.1f}x "
-                            f"ratio={trade.position_ratio:.0%} "
+                            f"position_pct={trade.position_pct:.2f}x "
                             f"notional=${trade.notional_value:.2f}"
                         )
                 else:

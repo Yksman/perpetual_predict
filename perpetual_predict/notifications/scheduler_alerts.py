@@ -274,8 +274,8 @@ async def send_prediction_completed(
         .add_field(
             name="💰 트레이딩 파라미터",
             value=(
-                f"• 레버리지: `{prediction.leverage:.1f}x`\n"
-                f"• 투입 비중: `{prediction.position_ratio:.0%}`"
+                f"• 투입 비중: `{prediction.position_pct:.2f}x` "
+                f"({prediction.position_pct * 100:.0f}%)"
             ),
             inline=True,
         )
@@ -743,8 +743,8 @@ async def send_variant_prediction(
         .add_field(
             name="💰 트레이딩 파라미터",
             value=(
-                f"• 레버리지: `{prediction.leverage:.1f}x`\n"
-                f"• 투입 비중: `{prediction.position_ratio:.0%}`"
+                f"• 투입 비중: `{prediction.position_pct:.2f}x` "
+                f"({prediction.position_pct * 100:.0f}%)"
             ),
             inline=True,
         )
