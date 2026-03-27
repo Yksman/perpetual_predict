@@ -45,13 +45,13 @@ class PaperTradingEngine:
     ) -> PaperTrade | None:
         """Open a paper trade based on prediction.
 
-        Returns None if direction is NEUTRAL, position_ratio is 0, or balance is 0.
+        Returns None if direction is NEUTRAL, position_pct is 0, or balance is 0.
         """
         if prediction.direction == "NEUTRAL":
             return None
 
-        if prediction.position_ratio <= 0:
-            logger.info("Agent chose position_ratio=0, skipping trade")
+        if prediction.position_pct <= 0:
+            logger.info("Agent chose position_pct=0, skipping trade")
             return None
 
         account = await self.db.get_paper_account(self.account_id)
@@ -61,13 +61,11 @@ class PaperTradingEngine:
 
         settings = get_settings().paper_trading
 
-        # Use agent-decided values, clamped to configured limits
-        leverage = max(1.0, min(settings.max_leverage, prediction.leverage))
-        position_ratio = max(0.0, min(1.0, prediction.position_ratio))
+        # Use agent-decided position_pct, clamped to configured max
+        position_pct = max(0.0, min(settings.max_leverage, prediction.position_pct))
 
         side = "LONG" if prediction.direction == "UP" else "SHORT"
-        position_size = account.current_balance * position_ratio
-        notional_value = position_size * leverage
+        notional_value = account.current_balance * position_pct
 
         # Entry fee on notional
         entry_fee = notional_value * (settings.entry_fee_pct / 100)
@@ -78,9 +76,7 @@ class PaperTradingEngine:
             prediction_id=prediction.prediction_id,
             symbol=prediction.symbol,
             side=side,
-            leverage=leverage,
-            position_size=position_size,
-            position_ratio=position_ratio,
+            position_pct=position_pct,
             notional_value=notional_value,
             entry_price=entry_price,
             entry_time=datetime.now(timezone.utc),
@@ -95,8 +91,8 @@ class PaperTradingEngine:
 
         logger.info(
             f"Paper trade opened: {side} "
-            f"leverage={leverage:.1f}x ratio={position_ratio:.0%} "
-            f"size=${position_size:.2f} notional=${notional_value:.2f} "
+            f"position_pct={position_pct:.2f}x "
+            f"notional=${notional_value:.2f} "
             f"@ ${entry_price:,.2f}"
         )
 
@@ -134,7 +130,7 @@ class PaperTradingEngine:
 
         net_pnl = gross_pnl - total_fees
         balance_after = max(0.0, trade.balance_before + net_pnl)
-        return_pct = (net_pnl / trade.position_size * 100) if trade.position_size > 0 else 0.0
+        return_pct = (net_pnl / trade.balance_before * 100) if trade.balance_before > 0 else 0.0
 
         # Update trade
         trade.exit_price = exit_price
@@ -222,8 +218,7 @@ class PaperTradingEngine:
             pnl_str = f"${t.net_pnl:+.2f}" if t.net_pnl else "$0.00"
             ret_str = f"{t.return_pct:+.2f}%" if t.return_pct else "0.00%"
             trade_lines.append(
-                f"  {t.side} {ret_str} (leverage {t.leverage:.1f}x, "
-                f"ratio {t.position_ratio:.0%}) → PnL {pnl_str}"
+                f"  {t.side} {ret_str} (position {t.position_pct:.2f}x) → PnL {pnl_str}"
             )
 
         return {
