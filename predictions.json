@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "157afda6-46a0-4516-a209-9a6945ee69b7",
+      "time": "2026-03-27T20:01:48.318776+00:00",
+      "target_open": "2026-03-27T20:00:00+00:00",
+      "target_close": "2026-03-28T00:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.65,
+      "key_factors": [
+        "모든 주요 이동평균선 4.6~5.5% 하회 — 강한 하락 추세",
+        "RSI 27.3 + Stoch RSI K=0.1 극단적 과매도 — 반등 가능성 상존",
+        "MACD -1022, 히스토그램 -452 — 약세 모멘텀 지속",
+        "최근 2캔들 매도 소진 징후이나 반전 패턴 미확인",
+        "Fear & Greed 13 극도의 공포 — 추세 지속과 역발상 반등 모두 가능",
+        "펀딩비 -0.0058% 숏 과밀 — 숏스퀴즈 리스크"
+      ],
+      "reasoning": "강한 하락 추세(모든 MA 하회, MACD 깊은 음수)가 지배적이지만, 극단적 과매도(RSI 27.3, Stoch RSI 0.1)와 지지선 근접($65,582까지 -0.65%)이 추가 하락을 제한한다. 최근 2개 캔들의 매도 소진 징후에도 불구하고 명확한 반전 시그널이 부재하여, 하방 편향을 유지하되 낮은 확신도로 판단한다. 과매도 반등보다는 추세 지속 가능성이 소폭 우세하다.",
+      "position_pct": 0.3,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "c7afb79e-4870-4654-bad9-d9fe330e17d1",
       "time": "2026-03-27T16:01:38.090687+00:00",
       "target_open": "2026-03-27T16:00:00+00:00",
@@ -17,11 +40,11 @@
       ],
       "reasoning": "기술적 지표가 압도적으로 하락을 지지. EMA 전 구간 음의 괴리, MACD 하락 가속, RSI 과매도이나 추세 하락장에서 과매도는 추가 하락의 전조가 될 수 있음. 시장 구조 Transition 상태에서 6회 이탈은 기존 상승 구조 붕괴를 의미. 극단적 공포와 과매도로 단기 반등 가능성은 있으나, 모든 이동평균선이 위에서 저항으로 작용하여 의미있는 반등은 어려울 것으로 판단. 최근 5개 캔들의 지속적 하락과 CVD 매도 우위가 하락 지속을 뒷받침.",
       "position_pct": 0.5,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "NEUTRAL",
+      "actual_price_change": -0.13087836784840504,
+      "predicted_return": -0.06912163215159497,
+      "evaluated_at": "2026-03-27T20:00:22.278317+00:00"
     },
     {
       "id": "a6b8f1ef-a0f8-4720-8438-a9bbff8fe0b4",

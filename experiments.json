@@ -50,15 +50,15 @@
       "created_at": "2026-03-24T03:49:15.109000+00:00",
       "completed_at": null,
       "winner": null,
-      "sample_size": 19,
-      "progress_pct": 63.3,
+      "sample_size": 20,
+      "progress_pct": 66.7,
       "result": {
-        "control_accuracy": 0.5789,
-        "variant_accuracy": 0.5263,
-        "control_return": 0.54,
-        "variant_return": 0.85,
-        "control_sharpe": 13.3,
-        "variant_sharpe": 14.31,
+        "control_accuracy": 0.55,
+        "variant_accuracy": 0.5,
+        "control_return": 0.51,
+        "variant_return": 0.82,
+        "control_sharpe": 12.02,
+        "variant_sharpe": 13.33,
         "p_value": null,
         "is_significant": false,
         "recommended_winner": null
@@ -66,11 +66,11 @@
       "accounts": {
         "control": {
           "initial_balance": 1000.0,
-          "current_balance": 1004.3472377140967
+          "current_balance": 1004.0001271125079
         },
         "variant": {
           "initial_balance": 1000.0,
-          "current_balance": 1007.2370611661221
+          "current_balance": 1006.8889518179652
         }
       },
       "equity_curves": {
@@ -154,6 +154,10 @@
           {
             "time": "2026-03-27T16:00:00+00:00",
             "balance": 1004.3472377140967
+          },
+          {
+            "time": "2026-03-27T20:00:00+00:00",
+            "balance": 1004.0001271125079
           }
         ],
         "variant": [
@@ -244,10 +248,34 @@
           {
             "time": "2026-03-27T16:00:00+00:00",
             "balance": 1007.2370611661221
+          },
+          {
+            "time": "2026-03-27T20:00:00+00:00",
+            "balance": 1006.8889518179652
           }
         ]
       },
       "prediction_pairs": [
+        {
+          "target_candle_open": "2026-03-27T20:00:00+00:00",
+          "target_candle_close": "2026-03-28T00:00:00+00:00",
+          "control": {
+            "direction": "DOWN",
+            "confidence": 0.65,
+            "position_pct": 0.3,
+            "is_correct": null,
+            "actual_direction": null,
+            "actual_price_change": null
+          },
+          "variant": {
+            "direction": "DOWN",
+            "confidence": 0.6,
+            "position_pct": 0.3,
+            "is_correct": null,
+            "actual_direction": null,
+            "actual_price_change": null
+          }
+        },
         {
           "target_candle_open": "2026-03-27T16:00:00+00:00",
           "target_candle_close": "2026-03-27T20:00:00+00:00",
@@ -255,17 +283,17 @@
             "direction": "DOWN",
             "confidence": 0.7,
             "position_pct": 0.5,
-            "is_correct": null,
-            "actual_direction": null,
-            "actual_price_change": null
+            "is_correct": 0,
+            "actual_direction": "NEUTRAL",
+            "actual_price_change": -0.13087836784840504
           },
           "variant": {
             "direction": "DOWN",
             "confidence": 0.7,
             "position_pct": 0.5,
-            "is_correct": null,
-            "actual_direction": null,
-            "actual_price_change": null
+            "is_correct": 0,
+            "actual_direction": "NEUTRAL",
+            "actual_price_change": -0.13087836784840504
           }
         },
         {
