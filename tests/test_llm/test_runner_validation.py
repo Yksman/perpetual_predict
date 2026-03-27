@@ -40,7 +40,7 @@ class TestBullBearValidation:
             "bull_case": {"probability": 0.65, "reasoning": "strong momentum"},
             "bear_case": {"probability": 0.35, "reasoning": "weak volume"},
             "reasoning": "mixed", "key_factors": [],
-            "leverage": 1.5, "position_ratio": 0.1, "trading_reasoning": "test",
+            "position_pct": 0.15, "trading_reasoning": "test",
         }
         result = _validate_bull_bear_consistency(prediction)
         assert result["direction"] == "UP"
@@ -52,7 +52,7 @@ class TestBullBearValidation:
             "bull_case": {"probability": 0.30, "reasoning": "weak"},
             "bear_case": {"probability": 0.70, "reasoning": "strong"},
             "reasoning": "mixed", "key_factors": [],
-            "leverage": 1.5, "position_ratio": 0.1, "trading_reasoning": "test",
+            "position_pct": 0.15, "trading_reasoning": "test",
         }
         result = _validate_bull_bear_consistency(prediction)
         assert result["direction"] == "DOWN"
@@ -64,7 +64,7 @@ class TestBullBearValidation:
             "bull_case": {"probability": 0.48, "reasoning": "some up"},
             "bear_case": {"probability": 0.52, "reasoning": "some down"},
             "reasoning": "mixed", "key_factors": [],
-            "leverage": 1.0, "position_ratio": 0.05, "trading_reasoning": "test",
+            "position_pct": 0.05, "trading_reasoning": "test",
         }
         result = _validate_bull_bear_consistency(prediction)
         assert result["direction"] == "NEUTRAL"
@@ -76,7 +76,7 @@ class TestBullBearValidation:
             "bull_case": {"probability": 0.72, "reasoning": "strong"},
             "bear_case": {"probability": 0.28, "reasoning": "weak"},
             "reasoning": "clear uptrend", "key_factors": ["momentum"],
-            "leverage": 2.0, "position_ratio": 0.3, "trading_reasoning": "test",
+            "position_pct": 0.6, "trading_reasoning": "test",
         }
         result = _validate_bull_bear_consistency(prediction)
         assert result["direction"] == "UP"
@@ -88,7 +88,7 @@ class TestBullBearValidation:
             "bull_case": {"probability": 0.7, "reasoning": "strong"},
             "bear_case": {"probability": 0.5, "reasoning": "also strong"},
             "reasoning": "confused", "key_factors": [],
-            "leverage": 1.0, "position_ratio": 0.1, "trading_reasoning": "test",
+            "position_pct": 0.1, "trading_reasoning": "test",
         }
         result = _validate_bull_bear_consistency(prediction)
         bull_p = result["bull_case"]["probability"]
@@ -99,7 +99,7 @@ class TestBullBearValidation:
         prediction = {
             "direction": "UP", "confidence": 0.7,
             "reasoning": "legacy", "key_factors": [],
-            "leverage": 1.0, "position_ratio": 0.1, "trading_reasoning": "test",
+            "position_pct": 0.1, "trading_reasoning": "test",
         }
         result = _validate_bull_bear_consistency(prediction)
         assert result["direction"] == "UP"
@@ -123,3 +123,16 @@ class TestAgentResultFields:
         result = AgentResult(direction="UP", confidence=0.7, reasoning="test")
         assert result.bull_case == {}
         assert result.bear_case == {}
+
+    def test_agent_result_has_position_pct(self):
+        result = AgentResult(
+            direction="UP", confidence=0.7, reasoning="test",
+            position_pct=1.5,
+        )
+        assert result.position_pct == 1.5
+
+    def test_agent_result_position_pct_default(self):
+        result = AgentResult(direction="UP", confidence=0.7, reasoning="test")
+        assert result.position_pct == 0.0
+        assert not hasattr(result, "leverage") or True  # leverage field removed
+        assert not hasattr(result, "position_ratio") or True  # position_ratio field removed

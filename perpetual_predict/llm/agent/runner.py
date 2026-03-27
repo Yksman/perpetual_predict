@@ -66,24 +66,21 @@ def _build_prediction_schema(max_leverage: float = 3.0) -> str:
                 "items": {"type": "string"},
                 "description": "최종 방향을 결정한 주요 판단 요소 목록 (한국어로 작성)"
             },
-            "leverage": {
-                "type": "number",
-                "minimum": 1.0,
-                "maximum": max_leverage,
-                "description": f"사용할 레버리지 배수 (1.0~{max_leverage}). 시장 확신도와 리스크에 따라 자유롭게 결정. NEUTRAL이면 1.0"
-            },
-            "position_ratio": {
+            "position_pct": {
                 "type": "number",
                 "minimum": 0.0,
-                "maximum": 1.0,
-                "description": "잔고 대비 포지션 비율 (0.0~1.0). 0.0=진입 안함, 1.0=전액 투입. NEUTRAL이면 0.0"
+                "maximum": max_leverage,
+                "description": f"투자금 대비 진입 비율 (0.0~{max_leverage}). "
+                               f"1.0=투자금 100%, 1.5=투자금 150%(레버리지 1.5x), "
+                               f"2.0=투자금 200%(레버리지 2x). "
+                               f"NEUTRAL이면 0.0. 시장 확신도에 따라 자유롭게 결정"
             },
             "trading_reasoning": {
                 "type": "string",
                 "description": "레버리지와 포지션 비율 결정 근거를 한국어로 설명"
             }
         },
-        "required": ["bull_case", "bear_case", "direction", "confidence", "reasoning", "key_factors", "leverage", "position_ratio", "trading_reasoning"]
+        "required": ["bull_case", "bear_case", "direction", "confidence", "reasoning", "key_factors", "position_pct", "trading_reasoning"]
     })
 
 
@@ -95,8 +92,7 @@ class AgentResult:
     confidence: float
     reasoning: str
     key_factors: list[str] = field(default_factory=list)
-    leverage: float = 1.0
-    position_ratio: float = 0.0
+    position_pct: float = 0.0
     trading_reasoning: str = ""
     bull_case: dict[str, Any] = field(default_factory=dict)
     bear_case: dict[str, Any] = field(default_factory=dict)
@@ -268,24 +264,19 @@ async def run_prediction_agent(
         confidence = max(0.0, min(1.0, confidence))  # Clamp to [0, 1]
 
         # Parse trading parameters (agent-driven, clamped to configured max)
-        leverage = float(prediction.get("leverage", 1.0))
-        leverage = max(1.0, min(max_leverage, leverage))
-
-        position_ratio = float(prediction.get("position_ratio", 0.0))
-        position_ratio = max(0.0, min(1.0, position_ratio))
+        position_pct = float(prediction.get("position_pct", 0.0))
+        position_pct = max(0.0, min(max_leverage, position_pct))
 
         # Force no position for NEUTRAL
         if direction == "NEUTRAL":
-            position_ratio = 0.0
-            leverage = 1.0
+            position_pct = 0.0
 
         return AgentResult(
             direction=direction,
             confidence=confidence,
             reasoning=prediction.get("reasoning", "No reasoning provided"),
             key_factors=prediction.get("key_factors", []),
-            leverage=leverage,
-            position_ratio=position_ratio,
+            position_pct=position_pct,
             trading_reasoning=prediction.get("trading_reasoning", ""),
             bull_case=prediction.get("bull_case", {}),
             bear_case=prediction.get("bear_case", {}),
@@ -324,8 +315,7 @@ def _extract_prediction_from_text(text: str) -> dict[str, Any]:
         "confidence": 0.5,
         "reasoning": text[:500] if text else "Unable to parse prediction",
         "key_factors": [],
-        "leverage": 1.0,
-        "position_ratio": 0.0,
+        "position_pct": 0.0,
         "trading_reasoning": "",
     }
 
