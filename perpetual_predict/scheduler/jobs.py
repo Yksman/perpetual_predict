@@ -455,8 +455,7 @@ async def _run_single_prediction(
     logger.info(
         f"{log_prefix} Prediction generated: {prediction.direction} "
         f"(confidence: {prediction.confidence:.0%}, "
-        f"leverage: {prediction.leverage:.1f}x, "
-        f"ratio: {prediction.position_ratio:.0%}) "
+        f"position_pct: {prediction.position_pct:.2f}x) "
         f"for candle {target_open.isoformat()}"
     )
 
@@ -559,8 +558,7 @@ async def prediction_job(
                                 session_id=prediction.session_id,
                                 duration_ms=prediction.duration_ms,
                                 model_usage=prediction.model_usage,
-                                leverage=prediction.leverage,
-                                position_ratio=prediction.position_ratio,
+                                position_pct=prediction.position_pct,
                                 trading_reasoning=prediction.trading_reasoning,
                             )
                             await db.insert_prediction(
@@ -573,7 +571,7 @@ async def prediction_job(
                             if (
                                 paper_settings.enabled
                                 and control_pred.direction != "NEUTRAL"
-                                and control_pred.position_ratio > 0
+                                and control_pred.position_pct > 0
                             ):
                                 from perpetual_predict.trading.engine import PaperTradingEngine
                                 ctrl_account_id = f"{exp.experiment_id}_control"
@@ -630,8 +628,7 @@ async def prediction_job(
                 "direction": prediction.direction if prediction else "N/A",
                 "confidence": prediction.confidence if prediction else 0,
                 "target_candle": target_open.isoformat(),
-                "leverage": prediction.leverage if prediction else 0,
-                "position_ratio": prediction.position_ratio if prediction else 0,
+                "position_pct": prediction.position_pct if prediction else 0,
             },
         )
 
