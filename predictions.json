@@ -1,6 +1,78 @@
 {
   "predictions": [
     {
+      "id": "d2a41b52-fef4-440d-a94a-abe0be56ac05",
+      "time": "2026-03-27T00:02:40.182165+00:00",
+      "target_open": "2026-03-27T00:00:00+00:00",
+      "target_close": "2026-03-27T04:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.62,
+      "key_factors": [
+        "모든 주요 이평선(SMA 20/50/200, EMA 9/21/55) 하방 이탈 — 명확한 하락 추세",
+        "MACD Regular Bearish Divergence: 가격 HH vs MACD LH로 중기 하락 전환 시그널",
+        "Fear & Greed 13 극단적 공포 + OI -3.57% 감소 → 디레버리징 진행 중",
+        "거시경제 리스크오프: S&P/NASDAQ/Gold 동반 하락, 10Y 금리 급등",
+        "Stochastic RSI 극단적 과매도(K=7.8) → 단기 반등 가능성으로 확신도 제한",
+        "$67,275 지지선까지 -2.21%로 근접해 하방 여력 제한적"
+      ],
+      "reasoning": "복합적 약세 시그널이 우세한 상황. 가격이 SMA 20/50/200 및 모든 EMA 아래에 위치하며, MACD 히스토그램 -237.43으로 하락 모멘텀 가속 중. RSI 40.7로 과매도 미도달이나 하락 여력 존재. Stochastic RSI K=7.8/D=3.9로 극단적 과매도 영역이나 반등 확인 신호 부재. 시장 구조는 Transition 상태로 최근 5회 구조 이탈 발생, $67,300 LL 기록 후 반등했으나 하락 압력 지속. MACD Regular Bearish Divergence($72,000 고점에서 MACD 하락)가 중기 하락 전환을 시사. Fear & Greed 13(Extreme Fear)과 OI -3.57% 감소는 레버리지 청산 진행 중임을 보여줌. 다만 CVD -19.34 BTC 수준은 극단적이지 않고, 펀딩비 양전환(+0.005%)은 숏 과열 해소 조짐. 거시 환경도 부정적 — S&P -1.74%, NASDAQ -2.38%, Gold -3.48% 동반 하락은 리스크오프 심화. 10Y 금리 4.39%로 급등하며 위험자산 전반 압박. 다만 $67,275 지지선까지 -2.21%로 가까워 강한 하방 돌파보다는 제한적 하락 또는 레인지 하단 테스트 가능성이 높음.",
+      "leverage": 1.5,
+      "position_ratio": 0.12,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "1f3c7fca-ca8f-4c42-b07d-de808e1bc881",
+      "time": "2026-03-27T00:01:36.582163+00:00",
+      "target_open": "2026-03-27T00:00:00+00:00",
+      "target_close": "2026-03-27T04:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.55,
+      "key_factors": [
+        "MACD 정규 베어리시 다이버전스 — 가격 HH($71,378→$72,000) vs MACD LH(357→223)",
+        "전 SMA(20/50/200) 하회 + EMA 9/21/55 모두 음의 이격",
+        "Stochastic RSI K=7.8/D=3.9 극단적 과매도 — 단기 반등 트리거 가능",
+        "Fear & Greed Index 13 (Extreme Fear) — 역발상 매수 시그널 가능성",
+        "CVD -19.34 BTC (ratio -0.38) 매도 압력 지속",
+        "OI -3.57% 디레버리징 + Long/Short 2.32 불균형 — 롱 청산 리스크"
+      ],
+      "reasoning": "가격이 SMA 20/50/200 모두 하회하며, MACD 히스토그램이 -237로 급격히 확대 중. MACD 정규 베어리시 다이버전스(가격 HH vs MACD LH) 확인. 시장 구조가 Transition으로 전환되며 LH-LL 패턴 형성 중. CVD -19.34 BTC로 매도 압력 지속. 다만 Stochastic RSI가 K=7.8/D=3.9로 극단적 과매도 영역이고, Fear & Greed 13(Extreme Fear)으로 역발상 바운스 가능성 존재. OI -3.57% 감소는 디레버리징 진행을 시사하며, 펀딩레이트가 음에서 양으로 전환(+0.005%)된 점은 숏 커버링 발생을 암시. 추세적 하방 압력과 단기 과매도 반등 가능성이 상충하여 확신도 제한적.",
+      "leverage": 1.0,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "9452cdde-a2e6-4adc-8187-443e3216d73e",
+      "time": "2026-03-27T00:01:36.582163+00:00",
+      "target_open": "2026-03-27T00:00:00+00:00",
+      "target_close": "2026-03-27T04:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.55,
+      "key_factors": [
+        "MACD 정규 베어리시 다이버전스 — 가격 HH($71,378→$72,000) vs MACD LH(357→223)",
+        "전 SMA(20/50/200) 하회 + EMA 9/21/55 모두 음의 이격",
+        "Stochastic RSI K=7.8/D=3.9 극단적 과매도 — 단기 반등 트리거 가능",
+        "Fear & Greed Index 13 (Extreme Fear) — 역발상 매수 시그널 가능성",
+        "CVD -19.34 BTC (ratio -0.38) 매도 압력 지속",
+        "OI -3.57% 디레버리징 + Long/Short 2.32 불균형 — 롱 청산 리스크"
+      ],
+      "reasoning": "가격이 SMA 20/50/200 모두 하회하며, MACD 히스토그램이 -237로 급격히 확대 중. MACD 정규 베어리시 다이버전스(가격 HH vs MACD LH) 확인. 시장 구조가 Transition으로 전환되며 LH-LL 패턴 형성 중. CVD -19.34 BTC로 매도 압력 지속. 다만 Stochastic RSI가 K=7.8/D=3.9로 극단적 과매도 영역이고, Fear & Greed 13(Extreme Fear)으로 역발상 바운스 가능성 존재. OI -3.57% 감소는 디레버리징 진행을 시사하며, 펀딩레이트가 음에서 양으로 전환(+0.005%)된 점은 숏 커버링 발생을 암시. 추세적 하방 압력과 단기 과매도 반등 가능성이 상충하여 확신도 제한적.",
+      "leverage": 1.0,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "7ac05657-eb1d-406c-ba47-aaff6bb2ae70",
       "time": "2026-03-26T20:02:16.222362+00:00",
       "target_open": "2026-03-26T20:00:00+00:00",
@@ -19,11 +91,11 @@
       "reasoning": "시장은 명확한 하락 모멘텀을 보이고 있다. 최근 5개 캔들 중 4개가 약세이며 24H -3.9% 하락. 가격이 SMA 20/50/200 모두 하회하고, EMA 전 구간 음의 이격도(-1.07%~-2.56%). MACD 히스토그램 -256으로 급격한 하락 가속. RSI 38.3으로 과매도 근접하나 아직 반등 시그널 부재. Fear & Greed 10(극단적 공포)은 단기 과매도 반등 가능성을 시사하지만, 구조적으로 LH-LL 패턴 형성 중이고 $67,275 지지선까지 1.82% 여유가 있어 추가 하락 여지 존재. MACD 정배열 다이버전스(가격 HH vs MACD LH)가 확인되어 추세 약화 신호. 다만 펀딩레이트 -0.0021%로 전환되고 OI -3.57% 감소는 숏 포지션 과열 해소를 암시하여 하락 확신도를 제한.",
       "leverage": 1.0,
       "position_ratio": 0.08,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 0.41647993436755476,
+      "predicted_return": -0.6164799343675548,
+      "evaluated_at": "2026-03-27T00:00:30.625852+00:00"
     },
     {
       "id": "a91ec421-38db-491a-92d7-2ad2d3aa7e8a",
@@ -44,11 +116,11 @@
       "reasoning": "강한 하락 모멘텀이 지속 중이나 과매도 영역 진입으로 반등 가능성도 존재하는 혼합 국면.\n\n**하락 근거**: 가격이 SMA 20/50/200 모두 하회. MACD -284.99로 심화 확장 중이며 히스토그램 -256.38로 하락 가속. 최근 5개 캔들 중 4개 음봉. MACD 정규 베어리시 다이버전스 확인 (가격 HH $71,378→$72,000 vs MACD LH 357.4→223.6). 시장 구조 전환기(Transition)에 5개 구조 이탈, 최근 LL $67,300 형성.\n\n**반등 경계 요인**: 스토캐스틱 RSI K=0.2/D=1.9로 극단적 과매도. RSI 38.3으로 과매도 접근. 공포탐욕지수 10(극단적 공포)은 역발상 반등 신호. 펀딩레이트 -0.0021%로 음전환(숏 과열). 최신 캔들 하단 꼬리 42.5%로 매수세 유입 흔적. OI -3.57% 감소로 디레버리징 진행 중.\n\n전체적으로 추세는 하방이나, 과매도 극단에서의 기술적 반등 리스크가 상당하여 확신도를 낮게 설정.",
       "leverage": 1.0,
       "position_ratio": 0.08,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 0.41647993436755476,
+      "predicted_return": -0.6164799343675548,
+      "evaluated_at": "2026-03-27T00:00:30.598398+00:00"
     },
     {
       "id": "7673e196-a891-4d21-87f1-d15b01efc723",
@@ -69,11 +141,11 @@
       "reasoning": "강한 하락 모멘텀이 지속 중이나 과매도 영역 진입으로 반등 가능성도 존재하는 혼합 국면.\n\n**하락 근거**: 가격이 SMA 20/50/200 모두 하회. MACD -284.99로 심화 확장 중이며 히스토그램 -256.38로 하락 가속. 최근 5개 캔들 중 4개 음봉. MACD 정규 베어리시 다이버전스 확인 (가격 HH $71,378→$72,000 vs MACD LH 357.4→223.6). 시장 구조 전환기(Transition)에 5개 구조 이탈, 최근 LL $67,300 형성.\n\n**반등 경계 요인**: 스토캐스틱 RSI K=0.2/D=1.9로 극단적 과매도. RSI 38.3으로 과매도 접근. 공포탐욕지수 10(극단적 공포)은 역발상 반등 신호. 펀딩레이트 -0.0021%로 음전환(숏 과열). 최신 캔들 하단 꼬리 42.5%로 매수세 유입 흔적. OI -3.57% 감소로 디레버리징 진행 중.\n\n전체적으로 추세는 하방이나, 과매도 극단에서의 기술적 반등 리스크가 상당하여 확신도를 낮게 설정.",
       "leverage": 1.0,
       "position_ratio": 0.08,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 0.41647993436755476,
+      "predicted_return": -0.6164799343675548,
+      "evaluated_at": "2026-03-27T00:00:30.622538+00:00"
     },
     {
       "id": "c3b57c84-ee13-441b-b9bf-b212cbc70976",
