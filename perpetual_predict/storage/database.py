@@ -339,6 +339,16 @@ class Database:
                     f"ALTER TABLE predictions ADD COLUMN {col} {col_type} DEFAULT {default}"
                 )
 
+        # Migration: Add bull/bear case fields
+        for col, col_type, default in [
+            ("bull_case", "TEXT", "'{}'"),
+            ("bear_case", "TEXT", "'{}'"),
+        ]:
+            if col not in columns:
+                await self._connection.execute(
+                    f"ALTER TABLE predictions ADD COLUMN {col} {col_type} DEFAULT {default}"
+                )
+
         # Migration: Add experiment fields to predictions
         for col, col_type, default in [
             ("experiment_id", "TEXT", "NULL"),
@@ -947,9 +957,10 @@ class Database:
          symbol, timeframe, direction, confidence, reasoning, key_factors,
          session_id, duration_ms, model_usage,
          leverage, position_ratio, trading_reasoning,
+         bull_case, bear_case,
          actual_direction, actual_price_change, is_correct, predicted_return, evaluated_at,
          experiment_id, arm)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         await self.connection.execute(
             sql,
@@ -970,6 +981,8 @@ class Database:
                 prediction.leverage,
                 prediction.position_ratio,
                 prediction.trading_reasoning,
+                json.dumps(prediction.bull_case),
+                json.dumps(prediction.bear_case),
                 prediction.actual_direction,
                 prediction.actual_price_change,
                 prediction.is_correct,

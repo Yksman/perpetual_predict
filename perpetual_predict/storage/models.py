@@ -249,6 +249,10 @@ class Prediction:
     position_ratio: float = 0.0
     trading_reasoning: str = ""
 
+    # Bull/Bear case analysis
+    bull_case: dict[str, Any] = field(default_factory=dict)
+    bear_case: dict[str, Any] = field(default_factory=dict)
+
     # Evaluation results (filled after candle closes)
     actual_direction: Direction | None = None
     actual_price_change: float | None = None
@@ -277,6 +281,8 @@ class Prediction:
             "leverage": self.leverage,
             "position_ratio": self.position_ratio,
             "trading_reasoning": self.trading_reasoning,
+            "bull_case": json.dumps(self.bull_case),
+            "bear_case": json.dumps(self.bear_case),
             "actual_direction": self.actual_direction,
             "actual_price_change": self.actual_price_change,
             "is_correct": self.is_correct,
@@ -297,6 +303,14 @@ class Prediction:
         if isinstance(model_usage, str):
             model_usage = json.loads(model_usage)
 
+        bull_case = data.get("bull_case", "{}")
+        if isinstance(bull_case, str):
+            bull_case = json.loads(bull_case) if bull_case else {}
+
+        bear_case = data.get("bear_case", "{}")
+        if isinstance(bear_case, str):
+            bear_case = json.loads(bear_case) if bear_case else {}
+
         return cls(
             prediction_id=data["prediction_id"],
             prediction_time=datetime.fromisoformat(data["prediction_time"]),
@@ -314,6 +328,8 @@ class Prediction:
             leverage=data.get("leverage", 1.0),
             position_ratio=data.get("position_ratio", 0.0),
             trading_reasoning=data.get("trading_reasoning", ""),
+            bull_case=bull_case,
+            bear_case=bear_case,
             actual_direction=data.get("actual_direction"),
             actual_price_change=data.get("actual_price_change"),
             is_correct=data.get("is_correct"),
