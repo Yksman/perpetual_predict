@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "a6b8f1ef-a0f8-4720-8438-a9bbff8fe0b4",
+      "time": "2026-03-27T12:01:24.663580+00:00",
+      "target_open": "2026-03-27T12:00:00+00:00",
+      "target_close": "2026-03-27T16:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.65,
+      "key_factors": [
+        "모든 주요 MA 하회 — EMA55 대비 -4.82%로 강한 하락 추세",
+        "MACD 히스토그램 -391.88로 하락 모멘텀 가속",
+        "직전 -2.68% 대형 음봉 후 미미한 반등(+0.06%) — 매수세 부재",
+        "RSI 30.1 과매도 + 펀딩레이트 음수 전환으로 단기 반등 리스크 존재",
+        "Fear & Greed 13 극단적 공포 — 추가 투매 또는 역발상 반등 양면 가능",
+        "시장 구조 6회 이탈로 Transition 상태 — 방향성 불확실"
+      ],
+      "reasoning": "모든 주요 이동평균선 아래에서 거래되는 명확한 하락 구조. MACD 히스토그램 확대, RSI 과매도 진입에도 불구하고 추세 반전 신호 부재. 직전 -2.68% 대형 음봉 후 미미한 반등(+0.06%)은 매수세 부족을 시사. 시장 구조의 빈번한 이탈(6회)과 Transition 상태는 방향성 불확실성 속 하방 우위를 나타냄. 다만 RSI 극단적 과매도와 음수 펀딩레이트로 단기 반등 가능성이 있어 확신도를 0.65로 제한.\"",
+      "position_pct": 0.5,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "7d91f00f-ef7e-4b56-a7c4-53632ff3fc65",
       "time": "2026-03-27T08:02:11.320262+00:00",
       "target_open": "2026-03-27T08:00:00+00:00",
@@ -17,11 +40,11 @@
       ],
       "reasoning": "기술적 지표 대다수가 하락을 지지: 가격이 모든 주요 이평선 아래, MACD 하락 가속, RSI 약세 영역. 극단적 공포(F&G 13)와 음수 펀딩레이트가 반등 가능성을 제공하지만, 구조적 하락 압력이 더 강함. 최근 5개 캔들에서 의미있는 반등 시도 없이 좁은 범위 횡보 중이며, 이는 하방 이탈 전 축적 패턴일 가능성. 다만 Stochastic RSI 극단적 과매도와 시장 구조 Transition 상태로 급락보다는 점진적 하락 또는 제한적 하락 예상.",
       "position_pct": 0.08,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -2.6840170623253776,
+      "predicted_return": 2.4840170623253774,
+      "evaluated_at": "2026-03-27T12:00:20.198789+00:00"
     },
     {
       "id": "6b39c101-53ba-4601-ad34-e046f1d552e3",
