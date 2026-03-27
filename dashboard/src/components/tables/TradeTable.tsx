@@ -76,8 +76,8 @@ export function TradeTable({ trades, limit = 20 }: TradeTableProps) {
                     {t.side === 'LONG' ? '▲' : '▼'} {t.side}
                   </span>
                   <span>
-                    <span style={{ color: 'var(--text-muted)' }}>Lev </span>
-                    <span style={{ color: 'var(--text-secondary)' }}>{t.leverage}x</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Pos </span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{t.position_pct.toFixed(2)}x</span>
                   </span>
                 </div>
                 {/* Row 3: Entry → Exit + Return */}
@@ -118,7 +118,7 @@ export function TradeTable({ trades, limit = 20 }: TradeTableProps) {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              {['Exit Time', 'Side', 'Leverage', 'Entry', 'Exit', 'Net PnL', 'Return'].map(h => (
+              {['Exit Time', 'Side', 'Position', 'Entry', 'Exit', 'Net PnL', 'Return'].map(h => (
                 <th key={h} style={{
                   fontFamily: 'var(--font-display)',
                   fontSize: '0.65rem',
@@ -164,7 +164,7 @@ export function TradeTable({ trades, limit = 20 }: TradeTableProps) {
                       {t.side}
                     </span>
                   </td>
-                  <td style={cellStyle('right')}>{t.leverage}x</td>
+                  <td style={cellStyle('right')}>{t.position_pct.toFixed(2)}x</td>
                   <td style={cellStyle('right')}>${formatPrice(t.entry_price)}</td>
                   <td style={cellStyle('right')}>
                     {t.exit_price ? `$${formatPrice(t.exit_price)}` : '—'}

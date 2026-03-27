@@ -75,12 +75,8 @@ export function PredictionTable({ predictions, limit = 20 }: PredictionTableProp
                     <span style={{ color: 'var(--text-secondary)' }}>{(p.confidence * 100).toFixed(0)}%</span>
                   </span>
                   <span>
-                    <span style={{ color: 'var(--text-muted)' }}>Lev </span>
-                    <span style={{ color: 'var(--text-secondary)' }}>{p.leverage}x</span>
-                  </span>
-                  <span>
-                    <span style={{ color: 'var(--text-muted)' }}>Size </span>
-                    <span style={{ color: 'var(--text-secondary)' }}>{(p.position_ratio * 100).toFixed(0)}%</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Pos </span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{p.position_pct.toFixed(2)}x</span>
                   </span>
                 </div>
                 {p.actual_price_change !== null ? (
@@ -108,7 +104,7 @@ export function PredictionTable({ predictions, limit = 20 }: PredictionTableProp
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              {['Time', 'Direction', 'Confidence', 'Leverage', 'Ratio', 'Result', 'Price Δ'].map(h => (
+              {['Time', 'Direction', 'Confidence', 'Position', 'Result', 'Price Δ'].map(h => (
                 <th key={h} style={{
                   fontFamily: 'var(--font-display)',
                   fontSize: '0.65rem',
@@ -167,11 +163,8 @@ export function PredictionTable({ predictions, limit = 20 }: PredictionTableProp
                   </div>
                 </td>
                 <td style={cellStyle('right')}>
-                  <span className="mono" style={{ fontSize: 'var(--table-font)' }}>{p.leverage}x</span>
-                </td>
-                <td style={cellStyle('right')}>
                   <span className="mono" style={{ fontSize: 'var(--table-font)' }}>
-                    {(p.position_ratio * 100).toFixed(0)}%
+                    {p.position_pct.toFixed(2)}x
                   </span>
                 </td>
                 <td style={cellStyle('right')}>

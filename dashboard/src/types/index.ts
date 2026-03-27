@@ -9,8 +9,7 @@ export interface Prediction {
   confidence: number;
   key_factors: string[];
   reasoning: string;
-  leverage: number;
-  position_ratio: number;
+  position_pct: number;
   is_correct: boolean | null;
   actual_direction: Direction | null;
   actual_price_change: number | null;
@@ -26,9 +25,7 @@ export interface Trade {
   id: string;
   prediction_id: string;
   side: 'LONG' | 'SHORT';
-  leverage: number;
-  position_size: number;
-  position_ratio: number;
+  position_pct: number;
   entry_price: number;
   entry_time: string;
   exit_price: number | null;
@@ -99,8 +96,7 @@ export type ExperimentStatus = 'active' | 'paused' | 'completed';
 export interface ExperimentPredictionArm {
   direction: Direction;
   confidence: number;
-  leverage: number;
-  position_ratio: number;
+  position_pct: number;
   is_correct: boolean | null;
   actual_direction: Direction | null;
   actual_price_change: number | null;
