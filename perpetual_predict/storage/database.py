@@ -173,9 +173,7 @@ CREATE TABLE IF NOT EXISTS paper_trades (
     prediction_id TEXT NOT NULL,
     symbol TEXT NOT NULL,
     side TEXT NOT NULL,
-    leverage REAL NOT NULL,
-    position_size REAL NOT NULL,
-    position_ratio REAL NOT NULL DEFAULT 1.0,
+    position_pct REAL NOT NULL DEFAULT 0.0,
     notional_value REAL NOT NULL,
     entry_price REAL NOT NULL,
     entry_time TEXT NOT NULL,
@@ -328,16 +326,25 @@ class Database:
                 "ALTER TABLE predictions ADD COLUMN predicted_return REAL"
             )
 
-        # Migration: Add paper trading fields to predictions
-        for col, col_type, default in [
-            ("leverage", "REAL", "1.0"),
-            ("position_ratio", "REAL", "0.0"),
-            ("trading_reasoning", "TEXT", "''"),
-        ]:
-            if col not in columns:
+        # Migration: Add position_pct field (replaces leverage + position_ratio)
+        if "position_pct" not in columns:
+            if "leverage" in columns and "position_ratio" in columns:
                 await self._connection.execute(
-                    f"ALTER TABLE predictions ADD COLUMN {col} {col_type} DEFAULT {default}"
+                    "ALTER TABLE predictions ADD COLUMN position_pct REAL DEFAULT 0.0"
                 )
+                await self._connection.execute(
+                    "UPDATE predictions SET position_pct = leverage * position_ratio"
+                )
+            else:
+                await self._connection.execute(
+                    "ALTER TABLE predictions ADD COLUMN position_pct REAL DEFAULT 0.0"
+                )
+
+        # Migration: Add trading_reasoning field to predictions
+        if "trading_reasoning" not in columns:
+            await self._connection.execute(
+                "ALTER TABLE predictions ADD COLUMN trading_reasoning TEXT DEFAULT ''"
+            )
 
         # Migration: Add bull/bear case fields
         for col, col_type, default in [
@@ -357,6 +364,21 @@ class Database:
             if col not in columns:
                 await self._connection.execute(
                     f"ALTER TABLE predictions ADD COLUMN {col} {col_type} DEFAULT {default}"
+                )
+
+        # Migration: Add position_pct to paper_trades (replaces leverage + position_ratio)
+        paper_columns = set()
+        async with self._connection.execute("PRAGMA table_info(paper_trades)") as cursor:
+            async for row in cursor:
+                paper_columns.add(row[1])
+
+        if "position_pct" not in paper_columns:
+            await self._connection.execute(
+                "ALTER TABLE paper_trades ADD COLUMN position_pct REAL DEFAULT 0.0"
+            )
+            if "leverage" in paper_columns and "position_ratio" in paper_columns:
+                await self._connection.execute(
+                    "UPDATE paper_trades SET position_pct = leverage * position_ratio"
                 )
 
         # Migration: Add experiment fields to paper_trades
@@ -404,8 +426,7 @@ class Database:
                 "  predicted_return REAL,"
                 "  evaluated_at TEXT,"
                 "  created_at TEXT DEFAULT CURRENT_TIMESTAMP,"
-                "  leverage REAL DEFAULT 1.0,"
-                "  position_ratio REAL DEFAULT 0.0,"
+                "  position_pct REAL DEFAULT 0.0,"
                 "  trading_reasoning TEXT DEFAULT '',"
                 "  experiment_id TEXT DEFAULT NULL,"
                 "  arm TEXT DEFAULT 'baseline'"
@@ -956,11 +977,11 @@ class Database:
         (prediction_id, prediction_time, target_candle_open, target_candle_close,
          symbol, timeframe, direction, confidence, reasoning, key_factors,
          session_id, duration_ms, model_usage,
-         leverage, position_ratio, trading_reasoning,
+         position_pct, trading_reasoning,
          bull_case, bear_case,
          actual_direction, actual_price_change, is_correct, predicted_return, evaluated_at,
          experiment_id, arm)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         await self.connection.execute(
             sql,
@@ -978,8 +999,7 @@ class Database:
                 prediction.session_id,
                 prediction.duration_ms,
                 json.dumps(prediction.model_usage),
-                prediction.leverage,
-                prediction.position_ratio,
+                prediction.position_pct,
                 prediction.trading_reasoning,
                 json.dumps(prediction.bull_case),
                 json.dumps(prediction.bear_case),
@@ -1207,7 +1227,7 @@ class Database:
         sql = """
         INSERT INTO paper_trades
         (trade_id, account_id, prediction_id, symbol,
-         side, leverage, position_size, position_ratio, notional_value,
+         side, position_pct, notional_value,
          entry_price, entry_time,
          exit_price, exit_time,
          entry_fee, exit_fee, total_fees,
@@ -1215,13 +1235,13 @@ class Database:
          balance_before, balance_after,
          status, confidence, trading_reasoning,
          experiment_id, arm)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         await self.connection.execute(
             sql,
             (
                 d["trade_id"], d["account_id"], d["prediction_id"], d["symbol"],
-                d["side"], d["leverage"], d["position_size"], d["position_ratio"],
+                d["side"], d["position_pct"],
                 d["notional_value"],
                 d["entry_price"], d["entry_time"],
                 d["exit_price"], d["exit_time"],
