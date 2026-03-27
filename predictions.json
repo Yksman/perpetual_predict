@@ -1,6 +1,78 @@
 {
   "predictions": [
     {
+      "id": "57cb2a24-4f2a-46a4-a8aa-c3963016b774",
+      "time": "2026-03-27T04:02:51.332329+00:00",
+      "target_open": "2026-03-27T04:00:00+00:00",
+      "target_close": "2026-03-27T08:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.6,
+      "key_factors": [
+        "모든 주요 이평선(EMA/SMA) 하방 배열 - 완전한 약세 구조",
+        "MACD 히스토그램 -230 확대 - 하락 모멘텀 가속",
+        "거시환경 리스크오프: S&P -1.74%, NASDAQ -2.38%, DXY 강세",
+        "Stoch RSI K=10.3 극단적 과매도 - 단기 반등 리스크",
+        "공포탐욕지수 13 극단적 공포 - 역발상 반등 가능성",
+        "L/S 비율 2.32 롱 과밀 - 하방 스퀴즈 위험"
+      ],
+      "reasoning": "기술적으로 모든 이평선 하방 배열과 MACD 확대가 하락 모멘텀을 확인. 거시환경의 강한 리스크오프(미국 증시 하락, 달러 강세, 금 급락)가 암호화폐 하방 압력 강화. 다만 Stoch RSI 극단적 과매도와 극단적 공포 수준이 단기 기술적 반등 가능성을 열어두어 확신도를 0.6으로 제한. 시장 구조의 잦은 브레이크(6회)는 방향성 확립이 어려운 전환기임을 시사.",
+      "leverage": 1.2,
+      "position_ratio": 0.15,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "6b39c101-53ba-4601-ad34-e046f1d552e3",
+      "time": "2026-03-27T04:01:26.267886+00:00",
+      "target_open": "2026-03-27T04:00:00+00:00",
+      "target_close": "2026-03-27T08:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.58,
+      "key_factors": [
+        "전 이평선(EMA/SMA) 하회 — 단기·중기 하락 추세 확인",
+        "MACD 히스토그램 -230 확장 — 하락 모멘텀 강화",
+        "Fear & Greed 13 극단적 공포 — 역추세 반등 경고",
+        "Stoch RSI K=10.3 극과매도 — 기술적 반등 임박 신호",
+        "Long/Short 2.32 롱 과밀 — 롱 스퀴즈 하방 리스크",
+        "시장 구조 Transition + 6회 브레이크 — 방향성 불확실"
+      ],
+      "reasoning": "기술적 지표 대부분이 하방을 가리키고 있으나(모든 이평선 하회, MACD 확장, 구조적 LL 형성), 극단적 공포 지수와 과매도 스토캐스틱이 반등 가능성을 시사. 핵심 갈등은 '추세 지속 vs 과매도 반등'이며, 현재 추세 지표가 근소하게 우세. 다만 $67,275 지지선 근접으로 하방도 제한적이어서 확신도 낮음.",
+      "leverage": 1.0,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
+      "id": "a2d7cda7-dad0-49d7-aa12-e4e8a1e216d0",
+      "time": "2026-03-27T04:01:26.267886+00:00",
+      "target_open": "2026-03-27T04:00:00+00:00",
+      "target_close": "2026-03-27T08:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.58,
+      "key_factors": [
+        "전 이평선(EMA/SMA) 하회 — 단기·중기 하락 추세 확인",
+        "MACD 히스토그램 -230 확장 — 하락 모멘텀 강화",
+        "Fear & Greed 13 극단적 공포 — 역추세 반등 경고",
+        "Stoch RSI K=10.3 극과매도 — 기술적 반등 임박 신호",
+        "Long/Short 2.32 롱 과밀 — 롱 스퀴즈 하방 리스크",
+        "시장 구조 Transition + 6회 브레이크 — 방향성 불확실"
+      ],
+      "reasoning": "기술적 지표 대부분이 하방을 가리키고 있으나(모든 이평선 하회, MACD 확장, 구조적 LL 형성), 극단적 공포 지수와 과매도 스토캐스틱이 반등 가능성을 시사. 핵심 갈등은 '추세 지속 vs 과매도 반등'이며, 현재 추세 지표가 근소하게 우세. 다만 $67,275 지지선 근접으로 하방도 제한적이어서 확신도 낮음.",
+      "leverage": 1.0,
+      "position_ratio": 0.08,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "6e77b0e4-cb8a-48b6-93e3-32750cbb4c6b",
       "time": "2026-03-27T02:49:47.701426+00:00",
       "target_open": "2026-03-27T00:00:00+00:00",
@@ -18,11 +90,11 @@
       "reasoning": "기술적으로 모든 주요 MA 하방 위치, MACD 베어리시 다이버전스, 하락 모멘텀 가속이 하방 우위를 지지한다. 매크로 환경도 글로벌 리스크오프(주식·금 동반 하락, 달러 강세)로 암호화폐에 불리하다. 다만 스토캐스틱 RSI 극단적 과매도와 지지선 근접, Fear & Greed 극단적 공포(13)가 하방 여력을 제한하여 급락보다는 완만한 하락 또는 횡보 후 추가 하락 시나리오가 유력하다. 확신도가 높지 않은 이유는 과매도 구간에서의 기술적 반등 가능성 때문이다.",
       "leverage": 1.0,
       "position_ratio": 0.08,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "NEUTRAL",
+      "actual_price_change": -0.08620677122933022,
+      "predicted_return": -0.11379322877066979,
+      "evaluated_at": "2026-03-27T04:00:18.127013+00:00"
     },
     {
       "id": "be8fca2f-b2d1-4626-857b-19f0679213b1",
@@ -42,11 +114,11 @@
       "reasoning": "MACD 베어리시 다이버전스와 모든 주요 이동평균선 하방 이탈이 핵심 약세 신호. 극단적 공포(F&G 13)가 역발상 반등 가능성을 제공하지만, 기술적 구조가 아직 하방을 지지. RSI와 StochRSI 모두 과매도 근접이나 반전 확인 신호 부재. 마켓 구조 전환(Transition) 중 5회 이탈은 방향성 불확실을 의미하나, 현재 모멘텀 지표 배열은 추가 하락 쪽에 무게. 다만 극단적 공포와 지지선 근접으로 낙폭은 제한적일 가능성.\"",
       "leverage": 1.0,
       "position_ratio": 0.08,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "NEUTRAL",
+      "actual_price_change": -0.08620677122933022,
+      "predicted_return": -0.11379322877066979,
+      "evaluated_at": "2026-03-27T04:00:18.085208+00:00"
     },
     {
       "id": "2e20e69b-d57b-4b75-a31a-98f647969c03",
@@ -66,11 +138,11 @@
       "reasoning": "MACD 베어리시 다이버전스와 모든 주요 이동평균선 하방 이탈이 핵심 약세 신호. 극단적 공포(F&G 13)가 역발상 반등 가능성을 제공하지만, 기술적 구조가 아직 하방을 지지. RSI와 StochRSI 모두 과매도 근접이나 반전 확인 신호 부재. 마켓 구조 전환(Transition) 중 5회 이탈은 방향성 불확실을 의미하나, 현재 모멘텀 지표 배열은 추가 하락 쪽에 무게. 다만 극단적 공포와 지지선 근접으로 낙폭은 제한적일 가능성.\"",
       "leverage": 1.0,
       "position_ratio": 0.08,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "NEUTRAL",
+      "actual_price_change": -0.08620677122933022,
+      "predicted_return": -0.11379322877066979,
+      "evaluated_at": "2026-03-27T04:00:18.122208+00:00"
     },
     {
       "id": "7ac05657-eb1d-406c-ba47-aaff6bb2ae70",
