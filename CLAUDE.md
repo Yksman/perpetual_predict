@@ -47,10 +47,11 @@ uv run python -m perpetual_predict export --push             # Export and push t
 - `cli/` - Command entry points: `collect.py`, `cycle.py`, `daemon.py`, `report.py`, `experiment.py`, `export.py`
 - `collectors/binance/` - Async collectors sharing a `BinanceClient` session
 - `collectors/macro/` - Macroeconomic data: `fred_collector.py` (FRED API), `market_index_collector.py` (yfinance: SPX, NASDAQ, DXY, GOLD)
+- `collectors/news/` - News collection: `news_collector.py` (RSS primary), `rss_collector.py` (feedparser, CoinTelegraph + CoinDesk)
 - `llm/agent/runner.py` - Invokes `claude -p --output-format json --json-schema` for structured predictions
 - `llm/context/builder.py` - Builds market context prompt from collected data
 - `llm/evaluation/evaluator.py` - Compares predictions against actual candle outcomes
-- `experiment/` - A/B testing framework: `models.py` (SEED_MODULES, EXPERIMENTAL_MODULES, DEFAULT_MODULES), `analyzer.py` (statistical significance)
+- `experiment/` - A/B testing framework: `models.py` (multi-variant `Experiment.variants: dict`, SEED_MODULES, EXPERIMENTAL_MODULES), `analyzer.py` (per-variant VariantResult, statistical significance)
 - `trading/` - Paper trading engine: `engine.py` (positions from predictions), `metrics.py` (accuracy, PnL, Sharpe)
 - `export/exporter.py` - Exports predictions, trades, metrics to JSON for dashboard consumption
 - `scheduler/scheduler.py` - APScheduler-based cron (4H intervals)
@@ -63,14 +64,14 @@ uv run python -m perpetual_predict export --push             # Export and push t
 
 1. **Evaluate**: 대상 캔들이 마감된 미평가 예측(is_correct=NULL)을 찾아 실제 방향과 비교. NEUTRAL 임계값 ±0.2% (수수료 손익분기)
 2. **Collect + Verify**: `collect_with_verification()` — 수집 후 데이터 무결성 검증. 실패 시 5회 재시도 (2s~10s 지수 백오프). 각 재시도마다 Discord 알림
-3. **Predict**: baseline 예측 실행 → 활성 실험이 있으면 variant arm 별도 실행 (10초 쿨다운). 에이전트는 `position_pct`(0.0~max_leverage)로 투자금 대비 진입 비율을 결정. 예측 결과로 paper trade 자동 오픈
+3. **Predict**: baseline 예측 실행 → 활성 실험이 있으면 모든 variant arm을 **병렬 실행** (max 4 concurrent, `asyncio.gather`). Control arm은 baseline 예측을 복사 재사용. 각 variant는 독립 paper trading 계좌(`{experiment_id}_variant_{name}`)에 거래 오픈. 에이전트는 `position_pct`(0.0~max_leverage)로 투자금 대비 진입 비율을 결정
 
 ## Context Builder Module System
 
 `llm/context/builder.py`의 `MarketContextBuilder.build()`:
 1. Binance에서 250개 캔들 fetch → pandas DataFrame 변환
 2. `analyzers/technical/` 8개 모듈로 지표 계산 (trend, momentum, volatility, price_structure, volume, market_structure, divergence, support_resistance)
-3. 추가 데이터 fetch: funding_rates, OI, long_short, fear_greed, liquidations, macro
+3. 추가 데이터 fetch: funding_rates, OI, long_short, fear_greed, liquidations, macro, news (RSS)
 4. `MarketContext` dataclass (~126 fields) 조립
 5. `format_prompt(enabled_modules)`: 모듈 이름 → `_section_*()` 매핑으로 프롬프트 생성. `None`이면 `DEFAULT_MODULES` 사용
 
@@ -79,7 +80,7 @@ uv run python -m perpetual_predict export --push             # Export and push t
 React 19 + Vite + TypeScript 정적 앱. 백엔드 API 없이 `export` 명령이 생성한 JSON 파일(`dashboard/data/*.json`)을 fetch하여 렌더링. Vercel 배포.
 
 - `predictions.json`, `trades.json`, `metrics.json`, `meta.json`, `experiments.json`
-- Tabs: Predictions (적중률, 신뢰도), Trading (PnL, 승률, 드로다운), Experiments (control vs variant)
+- Tabs: Predictions (적중률, 신뢰도), Trading (PnL, 승률, 드로다운), Experiments (control vs multi-variant, 각 variant별 카드)
 
 ## Key Patterns
 
@@ -105,19 +106,25 @@ React 19 + Vite + TypeScript 정적 앱. 백엔드 API 없이 `export` 명령이
 
 ## A/B Testing Framework
 
-실험 시스템은 control(baseline 모듈) vs variant(+신규 모듈) 구성을 비교한다.
+실험 시스템은 control(baseline 모듈) vs 하나 이상의 named variant 구성을 비교한다.
+
+**Multi-variant 구조**: `Experiment.variants: dict[str, list[str]]` — 키는 variant 이름, 값은 해당 arm의 모듈 목록. CLI: `experiment create --name <name> --variant macro --variant news --variant macro,news`
 
 **모듈 라이프사이클**:
 1. 신규 모듈 → `EXPERIMENTAL_MODULES` 등록 → `DEFAULT_MODULES`에서 자동 제외
-2. `experiment create --add <module>` → control/variant arm 생성, 각 arm별 독립 paper trading 계좌
-3. `min_samples`(기본 30) 이상 예측 누적 후 통계적 유의성 검정 (p-value < 0.05)
-4. `experiment merge` → 승리 variant의 모듈을 `EXPERIMENTAL_MODULES`에서 제거하여 baseline에 포함
+2. `experiment create --variant <modules>` → control + N개 variant arm 생성, 각 arm별 독립 paper trading 계좌 (`{experiment_id}_variant_{name}`)
+3. `min_samples`(기본 30) 이상 예측 누적 후 variant별 통계적 유의성 검정 (p-value < 0.05)
+4. `experiment merge [--variant <name>]` → 승리 variant의 모듈을 `EXPERIMENTAL_MODULES`에서 제거하여 baseline에 포함
 
-**Control 재사용 최적화**: baseline 예측은 모든 활성 실험의 control arm으로 공유된다. 동일 control 구성의 실험이 여러 개여도 `claude -p` 호출은 1회만 실행.
+**Variant 병렬 실행**: 모든 variant가 `asyncio.gather`로 병렬 실행 (max 4 concurrent). `claude -p`는 독립 subprocess이므로 완전한 프로세스 격리.
+
+**Control 재사용 최적화**: baseline 예측은 모든 활성 실험의 control arm으로 복사 저장. `claude -p` 호출은 1회만 실행.
 
 **평가 지표**: `accuracy` (방향 적중률), `net_return` (누적 수익률%), `sharpe` (위험 조정 수익률)
 
-**현재 실험 모듈**: `macro` (FRED + yfinance 거시경제지표)
+**현재 실험 모듈**: `news` (RSS 뉴스 헤드라인, CoinTelegraph + CoinDesk)
+
+**Sentiment 모듈 분리**: `sentiment` (legacy) → `sentiment_market` (funding rate, OI, long/short ratio) + `fear_greed` (Alternative.me index). Legacy `"sentiment"` 키는 두 모듈 모두 활성화하는 backward-compat 경로로 유지됨.
 
 ## Environment Variables
 
@@ -130,6 +137,9 @@ Optional (see `config/settings.py` for defaults):
 - `DATABASE_PATH=data/perpetual_predict.db`
 - `FRED_API_KEY` - FRED API key for macroeconomic data (fred.stlouisfed.org)
 - `MACRO_ENABLED=true` - Enable/disable macro data collection
+- `NEWS_ENABLED=true` - Enable/disable news collection
+- `NEWS_MAX_HEADLINES=100` - Maximum headlines to include in prompt context
+- `NEWS_RSS_FEEDS` - Comma-separated RSS feed URLs (default: CoinTelegraph + CoinDesk)
 - `EXPERIMENT_ENABLED=false` - Enable A/B experiment arms in cycle
 - `EXPERIMENT_MIN_SAMPLES=30` - Minimum samples before significance test
 - `EXPERIMENT_SIGNIFICANCE=0.05` - p-value threshold
