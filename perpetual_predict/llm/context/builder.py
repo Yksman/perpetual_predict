@@ -173,7 +173,14 @@ class MarketContext:
         if "liquidation" in modules:
             sections.append(self._section_liquidation())
         if "sentiment" in modules:
-            sections.append(self._section_sentiment())
+            # Legacy: "sentiment" enables both sub-modules
+            sections.append(self._section_sentiment_market())
+            sections.append(self._section_fear_greed())
+        else:
+            if "sentiment_market" in modules:
+                sections.append(self._section_sentiment_market())
+            if "fear_greed" in modules:
+                sections.append(self._section_fear_greed())
         if "market_structure" in modules:
             sections.append(self._section_market_structure())
         if "divergences" in modules:
@@ -283,6 +290,10 @@ class MarketContext:
         )
 
     def _section_sentiment(self) -> str:
+        """Legacy: full sentiment section. Use sentiment_market + fear_greed instead."""
+        return self._section_sentiment_market() + "\n" + self._section_fear_greed()
+
+    def _section_sentiment_market(self) -> str:
         return (
             f"### Market Sentiment\n"
             f"- Funding Rate: {self.funding_rate * 100:.4f}%\n"
@@ -290,8 +301,14 @@ class MarketContext:
             f"- Funding Change: {(self.funding_rate - self.funding_rate_8h_ago) * 100:+.4f}%\n"
             f"- Open Interest: ${self.open_interest:,.0f}\n"
             f"- OI 24H Change: {self.oi_change_24h:+.2f}%\n"
-            f"- Long/Short Ratio: {self.long_short_ratio:.2f}\n"
-            f"- Fear & Greed Index: {self.fear_greed_value} ({self.fear_greed_classification})"
+            f"- Long/Short Ratio: {self.long_short_ratio:.2f}"
+        )
+
+    def _section_fear_greed(self) -> str:
+        return (
+            f"### Fear & Greed Index\n"
+            f"- Value: {self.fear_greed_value}\n"
+            f"- Classification: {self.fear_greed_classification}"
         )
 
     def _section_market_structure(self) -> str:
