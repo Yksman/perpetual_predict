@@ -126,17 +126,67 @@ class ExperimentAccount:
 
 
 @dataclass
-class ExperimentResult:
-    """Statistical analysis result for an experiment."""
+class VariantResult:
+    """Statistical result for a single variant arm."""
 
-    experiment_id: str
+    variant_name: str
     sample_size: int
-    control_accuracy: float
-    variant_accuracy: float
-    control_return: float
-    variant_return: float
-    control_sharpe: float
-    variant_sharpe: float
+    accuracy: float
+    net_return: float
+    sharpe: float
     p_value: float | None = None
     is_significant: bool = False
-    recommended_winner: str | None = None  # 'control' | 'variant' | None
+
+
+@dataclass
+class ExperimentResult:
+    """Statistical analysis result for an experiment (multi-variant)."""
+
+    experiment_id: str
+    control_accuracy: float
+    control_return: float
+    control_sharpe: float
+    control_sample_size: int
+    variant_results: list[VariantResult] = field(default_factory=list)
+
+    @property
+    def sample_size(self) -> int:
+        return self.control_sample_size
+
+    @property
+    def variant_accuracy(self) -> float:
+        return self.variant_results[0].accuracy if self.variant_results else 0.0
+
+    @property
+    def variant_return(self) -> float:
+        return self.variant_results[0].net_return if self.variant_results else 0.0
+
+    @property
+    def variant_sharpe(self) -> float:
+        return self.variant_results[0].sharpe if self.variant_results else 0.0
+
+    @property
+    def p_value(self) -> float | None:
+        return self.variant_results[0].p_value if self.variant_results else None
+
+    @property
+    def is_significant(self) -> bool:
+        return self.variant_results[0].is_significant if self.variant_results else False
+
+    @property
+    def recommended_winner(self) -> str | None:
+        significant = [v for v in self.variant_results if v.is_significant]
+        if not significant:
+            return None
+        return f"variant_{significant[0].variant_name}"
+
+    def best_variant(self, metric: str = "net_return") -> VariantResult | None:
+        significant = [v for v in self.variant_results if v.is_significant]
+        if not significant:
+            return None
+        if metric == "accuracy":
+            return max(significant, key=lambda v: v.accuracy)
+        elif metric == "sharpe":
+            return max(significant, key=lambda v: v.sharpe)
+        else:
+            return max(significant, key=lambda v: v.net_return)
