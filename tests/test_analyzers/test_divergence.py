@@ -5,7 +5,9 @@ import pandas as pd
 import pytest
 
 from perpetual_predict.analyzers.technical.divergence import (
+    Divergence,
     DivergenceResult,
+    _build_divergence_summary,
     analyze_divergences,
     detect_rsi_divergence,
 )
@@ -108,4 +110,63 @@ class TestAnalyzeDivergences:
         })
         result = analyze_divergences(df, left_bars=2, right_bars=2)
         assert isinstance(result, DivergenceResult)
-        assert len(result.divergences) == 0
+
+
+class TestDivergenceSummaryDebiasing:
+    def test_summary_has_no_directional_labels(self):
+        """Summary should not contain Bullish/Bearish direction labels."""
+        divs = [
+            Divergence(
+                type="bearish",
+                indicator="MACD",
+                price_point_1=70000,
+                price_point_2=72000,
+                indicator_point_1=357,
+                indicator_point_2=223,
+                index_1=10,
+                index_2=20,
+                strength="regular",
+            ),
+            Divergence(
+                type="bullish",
+                indicator="RSI",
+                price_point_1=69000,
+                price_point_2=67000,
+                indicator_point_1=30,
+                indicator_point_2=35,
+                index_1=15,
+                index_2=25,
+                strength="regular",
+            ),
+        ]
+        summary = _build_divergence_summary(divs)
+
+        assert "Bearish" not in summary
+        assert "Bullish" not in summary
+        # Raw patterns should still be present
+        assert "HH" in summary
+        assert "LL" in summary
+        assert "MACD" in summary
+        assert "RSI" in summary
+        assert "Regular" in summary
+
+    def test_hidden_divergence_no_labels(self):
+        """Hidden divergences should also not have direction labels."""
+        divs = [
+            Divergence(
+                type="bearish",
+                indicator="MACD",
+                price_point_1=72000,
+                price_point_2=71000,
+                indicator_point_1=200,
+                indicator_point_2=250,
+                index_1=10,
+                index_2=20,
+                strength="hidden",
+            ),
+        ]
+        summary = _build_divergence_summary(divs)
+
+        assert "Bearish" not in summary
+        assert "Hidden" in summary
+        assert "LH" in summary

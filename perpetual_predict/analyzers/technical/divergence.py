@@ -275,7 +275,6 @@ def _build_divergence_summary(divergences: list[Divergence]) -> str:
     lines = []
     for d in divergences:
         strength_label = "Regular" if d.strength == "regular" else "Hidden"
-        direction = "Bullish" if d.type == "bullish" else "Bearish"
 
         if d.type == "bullish":
             price_pattern = "LL" if d.strength == "regular" else "HL"
@@ -285,7 +284,7 @@ def _build_divergence_summary(divergences: list[Divergence]) -> str:
             ind_pattern = "LH" if d.strength == "regular" else "HH"
 
         lines.append(
-            f"  - {d.indicator} {strength_label} {direction}: "
+            f"  - {d.indicator} {strength_label}: "
             f"Price {price_pattern} (${d.price_point_1:,.0f}→${d.price_point_2:,.0f}), "
             f"{d.indicator} {ind_pattern} ({d.indicator_point_1:.1f}→{d.indicator_point_2:.1f})"
         )
