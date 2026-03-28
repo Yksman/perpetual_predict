@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, AsyncIterator
 
@@ -20,6 +20,7 @@ from perpetual_predict.storage.models import (
     Liquidation,
     LongShortRatio,
     MacroIndicator,
+    NewsArticle,
     OpenInterest,
     Prediction,
     PredictionMetrics,
@@ -207,6 +208,22 @@ CREATE TABLE IF NOT EXISTS macro_indicators (
 )
 """
 
+CREATE_NEWS_ARTICLES_TABLE = """
+CREATE TABLE IF NOT EXISTS news_articles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT NOT NULL,
+    title TEXT NOT NULL,
+    source TEXT NOT NULL,
+    url TEXT NOT NULL,
+    votes_positive INTEGER,
+    votes_negative INTEGER,
+    votes_important INTEGER,
+    collected_at TEXT NOT NULL,
+    collector_source TEXT NOT NULL,
+    UNIQUE(url)
+)
+"""
+
 CREATE_EXPERIMENTS_TABLE = """
 CREATE TABLE IF NOT EXISTS experiments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -252,6 +269,7 @@ CREATE_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_paper_trades_prediction ON paper_trades(prediction_id)",
     "CREATE INDEX IF NOT EXISTS idx_paper_trades_account ON paper_trades(account_id, entry_time DESC)",
     "CREATE INDEX IF NOT EXISTS idx_macro_source_indicator_date ON macro_indicators(source, indicator, date DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_news_articles_timestamp ON news_articles(timestamp DESC)",
 ]
 
 # Experiment-related indexes (created after migration adds columns)
@@ -297,6 +315,7 @@ class Database:
         await self._connection.execute(CREATE_PAPER_ACCOUNT_TABLE)
         await self._connection.execute(CREATE_PAPER_TRADES_TABLE)
         await self._connection.execute(CREATE_MACRO_INDICATORS_TABLE)
+        await self._connection.execute(CREATE_NEWS_ARTICLES_TABLE)
         await self._connection.execute(CREATE_EXPERIMENTS_TABLE)
         await self._connection.execute(CREATE_EXPERIMENT_ACCOUNTS_TABLE)
 
@@ -941,6 +960,60 @@ class Database:
                 row["indicator"]: MacroIndicator.from_dict(dict(row))
                 for row in rows
             }
+
+    # News article operations
+    async def insert_news_articles(self, articles: list[NewsArticle]) -> None:
+        """Insert multiple news articles (INSERT OR REPLACE by URL)."""
+        if not articles:
+            return
+        sql = """
+        INSERT OR REPLACE INTO news_articles
+        (timestamp, title, source, url, votes_positive, votes_negative,
+         votes_important, collected_at, collector_source)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        data = [
+            (
+                a.timestamp.isoformat(),
+                a.title,
+                a.source,
+                a.url,
+                a.votes_positive,
+                a.votes_negative,
+                a.votes_important,
+                a.collected_at.isoformat(),
+                a.collector_source,
+            )
+            for a in articles
+        ]
+        await self.connection.executemany(sql, data)
+        await self.connection.commit()
+
+    async def get_recent_news(
+        self, hours: int = 4, limit: int | None = None
+    ) -> list[NewsArticle]:
+        """Get recent news articles within the given time window.
+
+        Args:
+            hours: Number of hours to look back from now.
+            limit: Maximum number of articles to return.
+
+        Returns:
+            List of NewsArticle ordered by timestamp descending.
+        """
+        from datetime import timedelta
+
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+        sql = "SELECT * FROM news_articles WHERE timestamp >= ? ORDER BY timestamp DESC"
+        params: list[Any] = [cutoff]
+
+        if limit is not None:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+            return [NewsArticle.from_dict(dict(row)) for row in rows]
 
     # Liquidation operations
     async def insert_liquidation(self, liq: Liquidation) -> None:
