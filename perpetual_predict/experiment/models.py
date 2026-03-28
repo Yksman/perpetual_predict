@@ -43,13 +43,20 @@ class Experiment:
     description: str = ""
     status: str = "active"  # active | paused | completed
     control_modules: list[str] = field(default_factory=lambda: list(DEFAULT_MODULES))
-    variant_modules: list[str] = field(default_factory=lambda: list(DEFAULT_MODULES))
+    variants: dict[str, list[str]] = field(default_factory=dict)
     min_samples: int = 30
     significance_level: float = 0.05
     primary_metric: str = "net_return"  # accuracy | net_return | sharpe
     created_at: datetime | None = None
     completed_at: datetime | None = None
     winner: str | None = None  # 'control' | 'variant' | None
+
+    @property
+    def variant_modules(self) -> list[str]:
+        """Backward compat: return first variant's modules."""
+        if not self.variants:
+            return []
+        return next(iter(self.variants.values()))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -58,7 +65,7 @@ class Experiment:
             "description": self.description,
             "status": self.status,
             "control_modules": json.dumps(self.control_modules),
-            "variant_modules": json.dumps(self.variant_modules),
+            "variant_modules": json.dumps(self.variants),
             "min_samples": self.min_samples,
             "significance_level": self.significance_level,
             "primary_metric": self.primary_metric,
@@ -73,9 +80,15 @@ class Experiment:
         if isinstance(control_modules, str):
             control_modules = json.loads(control_modules)
 
-        variant_modules = data.get("variant_modules", "[]")
-        if isinstance(variant_modules, str):
-            variant_modules = json.loads(variant_modules)
+        variant_data = data.get("variant_modules", "{}")
+        if isinstance(variant_data, str):
+            variant_data = json.loads(variant_data)
+
+        # Backward compat: if stored as list (old format), wrap in dict
+        if isinstance(variant_data, list):
+            variants = {"variant": variant_data}
+        else:
+            variants = variant_data
 
         return cls(
             experiment_id=data["experiment_id"],
@@ -83,7 +96,7 @@ class Experiment:
             description=data.get("description", ""),
             status=data.get("status", "active"),
             control_modules=control_modules,
-            variant_modules=variant_modules,
+            variants=variants,
             min_samples=data.get("min_samples", 30),
             significance_level=data.get("significance_level", 0.05),
             primary_metric=data.get("primary_metric", "net_return"),
