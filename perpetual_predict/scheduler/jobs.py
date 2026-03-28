@@ -762,6 +762,7 @@ async def full_cycle_job(health_status: HealthStatus) -> dict:
         if webhook and prediction:
             try:
                 from perpetual_predict.notifications.scheduler_alerts import (
+                    send_news_digest,
                     send_no_experiment,
                     send_prediction_completed,
                     send_variant_prediction,
@@ -774,6 +775,9 @@ async def full_cycle_job(health_status: HealthStatus) -> dict:
                     results.get("evaluation", {}),
                     health_status,
                 )
+
+                # News digest (separate message after prediction)
+                await send_news_digest(webhook)
 
                 # Variant predictions as separate messages
                 if variant_results:

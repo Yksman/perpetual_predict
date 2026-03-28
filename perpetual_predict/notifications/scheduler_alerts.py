@@ -815,6 +815,88 @@ async def send_variant_prediction(
         return False
 
 
+def _format_time_ago(dt: datetime) -> str:
+    """Format datetime as relative time ago string."""
+    now = datetime.now(timezone.utc)
+    # Ensure dt is timezone-aware
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    diff = now - dt
+    total_seconds = int(diff.total_seconds())
+
+    if total_seconds < 60:
+        return f"{total_seconds}s ago"
+    elif total_seconds < 3600:
+        return f"{total_seconds // 60}m ago"
+    elif total_seconds < 86400:
+        return f"{total_seconds // 3600}h ago"
+    else:
+        return f"{total_seconds // 86400}d ago"
+
+
+async def send_news_digest(
+    webhook: DiscordWebhook,
+    max_articles: int = 20,
+) -> bool:
+    """Send a digest of recently collected news articles.
+
+    Args:
+        webhook: DiscordWebhook instance.
+        max_articles: Maximum number of articles to display.
+
+    Returns:
+        True if sent successfully.
+    """
+    from perpetual_predict.storage.database import get_database
+
+    try:
+        async with get_database() as db:
+            articles = await db.get_recent_news(hours=24)
+    except Exception as e:
+        logger.error(f"Failed to fetch news articles: {e}")
+        return False
+
+    if not articles:
+        logger.info("No recent news articles to send")
+        return True
+
+    articles = articles[:max_articles]
+
+    # Build article lines: [Source] Title (time ago)
+    lines = []
+    for article in articles:
+        time_ago = _format_time_ago(article.timestamp)
+        line = f"[{article.source}] {article.title} ({time_ago})"
+        lines.append(line)
+
+    # Discord embed description limit is 4096 chars
+    description = "\n".join(lines)
+    if len(description) > 4096:
+        # Truncate lines to fit
+        description = ""
+        for line in lines:
+            if len(description) + len(line) + 1 > 4090:
+                description += "\n..."
+                break
+            description += f"\n{line}" if description else line
+
+    embed = (
+        DiscordEmbed(
+            title=f"📰 뉴스 다이제스트 ({len(articles)}건)",
+            description=description,
+            color=EmbedColors.INFO,
+        )
+        .set_timestamp()
+    )
+
+    try:
+        result = await webhook.send_embed(embed)
+        return result is not None
+    except Exception as e:
+        logger.error(f"Failed to send news digest: {e}")
+        return False
+
+
 async def send_no_experiment(
     webhook: DiscordWebhook,
 ) -> bool:
