@@ -2,17 +2,22 @@ import { Panel } from '../common/Panel';
 import { Badge } from '../common/Badge';
 import { DirectionIcon } from '../common/DirectionIcon';
 import { useIsMobile } from '../../hooks/useMediaQuery';
-import type { ExperimentPredictionPair } from '../../types';
+import type { ExperimentPredictionComparison } from '../../types';
 import { formatShortDate } from '../../utils/format';
 
 interface ExperimentPredictionPairsProps {
-  pairs: ExperimentPredictionPair[];
+  comparisons: ExperimentPredictionComparison[];
 }
 
-export function ExperimentPredictionPairs({ pairs }: ExperimentPredictionPairsProps) {
+function formatArmLabel(key: string): string {
+  if (key === 'control') return 'Control';
+  return key.replace(/^variant_/, '').replace(/_/g, ' ');
+}
+
+export function ExperimentPredictionPairs({ comparisons }: ExperimentPredictionPairsProps) {
   const isMobile = useIsMobile();
 
-  if (pairs.length === 0) {
+  if (comparisons.length === 0) {
     return (
       <Panel title="Prediction Comparison">
         <div style={{
@@ -22,72 +27,73 @@ export function ExperimentPredictionPairs({ pairs }: ExperimentPredictionPairsPr
           textAlign: 'center',
           padding: '40px 0',
         }}>
-          No paired predictions yet
+          No predictions yet
         </div>
       </Panel>
     );
   }
 
+  // Get arm keys from the first comparison entry
+  const armKeys = Object.keys(comparisons[0].arms);
+  // Find a control arm to get actual_direction from
+  const controlKey = armKeys.find(k => k === 'control') ?? armKeys[0];
+
   if (isMobile) {
     return (
       <Panel title="Prediction Comparison">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {pairs.map(pair => (
-            <div
-              key={pair.target_candle_open}
-              style={{
-                background: 'var(--bg-tertiary)',
-                border: '1px solid var(--border)',
-                padding: '12px',
-              }}
-            >
-              <div style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.7rem',
-                color: 'var(--text-secondary)',
-                marginBottom: '8px',
-              }}>
-                {formatShortDate(pair.target_candle_open)}
-                {pair.control.actual_direction && (
-                  <span style={{ marginLeft: '8px' }}>
-                    Actual: <DirectionIcon direction={pair.control.actual_direction} size="sm" />
-                  </span>
-                )}
-              </div>
-              {/* Control row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <span style={{
+          {comparisons.map(comp => {
+            const controlArm = comp.arms[controlKey];
+            return (
+              <div
+                key={comp.target_candle_open}
+                style={{
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border)',
+                  padding: '12px',
+                }}
+              >
+                <div style={{
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '0.65rem',
-                  color: 'var(--text-muted)',
-                  width: '50px',
+                  fontSize: '0.7rem',
+                  color: 'var(--text-secondary)',
+                  marginBottom: '8px',
                 }}>
-                  Control
-                </span>
-                <DirectionIcon direction={pair.control.direction} size="sm" />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-primary)' }}>
-                  {(pair.control.confidence * 100).toFixed(0)}%
-                </span>
-                <Badge result={pair.control.is_correct} />
+                  {formatShortDate(comp.target_candle_open)}
+                  {controlArm?.actual_direction && (
+                    <span style={{ marginLeft: '8px' }}>
+                      Actual: <DirectionIcon direction={controlArm.actual_direction} size="sm" />
+                    </span>
+                  )}
+                </div>
+                {armKeys.map(key => {
+                  const arm = comp.arms[key];
+                  if (!arm) return null;
+                  return (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.6rem',
+                        color: key === 'control' ? 'var(--text-muted)' : 'var(--color-accent)',
+                        width: '80px',
+                        flexShrink: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {formatArmLabel(key)}
+                      </span>
+                      <DirectionIcon direction={arm.direction} size="sm" />
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-primary)' }}>
+                        {(arm.confidence * 100).toFixed(0)}%
+                      </span>
+                      <Badge result={arm.is_correct} />
+                    </div>
+                  );
+                })}
               </div>
-              {/* Variant row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.65rem',
-                  color: 'var(--color-accent)',
-                  width: '50px',
-                }}>
-                  Variant
-                </span>
-                <DirectionIcon direction={pair.variant.direction} size="sm" />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-primary)' }}>
-                  {(pair.variant.confidence * 100).toFixed(0)}%
-                </span>
-                <Badge result={pair.variant.is_correct} />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Panel>
     );
@@ -119,47 +125,56 @@ export function ExperimentPredictionPairs({ pairs }: ExperimentPredictionPairsPr
           <thead>
             <tr>
               <th style={{ ...headerStyle, textAlign: 'left' }}>Candle</th>
-              <th style={{ ...headerStyle, textAlign: 'center' }}>Ctrl Dir</th>
-              <th style={{ ...headerStyle, textAlign: 'right' }}>Ctrl Conf</th>
-              <th style={{ ...headerStyle, textAlign: 'center' }}>Var Dir</th>
-              <th style={{ ...headerStyle, textAlign: 'right' }}>Var Conf</th>
+              {armKeys.map(key => (
+                <th key={`${key}-dir`} style={{ ...headerStyle, textAlign: 'center' }}>
+                  {formatArmLabel(key)} Dir
+                </th>
+              ))}
+              {armKeys.map(key => (
+                <th key={`${key}-conf`} style={{ ...headerStyle, textAlign: 'right' }}>
+                  {formatArmLabel(key)} Conf
+                </th>
+              ))}
               <th style={{ ...headerStyle, textAlign: 'center' }}>Actual</th>
-              <th style={{ ...headerStyle, textAlign: 'center' }}>Ctrl</th>
-              <th style={{ ...headerStyle, textAlign: 'center' }}>Var</th>
+              {armKeys.map(key => (
+                <th key={`${key}-result`} style={{ ...headerStyle, textAlign: 'center' }}>
+                  {formatArmLabel(key)}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {pairs.map(pair => (
-              <tr key={pair.target_candle_open}>
-                <td style={{ ...cellBase, color: 'var(--text-secondary)' }}>
-                  {formatShortDate(pair.target_candle_open)}
-                </td>
-                <td style={{ ...cellBase, textAlign: 'center' }}>
-                  <DirectionIcon direction={pair.control.direction} size="sm" />
-                </td>
-                <td style={{ ...cellBase, textAlign: 'right', color: 'var(--text-primary)' }}>
-                  {(pair.control.confidence * 100).toFixed(0)}%
-                </td>
-                <td style={{ ...cellBase, textAlign: 'center' }}>
-                  <DirectionIcon direction={pair.variant.direction} size="sm" />
-                </td>
-                <td style={{ ...cellBase, textAlign: 'right', color: 'var(--text-primary)' }}>
-                  {(pair.variant.confidence * 100).toFixed(0)}%
-                </td>
-                <td style={{ ...cellBase, textAlign: 'center' }}>
-                  {pair.control.actual_direction
-                    ? <DirectionIcon direction={pair.control.actual_direction} size="sm" />
-                    : <span style={{ color: 'var(--text-muted)' }}>—</span>
-                  }
-                </td>
-                <td style={{ ...cellBase, textAlign: 'center' }}>
-                  <Badge result={pair.control.is_correct} />
-                </td>
-                <td style={{ ...cellBase, textAlign: 'center' }}>
-                  <Badge result={pair.variant.is_correct} />
-                </td>
-              </tr>
-            ))}
+            {comparisons.map(comp => {
+              const controlArm = comp.arms[controlKey];
+              return (
+                <tr key={comp.target_candle_open}>
+                  <td style={{ ...cellBase, color: 'var(--text-secondary)' }}>
+                    {formatShortDate(comp.target_candle_open)}
+                  </td>
+                  {armKeys.map(key => (
+                    <td key={`${key}-dir`} style={{ ...cellBase, textAlign: 'center' }}>
+                      {comp.arms[key] ? <DirectionIcon direction={comp.arms[key].direction} size="sm" /> : '—'}
+                    </td>
+                  ))}
+                  {armKeys.map(key => (
+                    <td key={`${key}-conf`} style={{ ...cellBase, textAlign: 'right', color: 'var(--text-primary)' }}>
+                      {comp.arms[key] ? `${(comp.arms[key].confidence * 100).toFixed(0)}%` : '—'}
+                    </td>
+                  ))}
+                  <td style={{ ...cellBase, textAlign: 'center' }}>
+                    {controlArm?.actual_direction
+                      ? <DirectionIcon direction={controlArm.actual_direction} size="sm" />
+                      : <span style={{ color: 'var(--text-muted)' }}>—</span>
+                    }
+                  </td>
+                  {armKeys.map(key => (
+                    <td key={`${key}-result`} style={{ ...cellBase, textAlign: 'center' }}>
+                      {comp.arms[key] ? <Badge result={comp.arms[key].is_correct} /> : '—'}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

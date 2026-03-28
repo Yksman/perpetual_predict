@@ -42,7 +42,7 @@ export function ExperimentPage({ experiments }: ExperimentPageProps) {
         <ExperimentStats experiment={selected} />
       </div>
       <div style={{ marginTop: 'var(--gap)' }}>
-        <ExperimentPredictionPairs pairs={selected.prediction_pairs} />
+        <ExperimentPredictionPairs comparisons={selected.prediction_comparisons} />
       </div>
     </motion.div>
   );

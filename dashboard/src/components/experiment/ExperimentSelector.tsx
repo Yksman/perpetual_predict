@@ -76,30 +76,34 @@ export function ExperimentSelector({ experiments, selectedId, onSelect }: Experi
               flexWrap: 'wrap',
               marginBottom: '8px',
             }}>
-              {exp.module_diff.added.map(m => (
-                <span key={m} style={{
-                  padding: '1px 6px',
-                  fontSize: '0.6rem',
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--color-long)',
-                  background: 'var(--color-long-dim)',
-                  borderRadius: '3px',
-                }}>
-                  +{m}
-                </span>
-              ))}
-              {exp.module_diff.removed.map(m => (
-                <span key={m} style={{
-                  padding: '1px 6px',
-                  fontSize: '0.6rem',
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--color-short)',
-                  background: 'var(--color-short-dim)',
-                  borderRadius: '3px',
-                }}>
-                  -{m}
-                </span>
-              ))}
+              <span style={{
+                padding: '1px 6px',
+                fontSize: '0.6rem',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--color-accent)',
+                border: '1px solid var(--border)',
+                borderRadius: '3px',
+              }}>
+                {Object.keys(exp.variant_diffs).length} variant{Object.keys(exp.variant_diffs).length !== 1 ? 's' : ''}
+              </span>
+              {Object.entries(exp.variant_diffs).flatMap(([, diff]) => [
+                ...diff.added.map(m => ({ mod: m, type: 'added' as const })),
+                ...diff.removed.map(m => ({ mod: m, type: 'removed' as const })),
+              ])
+                .filter((item, idx, arr) => arr.findIndex(a => a.mod === item.mod && a.type === item.type) === idx)
+                .map(item => (
+                  <span key={`${item.type}-${item.mod}`} style={{
+                    padding: '1px 6px',
+                    fontSize: '0.6rem',
+                    fontFamily: 'var(--font-mono)',
+                    color: item.type === 'added' ? 'var(--color-long)' : 'var(--color-short)',
+                    background: item.type === 'added' ? 'var(--color-long-dim)' : 'var(--color-short-dim)',
+                    borderRadius: '3px',
+                  }}>
+                    {item.type === 'added' ? '+' : '-'}{item.mod}
+                  </span>
+                ))
+              }
             </div>
             {/* Progress bar */}
             <div style={{

@@ -102,23 +102,28 @@ export interface ExperimentPredictionArm {
   actual_price_change: number | null;
 }
 
-export interface ExperimentPredictionPair {
+export interface ExperimentPredictionComparison {
   target_candle_open: string;
   target_candle_close: string;
-  control: ExperimentPredictionArm;
-  variant: ExperimentPredictionArm;
+  arms: Record<string, ExperimentPredictionArm>;
+}
+
+export interface VariantResult {
+  variant_name: string;
+  sample_size: number;
+  accuracy: number;
+  net_return: number;
+  sharpe: number;
+  p_value: number | null;
+  is_significant: boolean;
 }
 
 export interface ExperimentResult {
   control_accuracy: number;
-  variant_accuracy: number;
   control_return: number;
-  variant_return: number;
   control_sharpe: number;
-  variant_sharpe: number;
-  p_value: number | null;
-  is_significant: boolean;
-  recommended_winner: 'control' | 'variant' | null;
+  control_sample_size: number;
+  variant_results: VariantResult[];
 }
 
 export interface ExperimentAccount {
@@ -137,8 +142,8 @@ export interface Experiment {
   description: string;
   status: ExperimentStatus;
   control_modules: string[];
-  variant_modules: string[];
-  module_diff: { added: string[]; removed: string[] };
+  variants: Record<string, string[]>;
+  variant_diffs: Record<string, { added: string[]; removed: string[] }>;
   min_samples: number;
   significance_level: number;
   primary_metric: string;
@@ -148,15 +153,9 @@ export interface Experiment {
   sample_size: number;
   progress_pct: number;
   result: ExperimentResult | null;
-  accounts: {
-    control: ExperimentAccount;
-    variant: ExperimentAccount;
-  };
-  equity_curves: {
-    control: EquityPoint[];
-    variant: EquityPoint[];
-  };
-  prediction_pairs: ExperimentPredictionPair[];
+  accounts: Record<string, ExperimentAccount>;
+  equity_curves: Record<string, EquityPoint[]>;
+  prediction_comparisons: ExperimentPredictionComparison[];
 }
 
 export interface ExperimentsData {

@@ -33,13 +33,19 @@ export function ExperimentSummary({ experiment }: ExperimentSummaryProps) {
         prefix="$"
         colorize
       />
-      <KpiCard
-        label="Variant Balance"
-        value={experiment.accounts.variant.current_balance}
-        decimals={2}
-        prefix="$"
-        colorize
-      />
+      {Object.entries(experiment.accounts)
+        .filter(([key]) => key !== 'control')
+        .map(([key, account]) => (
+          <KpiCard
+            key={key}
+            label={key.replace(/^variant_/, '').replace(/_/g, ' ')}
+            value={account.current_balance}
+            decimals={2}
+            prefix="$"
+            colorize
+          />
+        ))
+      }
     </div>
   );
 }
