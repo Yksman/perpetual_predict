@@ -97,6 +97,10 @@ class MarketContext:
     fear_greed_value: int = 50
     fear_greed_classification: str = "Neutral"
 
+    # News articles (raw data for prompt)
+    news_articles: list = field(default_factory=list)
+    news_max_headlines: int = 100
+
     # Market structure (HH/HL/LH/LL)
     market_structure_summary: str = ""
     market_structure_state: str = "Undefined"
@@ -178,6 +182,8 @@ class MarketContext:
             sections.append(self._section_support_resistance())
         if "macro" in modules:
             sections.append(self._section_macro())
+        if "news" in modules:
+            sections.append(self._section_news())
         if "recent_candles" in modules:
             sections.append(self._section_recent_candles())
 
@@ -338,6 +344,51 @@ class MarketContext:
 
         if len(lines) == 1:
             return ""
+
+        return "\n".join(lines)
+
+    def _section_news(self) -> str:
+        """Format news section with raw data only."""
+        if not self.news_articles:
+            return ""
+
+        total = len(self.news_articles)
+        max_h = self.news_max_headlines
+
+        # Aggregate vote totals
+        total_positive = sum(a.votes_positive or 0 for a in self.news_articles)
+        total_negative = sum(a.votes_negative or 0 for a in self.news_articles)
+        total_important = sum(a.votes_important or 0 for a in self.news_articles)
+
+        lines = ["### News (Recent 4H)"]
+
+        if total <= max_h:
+            lines.append(f"Articles: {total} total")
+        else:
+            lines.append(f"Articles: {total} total (showing {max_h} most recent, {total - max_h} older summarized)")
+
+        has_votes = any(a.votes_positive is not None for a in self.news_articles)
+        if has_votes:
+            lines.append(f"Sentiment votes: +{total_positive} positive, -{total_negative} negative, {total_important} important")
+
+        lines.append("")
+        lines.append("Headlines:")
+
+        display_articles = self.news_articles[:max_h]
+        for a in display_articles:
+            ts_str = a.timestamp.strftime("%Y-%m-%d %H:%M")
+            if a.votes_positive is not None:
+                vote_str = f", +{a.votes_positive}/-{a.votes_negative}, important: {a.votes_important}"
+            else:
+                vote_str = ", via RSS"
+            lines.append(f"- [{ts_str}] \"{a.title}\" (src: {a.source}{vote_str})")
+
+        if total > max_h:
+            older = self.news_articles[max_h:]
+            older_pos = sum(a.votes_positive or 0 for a in older)
+            older_neg = sum(a.votes_negative or 0 for a in older)
+            older_imp = sum(a.votes_important or 0 for a in older)
+            lines.append(f"\nOlder articles ({len(older)}): +{older_pos} positive, -{older_neg} negative, {older_imp} important")
 
         return "\n".join(lines)
 
