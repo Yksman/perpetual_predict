@@ -523,6 +523,7 @@ class MarketContextBuilder:
         fear_greed = await self.db.get_fear_greeds(limit=1)
         liquidations = await self.db.get_liquidations(self.symbol, limit=1)
         macro_snapshot = await self.db.get_latest_macro_snapshot()
+        news_articles = await self.db.get_recent_news(hours=4)
 
         # Calculate derived values
         price_change_4h = self._pct_change(latest["close"], prev["close"])
@@ -623,6 +624,10 @@ class MarketContextBuilder:
             gold_value=macro_snapshot["GOLD"].value if "GOLD" in macro_snapshot else None,
             gold_change_pct=macro_snapshot["GOLD"].change if "GOLD" in macro_snapshot else None,
 
+            # News articles
+            news_articles=news_articles,
+            news_max_headlines=self._get_max_headlines(),
+
             symbol=self.symbol,
             timeframe=self.timeframe,
             context_time=datetime.now(timezone.utc),
@@ -714,3 +719,11 @@ class MarketContextBuilder:
             )
 
         return "\n".join(lines)
+
+    def _get_max_headlines(self) -> int:
+        """Get max headlines from settings."""
+        try:
+            from perpetual_predict.config import get_settings
+            return get_settings().cryptopanic.max_headlines
+        except Exception:
+            return 100
