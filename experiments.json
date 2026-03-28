@@ -22,27 +22,80 @@
         "portfolio",
         "macro"
       ],
-      "variant_modules": [
-        "price_action",
-        "candle_structure",
-        "trend",
-        "momentum",
-        "volatility",
-        "cvd",
-        "liquidation",
-        "sentiment_market",
-        "market_structure",
-        "divergences",
-        "support_resistance",
-        "recent_candles",
-        "portfolio",
-        "macro"
-      ],
-      "module_diff": {
-        "added": [],
-        "removed": [
-          "fear_greed"
+      "variants": {
+        "no_fear_greed": [
+          "price_action",
+          "candle_structure",
+          "trend",
+          "momentum",
+          "volatility",
+          "cvd",
+          "liquidation",
+          "sentiment_market",
+          "market_structure",
+          "divergences",
+          "support_resistance",
+          "recent_candles",
+          "portfolio",
+          "macro"
+        ],
+        "plus_news": [
+          "price_action",
+          "candle_structure",
+          "trend",
+          "momentum",
+          "volatility",
+          "cvd",
+          "liquidation",
+          "sentiment_market",
+          "fear_greed",
+          "market_structure",
+          "divergences",
+          "support_resistance",
+          "recent_candles",
+          "portfolio",
+          "macro",
+          "news"
+        ],
+        "no_fear_greed_plus_news": [
+          "price_action",
+          "candle_structure",
+          "trend",
+          "momentum",
+          "volatility",
+          "cvd",
+          "liquidation",
+          "sentiment_market",
+          "market_structure",
+          "divergences",
+          "support_resistance",
+          "recent_candles",
+          "portfolio",
+          "macro",
+          "news"
         ]
+      },
+      "variant_diffs": {
+        "no_fear_greed": {
+          "added": [],
+          "removed": [
+            "fear_greed"
+          ]
+        },
+        "plus_news": {
+          "added": [
+            "news"
+          ],
+          "removed": []
+        },
+        "no_fear_greed_plus_news": {
+          "added": [
+            "news"
+          ],
+          "removed": [
+            "fear_greed"
+          ]
+        }
       },
       "min_samples": 30,
       "significance_level": 0.05,
@@ -54,23 +107,55 @@
       "progress_pct": 0.0,
       "result": {
         "control_accuracy": 0,
-        "variant_accuracy": 0,
         "control_return": 0,
-        "variant_return": 0,
         "control_sharpe": 0.0,
-        "variant_sharpe": 0.0,
-        "p_value": null,
-        "is_significant": false,
-        "recommended_winner": null
+        "control_sample_size": 0,
+        "variant_results": [
+          {
+            "variant_name": "no_fear_greed",
+            "sample_size": 0,
+            "accuracy": 0,
+            "net_return": 0,
+            "sharpe": 0.0,
+            "p_value": null,
+            "is_significant": false
+          },
+          {
+            "variant_name": "plus_news",
+            "sample_size": 0,
+            "accuracy": 0,
+            "net_return": 0,
+            "sharpe": 0.0,
+            "p_value": null,
+            "is_significant": false
+          },
+          {
+            "variant_name": "no_fear_greed_plus_news",
+            "sample_size": 0,
+            "accuracy": 0,
+            "net_return": 0,
+            "sharpe": 0.0,
+            "p_value": null,
+            "is_significant": false
+          }
+        ]
       },
       "accounts": {
         "control": {
           "initial_balance": 1000.0,
           "current_balance": 1000.0
         },
-        "variant": {
-          "initial_balance": 0,
-          "current_balance": 0
+        "variant_no_fear_greed": {
+          "initial_balance": 1000.0,
+          "current_balance": 1000.0
+        },
+        "variant_plus_news": {
+          "initial_balance": 1000.0,
+          "current_balance": 1000.0
+        },
+        "variant_no_fear_greed_plus_news": {
+          "initial_balance": 1000.0,
+          "current_balance": 1000.0
         }
       },
       "equity_curves": {
@@ -80,9 +165,65 @@
             "balance": 1000.0
           }
         ],
-        "variant": []
+        "variant_no_fear_greed": [
+          {
+            "time": "2026-03-28T08:00:00+00:00",
+            "balance": 1000.0
+          }
+        ],
+        "variant_plus_news": [
+          {
+            "time": "2026-03-28T08:00:00+00:00",
+            "balance": 1000.0
+          }
+        ],
+        "variant_no_fear_greed_plus_news": [
+          {
+            "time": "2026-03-28T08:00:00+00:00",
+            "balance": 1000.0
+          }
+        ]
       },
-      "prediction_pairs": []
+      "prediction_comparisons": [
+        {
+          "target_candle_open": "2026-03-28T08:00:00+00:00",
+          "target_candle_close": "2026-03-28T12:00:00+00:00",
+          "arms": {
+            "control": {
+              "direction": "DOWN",
+              "confidence": 0.65,
+              "position_pct": 0.3,
+              "is_correct": null,
+              "actual_direction": null,
+              "actual_price_change": null
+            },
+            "variant_no_fear_greed": {
+              "direction": "DOWN",
+              "confidence": 0.65,
+              "position_pct": 0.4,
+              "is_correct": null,
+              "actual_direction": null,
+              "actual_price_change": null
+            },
+            "variant_plus_news": {
+              "direction": "DOWN",
+              "confidence": 0.65,
+              "position_pct": 0.3,
+              "is_correct": null,
+              "actual_direction": null,
+              "actual_price_change": null
+            },
+            "variant_no_fear_greed_plus_news": {
+              "direction": "DOWN",
+              "confidence": 0.65,
+              "position_pct": 0.3,
+              "is_correct": null,
+              "actual_direction": null,
+              "actual_price_change": null
+            }
+          }
+        }
+      ]
     },
     {
       "experiment_id": "exp_31ba738f",
@@ -105,28 +246,32 @@
         "recent_candles",
         "portfolio"
       ],
-      "variant_modules": [
-        "price_action",
-        "candle_structure",
-        "ema_distance",
-        "trend",
-        "momentum",
-        "volatility",
-        "cvd",
-        "liquidation",
-        "sentiment",
-        "market_structure",
-        "divergences",
-        "support_resistance",
-        "recent_candles",
-        "portfolio",
-        "macro"
-      ],
-      "module_diff": {
-        "added": [
+      "variants": {
+        "variant": [
+          "price_action",
+          "candle_structure",
+          "ema_distance",
+          "trend",
+          "momentum",
+          "volatility",
+          "cvd",
+          "liquidation",
+          "sentiment",
+          "market_structure",
+          "divergences",
+          "support_resistance",
+          "recent_candles",
+          "portfolio",
           "macro"
-        ],
-        "removed": []
+        ]
+      },
+      "variant_diffs": {
+        "variant": {
+          "added": [
+            "macro"
+          ],
+          "removed": []
+        }
       },
       "min_samples": 30,
       "significance_level": 0.05,
@@ -138,30 +283,36 @@
       "progress_pct": 0.0,
       "result": {
         "control_accuracy": 0,
-        "variant_accuracy": 0,
         "control_return": 0,
-        "variant_return": 0,
         "control_sharpe": 0.0,
-        "variant_sharpe": 0.0,
-        "p_value": null,
-        "is_significant": false,
-        "recommended_winner": null
+        "control_sample_size": 0,
+        "variant_results": [
+          {
+            "variant_name": "variant",
+            "sample_size": 0,
+            "accuracy": 0,
+            "net_return": 0,
+            "sharpe": 0.0,
+            "p_value": null,
+            "is_significant": false
+          }
+        ]
       },
       "accounts": {
         "control": {
           "initial_balance": 0,
           "current_balance": 0
         },
-        "variant": {
+        "variant_variant": {
           "initial_balance": 0,
           "current_balance": 0
         }
       },
       "equity_curves": {
         "control": [],
-        "variant": []
+        "variant_variant": []
       },
-      "prediction_pairs": []
+      "prediction_comparisons": []
     }
   ]
 }
