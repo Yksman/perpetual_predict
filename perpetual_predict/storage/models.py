@@ -1,7 +1,7 @@
 """Data models for database storage."""
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 # Type alias for prediction direction
@@ -219,6 +219,56 @@ class MacroIndicator:
             date=date_val,
             value=data["value"],
             previous_value=data.get("previous_value"),
+        )
+
+
+@dataclass
+class NewsArticle:
+    """News article collected from CryptoPanic or RSS feeds."""
+
+    timestamp: datetime  # Article publish time
+    title: str
+    source: str  # "CoinDesk", "CoinTelegraph", etc.
+    url: str
+    votes_positive: int | None = None  # CryptoPanic votes (None for RSS)
+    votes_negative: int | None = None
+    votes_important: int | None = None
+    collected_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    collector_source: str = "cryptopanic"  # "cryptopanic" | "rss"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for database storage."""
+        return {
+            "timestamp": self.timestamp.isoformat(),
+            "title": self.title,
+            "source": self.source,
+            "url": self.url,
+            "votes_positive": self.votes_positive,
+            "votes_negative": self.votes_negative,
+            "votes_important": self.votes_important,
+            "collected_at": self.collected_at.isoformat(),
+            "collector_source": self.collector_source,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "NewsArticle":
+        """Create from dictionary (database row)."""
+        ts = data["timestamp"]
+        if isinstance(ts, str):
+            ts = datetime.fromisoformat(ts)
+        collected = data.get("collected_at", datetime.now(timezone.utc))
+        if isinstance(collected, str):
+            collected = datetime.fromisoformat(collected)
+        return cls(
+            timestamp=ts,
+            title=data["title"],
+            source=data["source"],
+            url=data["url"],
+            votes_positive=data.get("votes_positive"),
+            votes_negative=data.get("votes_negative"),
+            votes_important=data.get("votes_important"),
+            collected_at=collected,
+            collector_source=data.get("collector_source", "cryptopanic"),
         )
 
 
