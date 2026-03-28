@@ -72,10 +72,7 @@ async def collect_data(
     if settings.cryptopanic.news_enabled:
         from perpetual_predict.collectors.news.news_collector import NewsCollector
         rss_feeds = [u.strip() for u in settings.cryptopanic.rss_feeds.split(",") if u.strip()]
-        news_collector = NewsCollector(
-            cryptopanic_api_key=settings.cryptopanic.api_key,
-            rss_feed_urls=rss_feeds,
-        )
+        news_collector = NewsCollector(rss_feed_urls=rss_feeds)
 
     try:
         # Initialize collectors
