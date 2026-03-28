@@ -115,7 +115,7 @@
             "variant_name": "no_fear_greed",
             "sample_size": 1,
             "accuracy": 1.0,
-            "net_return": 0,
+            "net_return": 0.06,
             "sharpe": 0.0,
             "p_value": null,
             "is_significant": false
@@ -124,7 +124,7 @@
             "variant_name": "plus_news",
             "sample_size": 1,
             "accuracy": 1.0,
-            "net_return": 0,
+            "net_return": 0.04,
             "sharpe": 0.0,
             "p_value": null,
             "is_significant": false
@@ -133,7 +133,7 @@
             "variant_name": "no_fear_greed_plus_news",
             "sample_size": 1,
             "accuracy": 1.0,
-            "net_return": 0,
+            "net_return": 0.04,
             "sharpe": 0.0,
             "p_value": null,
             "is_significant": false
@@ -147,15 +147,15 @@
         },
         "variant_no_fear_greed": {
           "initial_balance": 1000.0,
-          "current_balance": 1000.0
+          "current_balance": 1000.5974555365306
         },
         "variant_plus_news": {
           "initial_balance": 1000.0,
-          "current_balance": 1000.0
+          "current_balance": 1000.4480916523979
         },
         "variant_no_fear_greed_plus_news": {
           "initial_balance": 1000.0,
-          "current_balance": 1000.0
+          "current_balance": 1000.4480916523979
         }
       },
       "equity_curves": {
@@ -173,18 +173,30 @@
           {
             "time": "2026-03-28T08:00:00+00:00",
             "balance": 1000.0
+          },
+          {
+            "time": "2026-03-28T12:00:00+00:00",
+            "balance": 1000.5974555365306
           }
         ],
         "variant_plus_news": [
           {
             "time": "2026-03-28T08:00:00+00:00",
             "balance": 1000.0
+          },
+          {
+            "time": "2026-03-28T12:00:00+00:00",
+            "balance": 1000.4480916523979
           }
         ],
         "variant_no_fear_greed_plus_news": [
           {
             "time": "2026-03-28T08:00:00+00:00",
             "balance": 1000.0
+          },
+          {
+            "time": "2026-03-28T12:00:00+00:00",
+            "balance": 1000.4480916523979
           }
         ]
       },
