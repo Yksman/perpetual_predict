@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "1237a4c4-0ea9-438e-aea5-899df2bc7b7c",
+      "time": "2026-03-28T20:01:43.565284+00:00",
+      "target_open": "2026-03-28T20:00:00+00:00",
+      "target_close": "2026-03-29T00:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.62,
+      "key_factors": [
+        "모든 주요 이동평균선(SMA 20/50/200) 하회 — 구조적 하락 추세 확인",
+        "거시경제 전면 리스크오프: SPX -1.67%, NASDAQ -2.15%, 금 $4,492(+2.66%), DXY 강세",
+        "서브캔들 거래량 급감($3,987→$1,313) — 매수세 부재",
+        "Fear & Greed 12(극단적 공포) — 역추세 매수 신호이나 즉각 반전 보장 아님",
+        "MACD 히스토그램 확대(-40.58) — 하락 모멘텀 지속",
+        "시장 구조 5회 이탈, LL 패턴 유지"
+      ],
+      "reasoning": "하락 추세가 구조적으로 유효하며(모든 SMA 하회, MACD 확대, 구조 이탈), 거시경제 환경이 전면적 리스크오프 상태. 극단적 공포 지수와 펀딩비 개선은 반등 가능성을 시사하지만, 거래량 감소와 전통시장 약세가 즉각적 반전을 제한. 다음 4H에서 $65,555 지지선 테스트 가능성이 반등보다 높다고 판단. 다만 공포 극단에서의 역추세 가능성이 있어 높은 확신도는 부여하지 않음.\"",
+      "position_pct": 0.4,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "30e447db-ba46-42b9-b1ca-3e25e45b971f",
       "time": "2026-03-28T16:01:27.920400+00:00",
       "target_open": "2026-03-28T16:00:00+00:00",
@@ -17,11 +40,11 @@
       ],
       "reasoning": "하락추세 구조가 명확함: 모든 주요 이평선 아래, MACD 음수 확대, 시장구조 LH-LL 패턴 지속. Extreme Fear(12)가 반등 촉매가 될 수 있으나, 매크로 환경(주식시장 약세, DXY 강세, 고금리)이 위험자산 전반에 불리. RSI 39.4는 과매도 영역 진입 전이라 추가 하락 가능. 다만 CVD 양수, 펀딩레이트 정상화, 극단적 공포지수로 인해 급락보다는 완만한 하방 또는 횡보 하락 예상. 확신도가 높지 않아 보수적 포지션 권장.",
       "position_pct": 0.3,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "NEUTRAL",
+      "actual_price_change": -0.16332648576341574,
+      "predicted_return": -0.03667351423658427,
+      "evaluated_at": "2026-03-28T20:00:14.666852+00:00"
     },
     {
       "id": "901a4197-abbf-465d-9aa4-cd35ee86bb7c",
