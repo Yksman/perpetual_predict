@@ -31,12 +31,16 @@ def setup_parser(subparsers) -> None:
     create_p.add_argument("--name", required=True, help="Experiment name")
     create_p.add_argument("--description", default="", help="Description")
     create_p.add_argument(
-        "--add", nargs="*", default=[],
-        help=f"Modules to ADD to variant (available: {', '.join(SEED_MODULES)})",
+        "--variant", action="append", default=[],
+        help=(
+            "Variant arm definition. Each --variant creates one arm. "
+            "Use comma for module combinations. "
+            "Example: --variant macro --variant news --variant macro,news"
+        ),
     )
     create_p.add_argument(
-        "--remove", nargs="*", default=[],
-        help="Modules to REMOVE from variant",
+        "--add", nargs="*", default=[],
+        help="[DEPRECATED: use --variant] Modules to add to a single variant",
     )
     create_p.add_argument("--min-samples", type=int, default=None)
     create_p.add_argument("--metric", default=None, choices=["accuracy", "net_return", "sharpe"])
@@ -59,6 +63,7 @@ def setup_parser(subparsers) -> None:
     # merge
     merge_p = exp_sub.add_parser("merge", help="Merge winning variant")
     merge_p.add_argument("experiment_id")
+    merge_p.add_argument("--variant", default=None, help="Specific variant to merge")
 
     exp_parser.set_defaults(func=run_experiment)
 
@@ -94,25 +99,39 @@ async def _dispatch(args) -> int:
 
 async def _create(args) -> int:
     settings = get_settings()
-
-    # Build variant modules
     control_modules = list(DEFAULT_MODULES)
-    variant_modules = list(DEFAULT_MODULES)
 
-    for mod in args.add:
-        if mod not in SEED_MODULES:
-            print(f"Unknown module: {mod}")
-            print(f"Available: {', '.join(SEED_MODULES)}")
-            return 1
-        if mod not in variant_modules:
-            variant_modules.append(mod)
+    # Build variants dict
+    variants: dict[str, list[str]] = {}
 
-    for mod in args.remove:
-        if mod in variant_modules:
-            variant_modules.remove(mod)
+    if args.variant:
+        for variant_spec in args.variant:
+            modules_to_add = [m.strip() for m in variant_spec.split(",") if m.strip()]
+            for mod in modules_to_add:
+                if mod not in SEED_MODULES:
+                    print(f"Unknown module: {mod}")
+                    print(f"Available: {', '.join(SEED_MODULES)}")
+                    return 1
+            variant_name = "_".join(modules_to_add)
+            variant_modules = list(DEFAULT_MODULES) + [
+                m for m in modules_to_add if m not in DEFAULT_MODULES
+            ]
+            variants[variant_name] = variant_modules
+    elif args.add:
+        variant_modules = list(DEFAULT_MODULES)
+        for mod in args.add:
+            if mod not in SEED_MODULES:
+                print(f"Unknown module: {mod}")
+                print(f"Available: {', '.join(SEED_MODULES)}")
+                return 1
+            if mod not in variant_modules:
+                variant_modules.append(mod)
+        variant_name = "_".join(args.add)
+        variants[variant_name] = variant_modules
+        print("Note: --add is deprecated, use --variant instead.")
 
-    if control_modules == variant_modules:
-        print("Error: Control and variant have identical modules. Use --add or --remove.")
+    if not variants:
+        print("Error: No variants defined. Use --variant <modules>.")
         return 1
 
     experiment = Experiment(
@@ -121,7 +140,7 @@ async def _create(args) -> int:
         description=args.description,
         status="active",
         control_modules=control_modules,
-        variant_modules=variant_modules,
+        variants=variants,
         min_samples=args.min_samples or settings.experiment.default_min_samples,
         significance_level=settings.experiment.default_significance_level,
         primary_metric=args.metric or settings.experiment.default_primary_metric,
@@ -130,30 +149,25 @@ async def _create(args) -> int:
 
     async with get_database() as db:
         await db.insert_experiment(experiment)
-        # Create independent paper accounts for each arm
         balance = settings.paper_trading.initial_balance
         await db.insert_experiment_account(experiment.experiment_id, "control", balance)
-        await db.insert_experiment_account(experiment.experiment_id, "variant", balance)
+        for variant_name in variants:
+            await db.insert_experiment_account(
+                experiment.experiment_id, f"variant_{variant_name}", balance,
+            )
 
     print(f"Experiment created: {experiment.experiment_id}")
     print(f"  Name: {experiment.name}")
-    print(f"  Control: {len(control_modules)} modules")
-    print(f"  Variant: {len(variant_modules)} modules")
-
-    # Show diff
-    added = set(variant_modules) - set(control_modules)
-    removed = set(control_modules) - set(variant_modules)
-    if added:
-        print(f"  Variant adds: {', '.join(added)}")
-    if removed:
-        print(f"  Variant removes: {', '.join(removed)}")
-
+    print(f"  Control: {len(control_modules)} modules (baseline)")
+    print(f"  Variants ({len(variants)}):")
+    for vname, vmods in variants.items():
+        added = set(vmods) - set(control_modules)
+        print(f"    {vname}: +{', '.join(added)}")
     print(f"  Min samples: {experiment.min_samples}")
     print(f"  Metric: {experiment.primary_metric}")
 
     if not settings.experiment.enabled:
         print("\n  ⚠️  EXPERIMENT_ENABLED=false — experiments won't run in cycle.")
-        print("     Set EXPERIMENT_ENABLED=true to activate.")
 
     return 0
 
@@ -188,44 +202,35 @@ async def _status(args) -> int:
         analyzer = ExperimentAnalyzer(db)
         result = await analyzer.analyze(args.experiment_id)
 
-        # Account balances
-        ctrl_acc = await db.get_experiment_account(args.experiment_id, "control")
-        var_acc = await db.get_experiment_account(args.experiment_id, "variant")
-
     print(f"Experiment: {experiment.name} ({experiment.experiment_id})")
     print(f"Status: {experiment.status}")
     print(f"Metric: {experiment.primary_metric} | Min samples: {experiment.min_samples}")
     print()
 
-    # Module diff
-    added = set(experiment.variant_modules) - set(experiment.control_modules)
-    removed = set(experiment.control_modules) - set(experiment.variant_modules)
-    if added:
-        print(f"Variant adds: {', '.join(added)}")
-    if removed:
-        print(f"Variant removes: {', '.join(removed)}")
-    print()
-
     if result:
-        print(f"{'Metric':<20} {'Control':>12} {'Variant':>12}")
-        print("-" * 46)
-        print(f"{'Samples':<20} {result.sample_size:>12} {result.sample_size:>12}")
-        print(f"{'Accuracy':<20} {result.control_accuracy:>11.1%} {result.variant_accuracy:>11.1%}")
-        print(f"{'Total Return':<20} {result.control_return:>+11.2f}% {result.variant_return:>+11.2f}%")
-        print(f"{'Sharpe Ratio':<20} {result.control_sharpe:>12.2f} {result.variant_sharpe:>12.2f}")
+        print(f"  {'control (baseline)':<25} accuracy {result.control_accuracy:>6.1%}, "
+              f"net_return {result.control_return:>+7.2f}%, "
+              f"sharpe {result.control_sharpe:>5.2f}")
 
-        if ctrl_acc and var_acc:
-            print(f"{'Balance':<20} ${ctrl_acc.current_balance:>10.2f} ${var_acc.current_balance:>10.2f}")
+        for vr in result.variant_results:
+            sig_mark = " ✓" if vr.is_significant else ""
+            p_str = f"(p={vr.p_value:.2f})" if vr.p_value is not None else f"({vr.sample_size} samples)"
+            print(f"  variant_{vr.variant_name:<20} accuracy {vr.accuracy:>6.1%}, "
+                  f"net_return {vr.net_return:>+7.2f}%, "
+                  f"sharpe {vr.sharpe:>5.2f}  {p_str}{sig_mark}")
 
         print()
-        if result.p_value is not None:
-            sig = "✅ YES" if result.is_significant else "❌ No"
-            print(f"p-value: {result.p_value:.4f} | Significant: {sig}")
-            if result.recommended_winner:
-                print(f"Recommended winner: {result.recommended_winner}")
+        significant = [v for v in result.variant_results if v.is_significant]
+        if significant:
+            best = result.best_variant(metric=experiment.primary_metric)
+            if best:
+                print(f"Best variant: {best.variant_name}")
         else:
-            remaining = experiment.min_samples - result.sample_size
-            print(f"Need {remaining} more samples for statistical test.")
+            min_samples_needed = experiment.min_samples - result.control_sample_size
+            if min_samples_needed > 0:
+                print(f"Need {min_samples_needed} more samples for statistical test.")
+            else:
+                print("No statistically significant variant yet.")
 
     return 0
 
@@ -255,28 +260,37 @@ async def _merge(args) -> int:
         analyzer = ExperimentAnalyzer(db)
         result = await analyzer.analyze(args.experiment_id)
 
-        if not result or not result.is_significant:
-            print("Cannot merge: results are not statistically significant yet.")
-            if result:
-                remaining = experiment.min_samples - result.sample_size
-                if remaining > 0:
-                    print(f"Need {remaining} more samples.")
-                elif result.p_value is not None:
-                    print(f"p-value ({result.p_value:.4f}) >= significance level ({experiment.significance_level})")
+        if not result:
+            print("No analysis results available.")
             return 1
 
-        winner = result.recommended_winner
-        print(f"Winner: {winner}")
-
-        if winner == "variant":
-            print("Variant modules will become the new baseline.")
-            print(f"Modules: {', '.join(experiment.variant_modules)}")
+        target_variant = None
+        if hasattr(args, "variant") and args.variant:
+            target_variant = next(
+                (v for v in result.variant_results if v.variant_name == args.variant),
+                None,
+            )
+            if not target_variant:
+                print(f"Variant not found: {args.variant}")
+                print(f"Available: {', '.join(v.variant_name for v in result.variant_results)}")
+                return 1
+            if not target_variant.is_significant:
+                print(f"Variant '{args.variant}' is not statistically significant (p={target_variant.p_value}).")
+                return 1
         else:
-            print("Control wins. No module changes needed.")
+            target_variant = result.best_variant(metric=experiment.primary_metric)
+            if not target_variant:
+                print("Cannot merge: no variant is statistically significant yet.")
+                return 1
+
+        winner_name = target_variant.variant_name
+        winner_modules = experiment.variants.get(winner_name, [])
+        print(f"Winner: variant_{winner_name}")
+        print(f"Modules: {', '.join(winner_modules)}")
 
         await db.update_experiment_status(
-            args.experiment_id, "completed", winner=winner,
+            args.experiment_id, "completed", winner=f"variant_{winner_name}",
         )
-        print(f"\nExperiment {args.experiment_id} completed. Winner: {winner}")
+        print(f"\nExperiment {args.experiment_id} completed. Winner: variant_{winner_name}")
 
     return 0
