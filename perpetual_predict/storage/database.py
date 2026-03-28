@@ -1339,15 +1339,18 @@ class Database:
         d = trade.to_dict()
 
         # Derive experiment_id and arm from account_id convention
+        # Format: "{experiment_id}_control" or "{experiment_id}_variant_{name}"
         experiment_id = None
         arm = "baseline"
         account_id = d["account_id"]
-        for arm_name in ("control", "variant"):
-            suffix = f"_{arm_name}"
-            if account_id.endswith(suffix):
-                experiment_id = account_id[: -len(suffix)]
-                arm = arm_name
-                break
+        if "_variant_" in account_id:
+            # e.g. "exp_abc123_variant_no_fear_greed"
+            idx = account_id.index("_variant_")
+            experiment_id = account_id[:idx]
+            arm = account_id[idx + 1:]  # "variant_no_fear_greed"
+        elif account_id.endswith("_control"):
+            experiment_id = account_id[: -len("_control")]
+            arm = "control"
 
         sql = """
         INSERT INTO paper_trades

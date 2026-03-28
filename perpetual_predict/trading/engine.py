@@ -164,15 +164,19 @@ class PaperTradingEngine:
         self, account_id: str, balance: float
     ) -> None:
         """Update experiment_accounts if this is an experiment trade."""
-        # Convention: experiment account_id = "{experiment_id}_{arm}"
-        for arm in ("control", "variant"):
-            suffix = f"_{arm}"
-            if account_id.endswith(suffix):
-                experiment_id = account_id[: -len(suffix)]
-                await self.db.update_experiment_account_balance(
-                    experiment_id, arm, balance
-                )
-                return
+        # Convention: "{experiment_id}_control" or "{experiment_id}_variant_{name}"
+        if "_variant_" in account_id:
+            idx = account_id.index("_variant_")
+            experiment_id = account_id[:idx]
+            arm = account_id[idx + 1:]  # "variant_no_fear_greed"
+            await self.db.update_experiment_account_balance(
+                experiment_id, arm, balance
+            )
+        elif account_id.endswith("_control"):
+            experiment_id = account_id[: -len("_control")]
+            await self.db.update_experiment_account_balance(
+                experiment_id, "control", balance
+            )
 
     async def get_portfolio_context(self) -> dict:
         """Build portfolio context for the LLM prompt.
