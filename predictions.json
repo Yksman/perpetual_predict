@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "901a4197-abbf-465d-9aa4-cd35ee86bb7c",
+      "time": "2026-03-28T12:01:28.115974+00:00",
+      "target_open": "2026-03-28T12:00:00+00:00",
+      "target_close": "2026-03-28T16:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.65,
+      "key_factors": [
+        "전 이평선(SMA20/50/200) 하회 — 강한 하락 추세 확인",
+        "MACD 히스토그램 -214 하락 가속 + RSI 32.4 약세 영역",
+        "시장 구조 LL 연속 갱신, 구조 이탈 5회",
+        "매크로 악화: S&P/NASDAQ 하락, DXY 강세, 금 급등 — 위험자산 회피",
+        "Fear & Greed 12 극단적 공포 — 역발상 반등 가능성은 있으나 구조적 근거 부족",
+        "좁은 레인지 횡보 + 음수 펀딩레이트로 급락보다 완만한 하방 압력 예상"
+      ],
+      "reasoning": "기술적으로 모든 이평선 하회, MACD 하락 가속, 시장 구조 LL 연속 갱신이 하락 우위를 명확히 보여준다. 매크로 환경도 주식시장 약세 + DXY 강세 + 금 급등으로 위험자산 회피 국면. Fear & Greed 12의 극단적 공포는 역발상 반등 가능성을 시사하나, 구조적 하락 추세가 깨지지 않은 상태에서 단순 센티먼트만으로 반전을 기대하기 어렵다. 다만 좁은 레인지 횡보($65.7K~$66.5K)와 음수 펀딩레이트가 급락보다는 완만한 하방 압력을 시사하므로 고확신 숏보다는 보수적 접근이 적절.",
+      "position_pct": 0.4,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "31571908-044d-4aa7-9ea5-779f982244c3",
       "time": "2026-03-28T09:16:42.996140+00:00",
       "target_open": "2026-03-28T08:00:00+00:00",
@@ -16,11 +39,11 @@
       ],
       "reasoning": "기술적으로 모든 이평선 하방, MACD/RSI/Stoch RSI 모두 약세, CVD 매도 우위로 하락 추세가 명확하다. 매크로 환경도 주식시장 약세 + DXY 강세 + 금 급등으로 위험자산 회피 심리가 강하다. Fear & Greed 12의 극단적 공포는 역발상 매수 근거가 되나, 추세 반전 확인 시그널(다이버전스, 거래량 급증 등)이 부재하여 단기 반등보다는 추가 하락 또는 횡보 가능성이 높다. 다만 $65,500 지지선 근접과 과매도 상태로 급락보다는 완만한 하락 예상.",
       "position_pct": 0.3,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -0.3493638841326473,
+      "predicted_return": 0.14936388413264728,
+      "evaluated_at": "2026-03-28T12:00:17.536846+00:00"
     },
     {
       "id": "32bab608-b42b-4229-8cf3-49635d359d0e",
