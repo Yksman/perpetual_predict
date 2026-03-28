@@ -528,19 +528,18 @@ async def prediction_job(
             account_id=paper_settings.account_id,
         )
 
-        # 2. Experiment arm predictions (only if enabled)
+        # 2. Experiment arm predictions (parallel, max 4 concurrent)
         variant_results: list[tuple] = []
 
         if settings.experiment.enabled:
             async with get_database() as db:
                 active_experiments = await db.get_active_experiments()
 
-            for exp in active_experiments:
-                import json
-                variant_modules = json.loads(exp.variant_modules) if isinstance(exp.variant_modules, str) else exp.variant_modules
+            # Build prediction tasks for all variants across all experiments
+            variant_tasks = []
 
-                # Reuse baseline as control (same modules = same prompt)
-                # Just save baseline result under the experiment's control arm
+            for exp in active_experiments:
+                # Reuse baseline as control arm
                 if prediction:
                     try:
                         async with get_database() as db:
@@ -597,29 +596,40 @@ async def prediction_job(
                             f"(baseline reuse) failed (non-fatal): {e}"
                         )
 
-                # Cooldown before variant call to avoid rate limiting
-                await asyncio.sleep(10)
+                # Queue variant prediction tasks
+                for variant_name, modules in exp.variants.items():
+                    variant_tasks.append((
+                        exp,
+                        variant_name,
+                        _run_single_prediction(
+                            market_context=market_context,
+                            target_open=target_open,
+                            target_close=target_close,
+                            symbol=symbol,
+                            timeframe=timeframe,
+                            enabled_modules=modules,
+                            experiment_id=exp.experiment_id,
+                            arm=f"variant_{variant_name}",
+                            account_id=f"{exp.experiment_id}_variant_{variant_name}",
+                        ),
+                    ))
 
-                # Run variant prediction (different modules = needs its own claude -p call)
-                try:
-                    variant_pred = await _run_single_prediction(
-                        market_context=market_context,
-                        target_open=target_open,
-                        target_close=target_close,
-                        symbol=symbol,
-                        timeframe=timeframe,
-                        enabled_modules=variant_modules,
-                        experiment_id=exp.experiment_id,
-                        arm="variant",
-                        account_id=f"{exp.experiment_id}_variant",
-                    )
-                    if variant_pred:
-                        variant_results.append((exp, variant_pred))
-                except Exception as e:
-                    logger.warning(
-                        f"Experiment {exp.experiment_id} variant "
-                        f"prediction failed (non-fatal): {e}"
-                    )
+            # Execute variant predictions in parallel (max 4 at a time)
+            MAX_CONCURRENT = 4
+            for batch_start in range(0, len(variant_tasks), MAX_CONCURRENT):
+                batch = variant_tasks[batch_start:batch_start + MAX_CONCURRENT]
+                batch_coros = [task[2] for task in batch]
+                batch_results = await asyncio.gather(*batch_coros, return_exceptions=True)
+
+                for i, result in enumerate(batch_results):
+                    exp_item, vname, _ = batch[i]
+                    if isinstance(result, Exception):
+                        logger.warning(
+                            f"Experiment {exp_item.experiment_id} variant_{vname} "
+                            f"prediction failed (non-fatal): {result}"
+                        )
+                    elif result:
+                        variant_results.append((exp_item, result))
 
         health_status.update_job_completed(
             job_name,
