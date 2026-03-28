@@ -629,7 +629,7 @@ async def prediction_job(
                             f"prediction failed (non-fatal): {result}"
                         )
                     elif result:
-                        variant_results.append((exp_item, result))
+                        variant_results.append((exp_item, vname, result))
 
         health_status.update_job_completed(
             job_name,
@@ -777,8 +777,8 @@ async def full_cycle_job(health_status: HealthStatus) -> dict:
 
                 # Variant predictions as separate messages
                 if variant_results:
-                    for exp, variant_pred in variant_results:
-                        await send_variant_prediction(webhook, variant_pred, exp)
+                    for exp, vname, variant_pred in variant_results:
+                        await send_variant_prediction(webhook, variant_pred, exp, vname)
                 else:
                     await send_no_experiment(webhook)
             except Exception as e:

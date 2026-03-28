@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -693,6 +694,7 @@ async def send_variant_prediction(
     webhook: DiscordWebhook,
     prediction: Prediction,
     experiment: Experiment,
+    variant_name: str | None = None,
 ) -> bool:
     """Send variant experiment prediction as a separate Discord message.
 
@@ -700,25 +702,33 @@ async def send_variant_prediction(
         webhook: DiscordWebhook instance.
         prediction: The variant prediction object.
         experiment: The experiment this variant belongs to.
+        variant_name: Name of the specific variant arm (for multi-variant).
 
     Returns:
         True if sent successfully.
     """
-    import json
-
     direction_emoji = _get_direction_emoji(prediction.direction)
     confidence_display = _format_confidence(prediction.confidence)
 
-    # Parse variant modules for display
-    variant_modules = experiment.variant_modules
-    if isinstance(variant_modules, str):
-        variant_modules = json.loads(variant_modules)
-    added_modules = set(variant_modules) - set(
+    # Determine module diff for this specific variant
+    control = (
         experiment.control_modules
         if isinstance(experiment.control_modules, list)
         else json.loads(experiment.control_modules)
     )
-    modules_display = ", ".join(f"`{m}`" for m in sorted(added_modules)) or "없음"
+    if variant_name and hasattr(experiment, "variants") and experiment.variants:
+        variant_modules = experiment.variants.get(variant_name, experiment.variant_modules)
+    else:
+        variant_modules = experiment.variant_modules
+    added_modules = set(variant_modules) - set(control)
+    removed_modules = set(control) - set(variant_modules)
+    diff_parts = []
+    if added_modules:
+        diff_parts.append(", ".join(f"`+{m}`" for m in sorted(added_modules)))
+    if removed_modules:
+        diff_parts.append(", ".join(f"`-{m}`" for m in sorted(removed_modules)))
+    modules_display = " ".join(diff_parts) or "동일"
+    variant_display = variant_name or "variant"
 
     factors_text = "\n".join(f"• {factor}" for factor in prediction.key_factors[:5])
     if not factors_text:
@@ -726,12 +736,12 @@ async def send_variant_prediction(
 
     embed = (
         DiscordEmbed(
-            title=f"🧪 Variant 예측 — {experiment.name}",
-            description=f"실험 `{experiment.experiment_id}` variant arm 예측 결과",
+            title=f"🧪 Variant 예측 — {experiment.name} / {variant_display}",
+            description=f"실험 `{experiment.experiment_id}` `{variant_display}` arm 예측 결과",
             color=EmbedColors.INFO,
         )
         .add_field(
-            name="추가 모듈",
+            name="모듈 변경",
             value=modules_display,
             inline=True,
         )
