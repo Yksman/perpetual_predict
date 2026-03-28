@@ -255,69 +255,93 @@ async def _build_experiments(db: Database) -> dict:
     for exp in experiments:
         result = await analyzer.analyze(exp.experiment_id)
 
-        # Accounts
-        ctrl_acc = await db.get_experiment_account(exp.experiment_id, "control")
-        var_acc = await db.get_experiment_account(exp.experiment_id, "variant")
+        # Determine variant arm names from experiment
+        variant_names = list(exp.variants.keys()) if exp.variants else ["variant"]
+        arm_names = ["control"] + [f"variant_{v}" for v in variant_names]
 
-        # Predictions per arm
-        ctrl_preds = await db.get_predictions_by_experiment(
-            exp.experiment_id, "control",
-        )
-        var_preds = await db.get_predictions_by_experiment(
-            exp.experiment_id, "variant",
-        )
+        # Fetch accounts, predictions, trades per arm
+        accounts_data = {}
+        preds_by_arm = {}
+        trades_by_arm = {}
+        equity_curves = {}
 
-        # Trades per arm
-        ctrl_trades = await db.get_paper_trades_by_experiment(
-            exp.experiment_id, "control",
-        )
-        var_trades = await db.get_paper_trades_by_experiment(
-            exp.experiment_id, "variant",
-        )
+        for arm in arm_names:
+            acc = await db.get_experiment_account(exp.experiment_id, arm)
+            preds = await db.get_predictions_by_experiment(exp.experiment_id, arm)
+            trades = await db.get_paper_trades_by_experiment(exp.experiment_id, arm)
 
-        # Module diff
-        added = sorted(set(exp.variant_modules) - set(exp.control_modules))
-        removed = sorted(set(exp.control_modules) - set(exp.variant_modules))
+            accounts_data[arm] = {
+                "initial_balance": acc.initial_balance if acc else 0,
+                "current_balance": acc.current_balance if acc else 0,
+            }
+            preds_by_arm[arm] = preds
+            trades_by_arm[arm] = trades
+            equity_curves[arm] = _build_equity_curve(acc, trades)
 
-        # Progress
-        sample_size = result.sample_size if result else 0
+        # Module diffs per variant
+        variant_diffs = {}
+        for vname in variant_names:
+            vmods = exp.variants.get(vname, [])
+            added = sorted(set(vmods) - set(exp.control_modules))
+            removed = sorted(set(exp.control_modules) - set(vmods))
+            variant_diffs[vname] = {"added": added, "removed": removed}
+
+        # Progress (use control sample count)
+        sample_size = result.control_sample_size if result else 0
         progress_pct = min(sample_size / exp.min_samples * 100, 100) if exp.min_samples > 0 else 0
 
-        # Prediction pairs: match by target_candle_open
-        ctrl_by_candle = {p.target_candle_open.isoformat(): p for p in ctrl_preds}
-        var_by_candle = {p.target_candle_open.isoformat(): p for p in var_preds}
-        common_candles = sorted(set(ctrl_by_candle) & set(var_by_candle), reverse=True)
-
-        prediction_pairs = []
-        for candle_key in common_candles:
-            cp = ctrl_by_candle[candle_key]
-            vp = var_by_candle[candle_key]
-            prediction_pairs.append({
-                "target_candle_open": candle_key,
-                "target_candle_close": cp.target_candle_close.isoformat(),
-                "control": _pred_arm(cp),
-                "variant": _pred_arm(vp),
-            })
-
-        # Equity curves per arm
-        equity_curves = {
-            "control": _build_equity_curve(ctrl_acc, ctrl_trades),
-            "variant": _build_equity_curve(var_acc, var_trades),
+        # Prediction comparison: match all arms by target_candle_open
+        ctrl_by_candle = {
+            p.target_candle_open.isoformat(): p for p in preds_by_arm.get("control", [])
         }
+        all_candle_keys = set(ctrl_by_candle.keys())
+        for arm in arm_names:
+            if arm != "control":
+                all_candle_keys &= {
+                    p.target_candle_open.isoformat() for p in preds_by_arm.get(arm, [])
+                }
+        common_candles = sorted(all_candle_keys, reverse=True)
 
-        # Result block
+        # Build per-arm lookup
+        arm_by_candle = {}
+        for arm in arm_names:
+            arm_by_candle[arm] = {
+                p.target_candle_open.isoformat(): p for p in preds_by_arm.get(arm, [])
+            }
+
+        prediction_comparisons = []
+        for candle_key in common_candles:
+            entry = {
+                "target_candle_open": candle_key,
+                "target_candle_close": ctrl_by_candle[candle_key].target_candle_close.isoformat(),
+                "arms": {},
+            }
+            for arm in arm_names:
+                pred = arm_by_candle[arm].get(candle_key)
+                if pred:
+                    entry["arms"][arm] = _pred_arm(pred)
+            prediction_comparisons.append(entry)
+
+        # Result block (multi-variant)
         result_block = None
         if result:
+            variant_results = []
+            for vr in result.variant_results:
+                variant_results.append({
+                    "variant_name": vr.variant_name,
+                    "sample_size": vr.sample_size,
+                    "accuracy": round(vr.accuracy, 4),
+                    "net_return": round(vr.net_return, 2),
+                    "sharpe": round(vr.sharpe, 2),
+                    "p_value": round(vr.p_value, 4) if vr.p_value is not None else None,
+                    "is_significant": vr.is_significant,
+                })
             result_block = {
                 "control_accuracy": round(result.control_accuracy, 4),
-                "variant_accuracy": round(result.variant_accuracy, 4),
                 "control_return": round(result.control_return, 2),
-                "variant_return": round(result.variant_return, 2),
                 "control_sharpe": round(result.control_sharpe, 2),
-                "variant_sharpe": round(result.variant_sharpe, 2),
-                "p_value": round(result.p_value, 4) if result.p_value is not None else None,
-                "is_significant": result.is_significant,
-                "recommended_winner": result.recommended_winner,
+                "control_sample_size": result.control_sample_size,
+                "variant_results": variant_results,
             }
 
         items.append({
@@ -326,8 +350,10 @@ async def _build_experiments(db: Database) -> dict:
             "description": exp.description,
             "status": exp.status,
             "control_modules": exp.control_modules,
-            "variant_modules": exp.variant_modules,
-            "module_diff": {"added": added, "removed": removed},
+            "variants": {
+                vname: exp.variants[vname] for vname in variant_names
+            },
+            "variant_diffs": variant_diffs,
             "min_samples": exp.min_samples,
             "significance_level": exp.significance_level,
             "primary_metric": exp.primary_metric,
@@ -337,18 +363,9 @@ async def _build_experiments(db: Database) -> dict:
             "sample_size": sample_size,
             "progress_pct": round(progress_pct, 1),
             "result": result_block,
-            "accounts": {
-                "control": {
-                    "initial_balance": ctrl_acc.initial_balance if ctrl_acc else 0,
-                    "current_balance": ctrl_acc.current_balance if ctrl_acc else 0,
-                },
-                "variant": {
-                    "initial_balance": var_acc.initial_balance if var_acc else 0,
-                    "current_balance": var_acc.current_balance if var_acc else 0,
-                },
-            },
+            "accounts": accounts_data,
             "equity_curves": equity_curves,
-            "prediction_pairs": prediction_pairs,
+            "prediction_comparisons": prediction_comparisons,
         })
 
     return {"experiments": items}
