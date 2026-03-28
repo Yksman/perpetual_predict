@@ -28,7 +28,7 @@ SEED_MODULES = [
 
 # A/B 테스트 검증 중인 모듈 — baseline 예측에서 제외됨
 # A/B 테스트 통과 후 이 set에서 제거하면 DEFAULT_MODULES에 자동 포함
-EXPERIMENTAL_MODULES = {"macro", "news"}
+EXPERIMENTAL_MODULES = {"news"}
 
 # baseline 예측에 사용되는 모듈 (검증 완료된 모듈만)
 DEFAULT_MODULES = [m for m in SEED_MODULES if m not in EXPERIMENTAL_MODULES]
