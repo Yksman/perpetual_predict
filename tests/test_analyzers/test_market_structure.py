@@ -120,3 +120,37 @@ class TestAnalyzeMarketStructure:
         df = _make_ohlcv(prices)
         result = analyze_market_structure(df, left_bars=2, right_bars=2)
         assert result.current_structure == "Undefined"
+
+
+class TestMarketStructureSummaryDebiasing:
+    def test_summary_has_no_directional_labels(self):
+        """Summary should not contain Bullish/Bearish/Transition labels."""
+        prices = []
+        for i in range(30):
+            base = 100 + i * 0.5 + (3 if i % 6 < 3 else -1)
+            prices.append((base, base + 2, base - 1, base + 1))
+
+        df = _make_ohlcv(prices)
+        result = analyze_market_structure(df, left_bars=2, right_bars=2)
+
+        assert "Bullish" not in result.summary
+        assert "Bearish" not in result.summary
+        assert "Transition" not in result.summary
+        # Structure Breaks count should still be present
+        assert "Structure Breaks" in result.summary
+
+    def test_summary_preserves_swing_data(self):
+        """Summary should still contain swing point data and break markers."""
+        # Use 30-candle uptrend data — same as test_summary_has_no_directional_labels
+        # which is known to produce swing labels in the summary.
+        prices = []
+        for i in range(30):
+            base = 100 + i * 0.5 + (3 if i % 6 < 3 else -1)
+            prices.append((base, base + 2, base - 1, base + 1))
+
+        df = _make_ohlcv(prices)
+        result = analyze_market_structure(df, left_bars=2, right_bars=2)
+
+        # Swing labels should be present
+        assert any(label in result.summary for label in ("HH", "HL", "LH", "LL", "H", "L"))
+        assert "$" in result.summary

@@ -198,7 +198,6 @@ def _build_summary(
             f"  {i}. ${swing.price:,.0f} ({swing.label}){marker}"
         )
 
-    lines.append(f"  Current Structure: {structure}")
     lines.append(f"  Structure Breaks: {breaks}")
 
     return "\n".join(lines)
