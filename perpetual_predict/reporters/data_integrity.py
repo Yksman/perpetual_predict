@@ -399,6 +399,11 @@ class LatestDataVerification:
     macro_indicator_count: int = 0
     macro_latest_date: str = ""
 
+    # News articles (보조 — 사이클 비블로킹)
+    news_4h: bool = False
+    news_article_count: int = 0
+    news_collector_source: str = ""
+
     # 기대 타임스탬프
     expected_candle_time: datetime | None = None
     expected_funding_time: datetime | None = None
@@ -435,12 +440,13 @@ class LatestDataVerification:
             self.open_interest_4h,
             self.long_short_ratio_4h,
             self.macro_daily,
+            self.news_4h,
         ])
 
     @property
     def total_types(self) -> int:
         """검증 대상 총 데이터 타입 수."""
-        return 5
+        return 6
 
     @property
     def missing_data(self) -> list[str]:
@@ -456,6 +462,8 @@ class LatestDataVerification:
             missing.append("4H LS Ratio")
         if not self.macro_daily:
             missing.append("Macro (daily)")
+        if not self.news_4h:
+            missing.append("News (4H)")
         return missing
 
 
@@ -616,11 +624,19 @@ async def verify_latest_data(
         if days_old <= 3:  # 주말/공휴일 허용
             result.macro_daily = True
 
+    # 6. News articles (4H freshness)
+    news_articles = await db.get_recent_news(hours=4)
+    if news_articles:
+        result.news_article_count = len(news_articles)
+        result.news_collector_source = news_articles[0].collector_source
+        result.news_4h = True
+
     # 로그 출력
     if result.all_verified:
         logger.info(
             f"All data verified: Candle, Funding, OI, LS Ratio"
-            f"{', Macro' if result.macro_daily else ''} "
+            f"{', Macro' if result.macro_daily else ''}"
+            f"{', News' if result.news_4h else ''} "
             f"({result.verified_count}/{result.total_types})"
         )
     else:
