@@ -67,6 +67,16 @@ async def collect_data(
         else:
             logger.info("FRED_API_KEY not set, skipping FRED data collection")
 
+    # News collector
+    news_collector = None
+    if settings.cryptopanic.news_enabled:
+        from perpetual_predict.collectors.news.news_collector import NewsCollector
+        rss_feeds = [u.strip() for u in settings.cryptopanic.rss_feeds.split(",") if u.strip()]
+        news_collector = NewsCollector(
+            cryptopanic_api_key=settings.cryptopanic.api_key,
+            rss_feed_urls=rss_feeds,
+        )
+
     try:
         # Initialize collectors
         ohlcv_collector = OHLCVCollector(
@@ -82,6 +92,7 @@ async def collect_data(
         # Run all API calls in parallel (including macro collectors)
         logger.info(f"Collecting market data for {symbol} {timeframe} (parallel)...")
         macro_tasks = [c.collect(days=days) for c in macro_collectors]
+        news_task = [news_collector.collect()] if news_collector else []
         api_results = await asyncio.gather(
             ohlcv_collector.collect(start_time=start_time, end_time=end_time),
             funding_collector.collect(start_time=start_time, end_time=end_time),
@@ -89,11 +100,13 @@ async def collect_data(
             ls_collector.collect(limit=ls_limit),
             fgi_collector.collect(limit=days),
             *macro_tasks,
+            *news_task,
             return_exceptions=True,
         )
 
         candles, funding_rates, open_interests, ratios, fgi_data = api_results[:5]
-        macro_results = api_results[5:]
+        macro_results = api_results[5:5 + len(macro_tasks)]
+        news_result = api_results[5 + len(macro_tasks)] if news_collector else None
 
         # Process results and save to database using batch inserts
         async with get_database() as db:
@@ -161,11 +174,27 @@ async def collect_data(
             results["macro_indicators"] = len(all_macro)
             logger.info(f"Collected {len(all_macro)} macro indicator records")
 
+            # Handle news articles
+            if news_result is not None:
+                if isinstance(news_result, Exception):
+                    logger.error(f"Failed to collect news: {news_result}")
+                    results["news_articles"] = 0
+                else:
+                    if news_result:
+                        await db.insert_news_articles(news_result)
+                    results["news_articles"] = len(news_result)
+                    source = "rss fallback" if news_collector and news_collector.used_fallback else "cryptopanic"
+                    logger.info(f"Collected {len(news_result)} news articles ({source})")
+            else:
+                results["news_articles"] = 0
+
     finally:
         await client.close()
         await fgi_collector.close()
         for c in macro_collectors:
             await c.close()
+        if news_collector:
+            await news_collector.close()
 
     return results
 
@@ -197,6 +226,7 @@ def run_collect(args: argparse.Namespace) -> int:
         print(f"  Long/Short Ratios: {results.get('long_short_ratios', 0)}")
         print(f"  Fear & Greed: {results.get('fear_greed', 0)}")
         print(f"  Macro Indicators: {results.get('macro_indicators', 0)}")
+        print(f"  News Articles: {results.get('news_articles', 0)}")
 
         total = sum(results.values())
         print(f"\nTotal records collected: {total}")

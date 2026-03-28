@@ -97,6 +97,7 @@ async def send_collection_completed(
         f"• 롱/숏 비율: `{results.get('long_short_ratios', 0)}`개",
         f"• 공포탐욕지수: `{results.get('fear_greed', 0)}`개",
         f"• 매크로지표: `{results.get('macro_indicators', 0)}`개",
+        f"• 뉴스기사: `{results.get('news_articles', 0)}`개",
     ]
 
     embed = (

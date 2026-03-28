@@ -82,6 +82,9 @@ class CryptoPanicConfig:
     api_key: str = ""
     base_url: str = "https://cryptopanic.com/api/v1"
     filter_currencies: str = "BTC"  # Comma-separated currency codes
+    news_enabled: bool = True
+    max_headlines: int = 100
+    rss_feeds: str = "https://cointelegraph.com/rss,https://www.coindesk.com/arc/outboundfeeds/rss/"
 
 
 @dataclass
@@ -226,6 +229,9 @@ class Settings:
             cryptopanic=CryptoPanicConfig(
                 api_key=os.getenv("CRYPTOPANIC_API_KEY", ""),
                 filter_currencies=os.getenv("CRYPTOPANIC_CURRENCIES", "BTC"),
+                news_enabled=os.getenv("NEWS_ENABLED", "true").lower() == "true",
+                max_headlines=int(os.getenv("NEWS_MAX_HEADLINES", "100")),
+                rss_feeds=os.getenv("NEWS_RSS_FEEDS", "https://cointelegraph.com/rss,https://www.coindesk.com/arc/outboundfeeds/rss/"),
             ),
             scheduler=SchedulerConfig(
                 enabled=os.getenv("SCHEDULER_ENABLED", "true").lower() == "true",
