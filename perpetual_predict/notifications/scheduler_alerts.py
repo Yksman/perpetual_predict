@@ -285,10 +285,10 @@ async def send_prediction_completed(
         .set_timestamp()
     )
 
-    # Add reasoning (truncated)
+    # Add reasoning (full text, split if needed)
     reasoning = prediction.reasoning
-    if len(reasoning) > 500:
-        reasoning = reasoning[:497] + "..."
+    if len(reasoning) > 1024:
+        reasoning = reasoning[:1021] + "..."
     embed.add_field(name="💭 분석 근거", value=reasoning, inline=False)
 
     # Add full trading reasoning
@@ -302,22 +302,24 @@ async def send_prediction_completed(
             inline=False,
         )
 
-    # Add bull/bear case probabilities
+    # Add bull/bear case probabilities (separate fields for full text)
     bull_prob = prediction.bull_case.get("probability") if prediction.bull_case else None
     bear_prob = prediction.bear_case.get("probability") if prediction.bear_case else None
     if bull_prob is not None and bear_prob is not None:
         bull_reasoning = prediction.bull_case.get("reasoning", "")
         bear_reasoning = prediction.bear_case.get("reasoning", "")
-        if len(bull_reasoning) > 200:
-            bull_reasoning = bull_reasoning[:197] + "..."
-        if len(bear_reasoning) > 200:
-            bear_reasoning = bear_reasoning[:197] + "..."
+        if len(bull_reasoning) > 1024:
+            bull_reasoning = bull_reasoning[:1021] + "..."
+        if len(bear_reasoning) > 1024:
+            bear_reasoning = bear_reasoning[:1021] + "..."
         embed.add_field(
-            name="📊 시나리오 분석",
-            value=(
-                f"🟢 **상승**: {bull_prob:.0%}\n{bull_reasoning}\n\n"
-                f"🔴 **하락**: {bear_prob:.0%}\n{bear_reasoning}"
-            ),
+            name=f"🟢 상승: {bull_prob:.0%}",
+            value=bull_reasoning or "없음",
+            inline=False,
+        )
+        embed.add_field(
+            name=f"🔴 하락: {bear_prob:.0%}",
+            value=bear_reasoning or "없음",
             inline=False,
         )
 
@@ -762,29 +764,31 @@ async def send_variant_prediction(
         .add_field(name="📝 주요 판단 요소", value=factors_text, inline=False)
     )
 
-    # Bull/Bear case probabilities
+    # Bull/Bear case probabilities (separate fields for full text)
     bull_prob = prediction.bull_case.get("probability") if prediction.bull_case else None
     bear_prob = prediction.bear_case.get("probability") if prediction.bear_case else None
     if bull_prob is not None and bear_prob is not None:
         bull_reasoning = prediction.bull_case.get("reasoning", "")
         bear_reasoning = prediction.bear_case.get("reasoning", "")
-        if len(bull_reasoning) > 200:
-            bull_reasoning = bull_reasoning[:197] + "..."
-        if len(bear_reasoning) > 200:
-            bear_reasoning = bear_reasoning[:197] + "..."
+        if len(bull_reasoning) > 1024:
+            bull_reasoning = bull_reasoning[:1021] + "..."
+        if len(bear_reasoning) > 1024:
+            bear_reasoning = bear_reasoning[:1021] + "..."
         embed.add_field(
-            name="📊 시나리오 분석",
-            value=(
-                f"🟢 **상승**: {bull_prob:.0%}\n{bull_reasoning}\n\n"
-                f"🔴 **하락**: {bear_prob:.0%}\n{bear_reasoning}"
-            ),
+            name=f"🟢 상승: {bull_prob:.0%}",
+            value=bull_reasoning or "없음",
+            inline=False,
+        )
+        embed.add_field(
+            name=f"🔴 하락: {bear_prob:.0%}",
+            value=bear_reasoning or "없음",
             inline=False,
         )
 
-    # Reasoning
+    # Reasoning (full text)
     reasoning = prediction.reasoning
-    if len(reasoning) > 500:
-        reasoning = reasoning[:497] + "..."
+    if len(reasoning) > 1024:
+        reasoning = reasoning[:1021] + "..."
     embed.add_field(name="💭 분석 근거", value=reasoning, inline=False)
 
     # Trading reasoning
