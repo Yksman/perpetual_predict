@@ -22,7 +22,6 @@ SEED_MODULES = [
     "divergences",
     "support_resistance",
     "recent_candles",
-    "portfolio",
     "macro",
     "news",
 ]

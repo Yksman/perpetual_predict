@@ -365,6 +365,81 @@ async def evaluation_job(health_status: HealthStatus) -> list[dict]:
         raise
 
 
+async def _fetch_sub_candles_1h(
+    symbol: str,
+    timeframe: str,
+    max_retries: int = 3,
+    retry_delay: float = 2.0,
+) -> list[list] | None:
+    """Fetch 1H candles covering the previous 4H window from Binance API.
+
+    Used to provide sub-timeframe breakdown of the just-closed 4H candle,
+    giving the prediction agent insight into the "shape of the move."
+
+    Args:
+        symbol: Trading symbol (e.g., "BTCUSDT").
+        timeframe: Base timeframe (e.g., "4h") to determine the window.
+        max_retries: Maximum fetch attempts before fallback.
+        retry_delay: Seconds to wait between retries.
+
+    Returns:
+        List of 4 raw Binance kline arrays, or None on failure.
+    """
+    settings = get_settings()
+
+    # Calculate the previous 4H candle window
+    now = datetime.now(timezone.utc)
+    hours_per_candle = 4 if timeframe.lower() == "4h" else 1
+    current_candle_hour = (now.hour // hours_per_candle) * hours_per_candle
+    current_candle_open = now.replace(
+        hour=current_candle_hour, minute=0, second=0, microsecond=0
+    )
+    # Previous 4H candle: from (current_open - 4h) to current_open
+    prev_candle_open = current_candle_open - timedelta(hours=hours_per_candle)
+
+    start_ms = int(prev_candle_open.timestamp() * 1000)
+    end_ms = int(current_candle_open.timestamp() * 1000) - 1  # exclusive
+
+    for attempt in range(max_retries):
+        client = BinanceClient(
+            api_key=settings.binance.api_key,
+            api_secret=settings.binance.api_secret,
+            use_testnet=settings.binance.use_testnet,
+        )
+        try:
+            klines = await client.get_klines(
+                symbol=symbol,
+                interval="1h",
+                start_time=start_ms,
+                end_time=end_ms,
+                limit=4,
+            )
+            if klines and len(klines) >= 4:
+                logger.info(
+                    f"Fetched {len(klines)} 1H sub-candles for "
+                    f"{prev_candle_open.strftime('%H:%M')}-"
+                    f"{current_candle_open.strftime('%H:%M')} UTC"
+                )
+                return klines[:4]
+            else:
+                logger.warning(
+                    f"1H sub-candle fetch returned {len(klines) if klines else 0} "
+                    f"candles (expected 4), attempt {attempt + 1}/{max_retries}"
+                )
+        except Exception as e:
+            logger.warning(
+                f"1H sub-candle fetch failed (attempt {attempt + 1}/{max_retries}): {e}"
+            )
+        finally:
+            await client.close()
+
+        if attempt < max_retries - 1:
+            await asyncio.sleep(retry_delay)
+
+    logger.warning("1H sub-candle fetch failed after all retries, proceeding without")
+    return None
+
+
 async def _run_single_prediction(
     market_context,
     target_open: datetime,
@@ -496,23 +571,15 @@ async def prediction_job(
         # Calculate target candle times
         target_open, target_close = _calculate_target_candle_times(timeframe)
 
+        # Fetch 1H sub-candles for previous 4H window (live from Binance)
+        sub_candles_1h = await _fetch_sub_candles_1h(symbol, timeframe)
+
         # Build market context (shared across all arms — same market data)
         paper_settings = settings.paper_trading
         async with get_database() as db:
             context_builder = MarketContextBuilder(db, symbol, timeframe)
-
-            portfolio_context = None
-            if paper_settings.enabled:
-                try:
-                    from perpetual_predict.trading.engine import PaperTradingEngine
-                    engine = PaperTradingEngine(db, paper_settings.account_id)
-                    await engine.ensure_account(paper_settings.initial_balance)
-                    portfolio_context = await engine.get_portfolio_context()
-                except Exception as e:
-                    logger.warning(f"Failed to load portfolio context (non-fatal): {e}")
-
             market_context = await context_builder.build(
-                portfolio_context=portfolio_context,
+                sub_candles_1h=sub_candles_1h,
             )
 
         # 1. Baseline prediction (always runs, same as before)

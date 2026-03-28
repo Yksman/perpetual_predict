@@ -131,20 +131,13 @@ class MarketContext:
     # Recent candle summary
     recent_candles_summary: str = ""
 
+    # Sub-timeframe breakdown (1H candles for the previous 4H window)
+    sub_candles_1h_summary: str = ""
+
     # Metadata
     symbol: str = "BTCUSDT"
     timeframe: str = "4h"
     context_time: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-
-    # Portfolio context (optional, for paper trading)
-    portfolio_balance: float | None = None
-    portfolio_initial_balance: float | None = None
-    portfolio_return_pct: float | None = None
-    portfolio_max_drawdown: float | None = None
-    portfolio_recent_win_rate: float | None = None
-    portfolio_consecutive_losses: int = 0
-    portfolio_total_trades: int = 0
-    portfolio_recent_trades: str = ""
 
     def format_prompt(self, enabled_modules: list[str] | None = None) -> str:
         """Format context as LLM prompt.
@@ -194,9 +187,11 @@ class MarketContext:
         if "recent_candles" in modules:
             sections.append(self._section_recent_candles())
 
-        sections.append(self._section_footer(
-            include_portfolio="portfolio" in modules,
-        ))
+        # Always include sub-candle breakdown (not a module — core infrastructure)
+        if self.sub_candles_1h_summary:
+            sections.append(self._section_sub_candles())
+
+        sections.append(self._section_footer())
 
         return "\n\n".join(s for s in sections if s)
 
@@ -415,9 +410,14 @@ class MarketContext:
             f"{self.recent_candles_summary}"
         )
 
-    def _section_footer(self, include_portfolio: bool = True) -> str:
-        portfolio = self._format_portfolio_section() if include_portfolio else ""
-        return f"---\n{portfolio}" if portfolio else ""
+    def _section_sub_candles(self) -> str:
+        return (
+            f"### Previous 4H Breakdown (1H Candles)\n"
+            f"{self.sub_candles_1h_summary}"
+        )
+
+    def _section_footer(self) -> str:
+        return ""
 
     def _format_levels_section(self) -> str:
         """Format support/resistance levels section."""
@@ -447,22 +447,6 @@ class MarketContext:
 
         return "\n".join(lines)
 
-    def _format_portfolio_section(self) -> str:
-        """Format portfolio context section for the prompt."""
-        if self.portfolio_balance is None:
-            return ""
-
-        return f"""
-### Paper Trading Portfolio
-- Current Balance: ${self.portfolio_balance:,.2f} (Initial: ${self.portfolio_initial_balance:,.2f}, Return: {self.portfolio_return_pct:+.2f}%)
-- Max Drawdown: {self.portfolio_max_drawdown:+.2f}%
-- Recent Win Rate: {self.portfolio_recent_win_rate:.1f}% ({self.portfolio_total_trades} trades)
-- Consecutive Losses: {self.portfolio_consecutive_losses}
-- Recent Trades:
-{self.portfolio_recent_trades}
-"""
-
-
 class MarketContextBuilder:
     """Builds market context from database data."""
 
@@ -479,14 +463,15 @@ class MarketContextBuilder:
     async def build(
         self,
         lookback_candles: int = 250,
-        portfolio_context: dict | None = None,
+        sub_candles_1h: list[list] | None = None,
     ) -> MarketContext:
         """Build complete market context.
 
         Args:
             lookback_candles: Number of historical candles for technical analysis.
                 Default 250 for SMA200 calculation + buffer.
-            portfolio_context: Optional portfolio state dict from PaperTradingEngine.
+            sub_candles_1h: Raw 1H kline data for the previous 4H window
+                (fetched live from Binance API). Each item is a Binance kline array.
 
         Returns:
             MarketContext with all market data.
@@ -626,6 +611,7 @@ class MarketContextBuilder:
             resistance_distance_pct=resistance_dist,
 
             recent_candles_summary=recent_summary,
+            sub_candles_1h_summary=self._format_sub_candles_1h(sub_candles_1h),
 
             # Macroeconomic indicators
             treasury_10y=macro_snapshot["DGS10"].value if "DGS10" in macro_snapshot else None,
@@ -648,16 +634,6 @@ class MarketContextBuilder:
             symbol=self.symbol,
             timeframe=self.timeframe,
             context_time=datetime.now(timezone.utc),
-
-            # Portfolio context (from paper trading engine)
-            portfolio_balance=portfolio_context.get("balance") if portfolio_context else None,
-            portfolio_initial_balance=portfolio_context.get("initial_balance") if portfolio_context else None,
-            portfolio_return_pct=portfolio_context.get("total_return_pct", 0.0) if portfolio_context else None,
-            portfolio_max_drawdown=portfolio_context.get("max_drawdown_pct", 0.0) if portfolio_context else None,
-            portfolio_recent_win_rate=portfolio_context.get("recent_win_rate", 0.0) if portfolio_context else None,
-            portfolio_consecutive_losses=portfolio_context.get("consecutive_losses", 0) if portfolio_context else 0,
-            portfolio_total_trades=portfolio_context.get("total_trades", 0) if portfolio_context else 0,
-            portfolio_recent_trades=portfolio_context.get("recent_trades_summary", "") if portfolio_context else "",
         )
 
     def _candles_to_df(self, candles: list[Candle]) -> pd.DataFrame:
@@ -734,6 +710,55 @@ class MarketContextBuilder:
                 f"O: ${row['open']:,.0f} H: ${row['high']:,.0f} "
                 f"L: ${row['low']:,.0f} C: ${row['close']:,.0f} | {pattern}"
             )
+
+        return "\n".join(lines)
+
+    def _format_sub_candles_1h(
+        self, klines: list[list] | None
+    ) -> str:
+        """Format raw 1H Binance klines into a readable summary.
+
+        Args:
+            klines: Raw Binance kline arrays. Each: [open_time, open, high,
+                    low, close, volume, close_time, ...].
+
+        Returns:
+            Formatted string, or empty string if no data.
+        """
+        if not klines:
+            return ""
+
+        lines = []
+        for kline in klines:
+            open_time_ms = int(kline[0])
+            open_time = datetime.fromtimestamp(open_time_ms / 1000, tz=timezone.utc)
+            end_time = open_time + pd.Timedelta(hours=1)
+
+            o, h, low, c = float(kline[1]), float(kline[2]), float(kline[3]), float(kline[4])
+            vol = float(kline[5])
+            change = ((c - o) / o) * 100 if o > 0 else 0.0
+            direction = "+" if change >= 0 else ""
+
+            lines.append(
+                f"  [{open_time.strftime('%H:%M')}-{end_time.strftime('%H:%M')}] "
+                f"{direction}{change:.2f}% | "
+                f"O: ${o:,.0f} H: ${h:,.0f} L: ${low:,.0f} C: ${c:,.0f} | "
+                f"V: ${vol:,.0f}"
+            )
+
+        # Add time range header
+        if klines:
+            first_time = datetime.fromtimestamp(
+                int(klines[0][0]) / 1000, tz=timezone.utc
+            )
+            last_close = datetime.fromtimestamp(
+                int(klines[-1][6]) / 1000, tz=timezone.utc
+            )
+            header = (
+                f"Time range: {first_time.strftime('%Y-%m-%d %H:%M')} ~ "
+                f"{last_close.strftime('%H:%M')} UTC (just closed)"
+            )
+            return header + "\n" + "\n".join(lines)
 
         return "\n".join(lines)
 
