@@ -11,7 +11,6 @@ from typing import Any
 SEED_MODULES = [
     "price_action",
     "candle_structure",
-    "ema_distance",
     "trend",
     "momentum",
     "volatility",

@@ -111,3 +111,65 @@ class TestRecentCandlesDebiasing:
         ]
         summary = self._make_summary(candles)
         assert "+" in summary
+
+
+class TestEmaDistanceIntegration:
+    """Verify EMA distances are integrated into trend section, not separate."""
+
+    def test_trend_section_includes_ema_distances(self):
+        ctx = MarketContext(
+            current_price=70000.0,
+            price_change_4h=0.0,
+            price_change_24h=0.0,
+            high_24h=70000.0,
+            low_24h=70000.0,
+            volume_24h=0.0,
+            sma_20=69000.0,
+            sma_50=68000.0,
+            sma_200=65000.0,
+            ema_12=69500.0,
+            ema_26=69000.0,
+            macd=500.0,
+            macd_signal=400.0,
+            macd_histogram=100.0,
+            bb_upper=72000.0,
+            bb_middle=70000.0,
+            bb_lower=68000.0,
+            dist_ema_9=0.45,
+            dist_ema_21=-1.22,
+            dist_ema_55=-4.82,
+            dist_ema_200=-0.12,
+        )
+        section = ctx._section_trend()
+
+        assert "EMA 9" in section
+        assert "EMA 21" in section
+        assert "EMA 55" in section
+        assert "EMA 200" in section
+        assert "+0.45%" in section
+        assert "-1.22%" in section
+
+    def test_format_prompt_no_ema_distance_section(self):
+        ctx = MarketContext(
+            current_price=70000.0,
+            price_change_4h=0.0,
+            price_change_24h=0.0,
+            high_24h=70000.0,
+            low_24h=70000.0,
+            volume_24h=0.0,
+            sma_20=69000.0,
+            sma_50=68000.0,
+            sma_200=65000.0,
+            ema_12=69500.0,
+            ema_26=69000.0,
+            macd=500.0,
+            macd_signal=400.0,
+            macd_histogram=100.0,
+            bb_upper=72000.0,
+            bb_middle=70000.0,
+            bb_lower=68000.0,
+        )
+        prompt = ctx.format_prompt()
+
+        assert "### EMA Distance" not in prompt
+        assert "### Trend Indicators" in prompt

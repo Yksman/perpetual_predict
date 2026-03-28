@@ -158,8 +158,6 @@ class MarketContext:
             sections.append(self._section_price_action())
         if "candle_structure" in modules:
             sections.append(self._section_candle_structure())
-        if "ema_distance" in modules:
-            sections.append(self._section_ema_distance())
         if "trend" in modules:
             sections.append(self._section_trend())
         if "momentum" in modules:
@@ -234,7 +232,8 @@ class MarketContext:
             f"- SMA 20: ${self.sma_20:,.2f} ({sma_20_dist:+.2f}%)\n"
             f"- SMA 50: ${self.sma_50:,.2f} ({sma_50_dist:+.2f}%)\n"
             f"- SMA 200: ${self.sma_200:,.2f} ({sma_200_dist:+.2f}%)\n"
-            f"- EMA 12/26: ${self.ema_12:,.2f} / ${self.ema_26:,.2f}\n"
+            f"- EMA 9: {self.dist_ema_9:+.2f}% | EMA 21: {self.dist_ema_21:+.2f}% | "
+            f"EMA 55: {self.dist_ema_55:+.2f}% | EMA 200: {self.dist_ema_200:+.2f}%\n"
             f"- MACD: {self.macd:.2f} | Signal: {self.macd_signal:.2f} | Histogram: {self.macd_histogram:.2f}\n"
             f"- ADX: {self.adx:.1f}"
         )
