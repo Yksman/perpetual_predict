@@ -103,38 +103,38 @@
       "created_at": "2026-03-28T09:12:32.108529+00:00",
       "completed_at": null,
       "winner": null,
-      "sample_size": 1,
-      "progress_pct": 3.3,
+      "sample_size": 2,
+      "progress_pct": 6.7,
       "result": {
-        "control_accuracy": 1.0,
-        "control_return": 0.04,
-        "control_sharpe": 0.0,
-        "control_sample_size": 1,
+        "control_accuracy": 0.5,
+        "control_return": -0.45,
+        "control_sharpe": -27.63,
+        "control_sample_size": 2,
         "variant_results": [
           {
             "variant_name": "no_fear_greed",
-            "sample_size": 1,
-            "accuracy": 1.0,
-            "net_return": 0.06,
-            "sharpe": 0.0,
+            "sample_size": 2,
+            "accuracy": 0.5,
+            "net_return": -0.31,
+            "sharpe": -23.98,
             "p_value": null,
             "is_significant": false
           },
           {
             "variant_name": "plus_news",
-            "sample_size": 1,
-            "accuracy": 1.0,
-            "net_return": 0.04,
-            "sharpe": 0.0,
+            "sample_size": 2,
+            "accuracy": 0.5,
+            "net_return": -0.33,
+            "sharpe": -26.01,
             "p_value": null,
             "is_significant": false
           },
           {
             "variant_name": "no_fear_greed_plus_news",
-            "sample_size": 1,
-            "accuracy": 1.0,
-            "net_return": 0.04,
-            "sharpe": 0.0,
+            "sample_size": 2,
+            "accuracy": 0.5,
+            "net_return": -0.33,
+            "sharpe": -26.01,
             "p_value": null,
             "is_significant": false
           }
@@ -143,19 +143,19 @@
       "accounts": {
         "control": {
           "initial_balance": 1000.0,
-          "current_balance": 1000.4480916523979
+          "current_balance": 995.4586990144402
         },
         "variant_no_fear_greed": {
           "initial_balance": 1000.0,
-          "current_balance": 1000.5974555365306
+          "current_balance": 996.8548523821024
         },
         "variant_plus_news": {
           "initial_balance": 1000.0,
-          "current_balance": 1000.4480916523979
+          "current_balance": 996.7060471739296
         },
         "variant_no_fear_greed_plus_news": {
           "initial_balance": 1000.0,
-          "current_balance": 1000.4480916523979
+          "current_balance": 996.7060471739296
         }
       },
       "equity_curves": {
@@ -167,6 +167,10 @@
           {
             "time": "2026-03-28T12:00:00+00:00",
             "balance": 1000.4480916523979
+          },
+          {
+            "time": "2026-03-28T16:00:00+00:00",
+            "balance": 995.4586990144402
           }
         ],
         "variant_no_fear_greed": [
@@ -177,6 +181,10 @@
           {
             "time": "2026-03-28T12:00:00+00:00",
             "balance": 1000.5974555365306
+          },
+          {
+            "time": "2026-03-28T16:00:00+00:00",
+            "balance": 996.8548523821024
           }
         ],
         "variant_plus_news": [
@@ -187,6 +195,10 @@
           {
             "time": "2026-03-28T12:00:00+00:00",
             "balance": 1000.4480916523979
+          },
+          {
+            "time": "2026-03-28T16:00:00+00:00",
+            "balance": 996.7060471739296
           }
         ],
         "variant_no_fear_greed_plus_news": [
@@ -197,10 +209,52 @@
           {
             "time": "2026-03-28T12:00:00+00:00",
             "balance": 1000.4480916523979
+          },
+          {
+            "time": "2026-03-28T16:00:00+00:00",
+            "balance": 996.7060471739296
           }
         ]
       },
       "prediction_comparisons": [
+        {
+          "target_candle_open": "2026-03-28T16:00:00+00:00",
+          "target_candle_close": "2026-03-28T20:00:00+00:00",
+          "arms": {
+            "control": {
+              "direction": "DOWN",
+              "confidence": 0.55,
+              "position_pct": 0.3,
+              "is_correct": null,
+              "actual_direction": null,
+              "actual_price_change": null
+            },
+            "variant_no_fear_greed": {
+              "direction": "DOWN",
+              "confidence": 0.55,
+              "position_pct": 0.3,
+              "is_correct": null,
+              "actual_direction": null,
+              "actual_price_change": null
+            },
+            "variant_plus_news": {
+              "direction": "DOWN",
+              "confidence": 0.55,
+              "position_pct": 0.3,
+              "is_correct": null,
+              "actual_direction": null,
+              "actual_price_change": null
+            },
+            "variant_no_fear_greed_plus_news": {
+              "direction": "DOWN",
+              "confidence": 0.55,
+              "position_pct": 0.3,
+              "is_correct": null,
+              "actual_direction": null,
+              "actual_price_change": null
+            }
+          }
+        },
         {
           "target_candle_open": "2026-03-28T12:00:00+00:00",
           "target_candle_close": "2026-03-28T16:00:00+00:00",
@@ -209,33 +263,33 @@
               "direction": "DOWN",
               "confidence": 0.65,
               "position_pct": 0.4,
-              "is_correct": null,
-              "actual_direction": null,
-              "actual_price_change": null
+              "is_correct": 0,
+              "actual_direction": "UP",
+              "actual_price_change": 1.04678948352956
             },
             "variant_no_fear_greed": {
               "direction": "DOWN",
               "confidence": 0.65,
               "position_pct": 0.3,
-              "is_correct": null,
-              "actual_direction": null,
-              "actual_price_change": null
+              "is_correct": 0,
+              "actual_direction": "UP",
+              "actual_price_change": 1.04678948352956
             },
             "variant_plus_news": {
               "direction": "DOWN",
               "confidence": 0.65,
               "position_pct": 0.3,
-              "is_correct": null,
-              "actual_direction": null,
-              "actual_price_change": null
+              "is_correct": 0,
+              "actual_direction": "UP",
+              "actual_price_change": 1.04678948352956
             },
             "variant_no_fear_greed_plus_news": {
               "direction": "DOWN",
               "confidence": 0.6,
               "position_pct": 0.3,
-              "is_correct": null,
-              "actual_direction": null,
-              "actual_price_change": null
+              "is_correct": 0,
+              "actual_direction": "UP",
+              "actual_price_change": 1.04678948352956
             }
           }
         },

@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "30e447db-ba46-42b9-b1ca-3e25e45b971f",
+      "time": "2026-03-28T16:01:27.920400+00:00",
+      "target_open": "2026-03-28T16:00:00+00:00",
+      "target_close": "2026-03-28T20:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.55,
+      "key_factors": [
+        "모든 주요 이평선(SMA20/50/200) 하방 위치 — 명확한 하락추세",
+        "MACD -967.69, 히스토그램 음수 확대 — 하락 모멘텀 지속",
+        "Fear & Greed 12(Extreme Fear) — 역발상 매수 가능성 vs 추세 지속 갈등",
+        "S&P -1.67%, NASDAQ -2.15%, DXY +0.25% — 매크로 위험자산 비우호적",
+        "시장구조 LH-LL 패턴 + Structure Breaks 5회 — 하방 구조 우세",
+        "OI +3.35% 증가 + 롱숏비 2.62 — 롱 과밀 시 청산 위험"
+      ],
+      "reasoning": "하락추세 구조가 명확함: 모든 주요 이평선 아래, MACD 음수 확대, 시장구조 LH-LL 패턴 지속. Extreme Fear(12)가 반등 촉매가 될 수 있으나, 매크로 환경(주식시장 약세, DXY 강세, 고금리)이 위험자산 전반에 불리. RSI 39.4는 과매도 영역 진입 전이라 추가 하락 가능. 다만 CVD 양수, 펀딩레이트 정상화, 극단적 공포지수로 인해 급락보다는 완만한 하방 또는 횡보 하락 예상. 확신도가 높지 않아 보수적 포지션 권장.",
+      "position_pct": 0.3,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "901a4197-abbf-465d-9aa4-cd35ee86bb7c",
       "time": "2026-03-28T12:01:28.115974+00:00",
       "target_open": "2026-03-28T12:00:00+00:00",
@@ -17,11 +40,11 @@
       ],
       "reasoning": "기술적으로 모든 이평선 하회, MACD 하락 가속, 시장 구조 LL 연속 갱신이 하락 우위를 명확히 보여준다. 매크로 환경도 주식시장 약세 + DXY 강세 + 금 급등으로 위험자산 회피 국면. Fear & Greed 12의 극단적 공포는 역발상 반등 가능성을 시사하나, 구조적 하락 추세가 깨지지 않은 상태에서 단순 센티먼트만으로 반전을 기대하기 어렵다. 다만 좁은 레인지 횡보($65.7K~$66.5K)와 음수 펀딩레이트가 급락보다는 완만한 하방 압력을 시사하므로 고확신 숏보다는 보수적 접근이 적절.",
       "position_pct": 0.4,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 1.04678948352956,
+      "predicted_return": -1.2467894835295599,
+      "evaluated_at": "2026-03-28T16:00:14.322693+00:00"
     },
     {
       "id": "31571908-044d-4aa7-9ea5-779f982244c3",
