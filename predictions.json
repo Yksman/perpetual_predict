@@ -1,6 +1,28 @@
 {
   "predictions": [
     {
+      "id": "78fdc245-cb9c-4878-abf3-6dc17d58bac7",
+      "time": "2026-03-29T16:01:21.421574+00:00",
+      "target_open": "2026-03-29T16:00:00+00:00",
+      "target_close": "2026-03-29T20:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.65,
+      "key_factors": [
+        "모든 주요 이평선(SMA20/50/200) 하방 — 강한 하락 추세",
+        "Market Structure 5회 이탈 + LL($65,501) 형성",
+        "매크로 리스크오프: S&P -1.67%, NASDAQ -2.15%, Gold +3.40%",
+        "Fear & Greed 9 극단적 공포 — 추가 패닉 가능",
+        "CVD -18.08 BTC 매도 압력 + 범위 내 34% 포지션(지지선 근접)"
+      ],
+      "reasoning": "기술적으로 모든 이평선 하방, 하락 추세 구조(연속 LL/LH), ADX 30.9의 유효 추세 강도가 하방 지속을 지지. 매크로 리스크오프 환경(미국 증시 하락, 금 급등, DXY 강세)이 암호화폐에 추가 압력. Fear & Greed 9의 극단적 공포는 역발상 반등 가능성이 있으나, 구조적 하락 추세에서는 오히려 추가 패닉 매도 촉발 가능. Stochastic RSI 과매수는 단기 반등 후 재하락 패턴 시사. 지지선 $65,555까지 1.4% 하락 여지 대비 저항선 $68,271까지 2.68% 상승 필요 — 비대칭적 리스크.",
+      "position_pct": 0.5,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "c35253c1-54f1-4115-a5e9-867c794325b7",
       "time": "2026-03-29T12:01:24.760069+00:00",
       "target_open": "2026-03-29T12:00:00+00:00",
@@ -17,11 +39,11 @@
       ],
       "reasoning": "기술적으로 모든 이평선 하회 + 하락 시장 구조(LH-LL 패턴)가 지배적. MACD 히스토그램 양전환과 CVD 매수 우위는 단기 반등 가능성을 시사하나, 거시환경(주식시장 약세, DXY 강세, 금 급등)이 리스크오프를 강하게 지지. 극단적 공포(F&G 9)는 역발상 매수 신호일 수 있으나, 거래량 부재와 도지 캔들로 반등 확신 부족. 볼린저 밴드 중간선에서의 횡보는 방향성 결정 직전 상태이며, 하방 압력이 우세한 환경에서 하락 돌파 확률이 소폭 높다고 판단.\"",
       "position_pct": 0.3,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -0.42048013800374195,
+      "predicted_return": 0.22048013800374194,
+      "evaluated_at": "2026-03-29T16:00:12.021366+00:00"
     },
     {
       "id": "209ff5fc-ad35-4b3e-b03f-c37ef946ec40",
