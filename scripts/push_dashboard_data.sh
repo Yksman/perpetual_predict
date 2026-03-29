@@ -15,6 +15,14 @@ fi
 
 cd "$REPO_DIR"
 
+# Prevent concurrent pushes via flock
+LOCK="$REPO_DIR/.git/push_dashboard.lock"
+exec 9>"$LOCK"
+if ! flock -n 9; then
+    echo "Another push is in progress, skipping."
+    exit 0
+fi
+
 # Save current branch
 CURRENT=$(git branch --show-current)
 
@@ -24,6 +32,15 @@ if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; th
     git stash --quiet
     STASHED=true
 fi
+
+# Guarantee branch restoration and stash pop on ANY exit (success or failure)
+cleanup() {
+    git checkout "$CURRENT" --quiet 2>/dev/null || true
+    if [ "$STASHED" = true ]; then
+        git stash pop --quiet 2>/dev/null || true
+    fi
+}
+trap cleanup EXIT
 
 # Switch to data branch (create orphan if needed)
 if git show-ref --verify --quiet "refs/heads/$BRANCH" 2>/dev/null; then
@@ -44,12 +61,4 @@ else
     git commit -m "data: update $(date -u +%Y-%m-%dT%H:%M:%SZ)" --quiet
     git push origin "$BRANCH" --force --quiet
     echo "Pushed to $BRANCH"
-fi
-
-# Return to original branch
-git checkout "$CURRENT" --quiet
-
-# Restore stashed changes
-if [ "$STASHED" = true ]; then
-    git stash pop --quiet
 fi

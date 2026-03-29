@@ -27,7 +27,9 @@ uv run python -m perpetual_predict cycle --phase predict    # Run single phase
 uv run python -m perpetual_predict daemon --run-once        # Single collection
 
 # A/B experiment management
-uv run python -m perpetual_predict experiment create --name "test_macro" --add macro
+uv run python -m perpetual_predict experiment create --name "test_macro" --variant macro             # Add module
+uv run python -m perpetual_predict experiment create --name "no_trend" --exclude trend               # Remove module
+uv run python -m perpetual_predict experiment create --name "ablation" --exclude trend,market_structure  # Remove multiple
 uv run python -m perpetual_predict experiment list                                    # List experiments
 uv run python -m perpetual_predict experiment status <experiment_id>                  # Show results
 uv run python -m perpetual_predict experiment pause <experiment_id>
@@ -109,6 +111,11 @@ React 19 + Vite + TypeScript 정적 앱. 백엔드 API 없이 `export` 명령이
 실험 시스템은 control(baseline 모듈) vs 하나 이상의 named variant 구성을 비교한다.
 
 **Multi-variant 구조**: `Experiment.variants: dict[str, list[str]]` — 키는 variant 이름, 값은 해당 arm의 모듈 목록. CLI: `experiment create --name <name> --variant macro --variant news --variant macro,news`
+
+**Variant 생성 방식**:
+- `--variant <modules>`: baseline에 모듈 **추가** (experimental → active). 예: `--variant news`
+- `--exclude <modules>`: baseline에서 모듈 **제거** (ablation 실험). 예: `--exclude trend`. Variant 이름은 자동으로 `no_<module>` 형식으로 생성
+- `--variant`와 `--exclude`는 동시에 사용할 수 없음 (둘 중 하나만)
 
 **모듈 라이프사이클**:
 1. 신규 모듈 → `EXPERIMENTAL_MODULES` 등록 → `DEFAULT_MODULES`에서 자동 제외
