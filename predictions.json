@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "274a782e-c145-4d86-9961-4efb67df6b30",
+      "time": "2026-03-29T20:01:28.779992+00:00",
+      "target_open": "2026-03-29T20:00:00+00:00",
+      "target_close": "2026-03-30T00:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.65,
+      "key_factors": [
+        "모든 주요 이평선(SMA20/50/200) 하회 — 명확한 하락 추세",
+        "시장 구조 5회 Break, LH-LL 패턴 지속",
+        "CVD -886 BTC 매도 압력 우세 + 거래량 감소(0.73x)",
+        "매크로 위험회피: S&P -1.67%, NASDAQ -2.15%, DXY 상승, 금 급등",
+        "Fear & Greed 9 극단적 공포 — 단기 반등 가능성은 있으나 추세 반전 미확인",
+        "RSI 37.5 약세 영역이나 과매도 아님 — 추가 하락 여지"
+      ],
+      "reasoning": "기술적으로 모든 이평선 하회 + 하락 시장 구조(LH-LL) + CVD 음수가 명확한 약세 신호. 매크로 환경도 미국 증시 하락, DXY 강세, 금 급등으로 위험자산 회피 국면. Fear & Greed 9의 극단적 공포는 역발상 매수 신호가 될 수 있으나, 추세 반전 확인 없이는 낙관하기 어려움. StochRSI 과매수는 단기 반등 후 재하락 가능성을 시사. 볼륨 감소와 함께 하락이 진행 중이어서 급락보다는 점진적 하락 예상. $65,555 지지선 테스트 가능성 높음.",
+      "position_pct": 0.6,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "78fdc245-cb9c-4878-abf3-6dc17d58bac7",
       "time": "2026-03-29T16:01:21.421574+00:00",
       "target_open": "2026-03-29T16:00:00+00:00",
@@ -16,11 +39,11 @@
       ],
       "reasoning": "기술적으로 모든 이평선 하방, 하락 추세 구조(연속 LL/LH), ADX 30.9의 유효 추세 강도가 하방 지속을 지지. 매크로 리스크오프 환경(미국 증시 하락, 금 급등, DXY 강세)이 암호화폐에 추가 압력. Fear & Greed 9의 극단적 공포는 역발상 반등 가능성이 있으나, 구조적 하락 추세에서는 오히려 추가 패닉 매도 촉발 가능. Stochastic RSI 과매수는 단기 반등 후 재하락 패턴 시사. 지지선 $65,555까지 1.4% 하락 여지 대비 저항선 $68,271까지 2.68% 상승 필요 — 비대칭적 리스크.",
       "position_pct": 0.5,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -0.2702259702646126,
+      "predicted_return": 0.07022597026461258,
+      "evaluated_at": "2026-03-29T20:00:16.639442+00:00"
     },
     {
       "id": "c35253c1-54f1-4115-a5e9-867c794325b7",
