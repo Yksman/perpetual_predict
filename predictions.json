@@ -1,6 +1,28 @@
 {
   "predictions": [
     {
+      "id": "209ff5fc-ad35-4b3e-b03f-c37ef946ec40",
+      "time": "2026-03-29T08:01:28.692968+00:00",
+      "target_open": "2026-03-29T08:00:00+00:00",
+      "target_close": "2026-03-29T12:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.6,
+      "key_factors": [
+        "모든 주요 이평선(SMA20/50/200) 하회하는 하락 추세 배열",
+        "마켓 구조 5회 이탈 + 연속 Lower Low 형성",
+        "매크로 리스크오프: S&P -1.67%, NASDAQ -2.15%, 금 +3.40%",
+        "Fear & Greed 9 극단적 공포 — 반등 가능성과 추가 하락 양면",
+        "CVD -0.54 매도 우세 + 볼륨 감소 추세"
+      ],
+      "reasoning": "기술적으로 모든 이평선 하회 + 하락 구조(연속 LL) + 매도 CVD 우세가 하락 방향을 지지. 매크로 환경도 미국 증시 급락, 금 급등, DXY 강세로 위험자산 회피 국면. Fear & Greed 극단적 공포(9)는 역발상 반등 가능성을 시사하나, 구조적 하락 추세가 우선. MACD 히스토그램 양전환과 펀딩레이트 회복은 단기 반등 시도 가능성을 열어두지만, 주요 저항($67,366 SMA20)을 돌파하기엔 모멘텀 부족. 종합적으로 하락 편향이나 극단적 공포 구간에서의 불확실성으로 높은 확신도는 부여하기 어려움.",
+      "position_pct": 0.5,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "121fe2d6-7d7f-4614-aeac-b92798380c99",
       "time": "2026-03-29T04:01:39.355726+00:00",
       "target_open": "2026-03-29T04:00:00+00:00",
@@ -16,11 +38,11 @@
       ],
       "reasoning": "전체적 하락 추세(모든 MA 하방, 시장 구조 하락)와 매크로 리스크오프 환경이 단기 반등 시그널보다 우세. 반등이 진행 중이나 SMA 20 저항($67,591)에 접근하며 모멘텀 소진 가능성 높음. Extreme Fear는 역발상 시그널이 될 수 있으나, 매크로 악화(미증시 하락, DXY 강세)가 동반되어 반등 지속성 의문. 다음 4H 캔들은 저항 부근에서 매도 압력 재개될 확률이 높다고 판단.\"",
       "position_pct": 0.4,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -0.3636597448699559,
+      "predicted_return": 0.16365974486995588,
+      "evaluated_at": "2026-03-29T08:00:17.780339+00:00"
     },
     {
       "id": "0bf78428-fd5d-4d1a-a6a7-95a1c9ecb641",
