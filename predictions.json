@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "0bf78428-fd5d-4d1a-a6a7-95a1c9ecb641",
+      "time": "2026-03-29T00:01:30.325755+00:00",
+      "target_open": "2026-03-29T00:00:00+00:00",
+      "target_close": "2026-03-29T04:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.65,
+      "key_factors": [
+        "모든 주요 MA 하방 거래 — SMA200 대비 -4.16%로 강한 하락 추세",
+        "MACD -956, 히스토그램 -47로 하락 모멘텀 확대 중",
+        "시장 구조 5회 이탈, LH→LL 패턴 반복 — 명확한 하락 구조",
+        "S&P -1.67%, NASDAQ -2.15%, 금 +2.66% — 위험자산 회피 + 안전자산 선호",
+        "Fear & Greed 9(극단적 공포) — 바닥 근접 가능성 있으나 반전 시그널 부재",
+        "레인지 내 29% 위치로 지지선(65,555) 근접, 하방 리스크 제한적이나 상방 저항 강함"
+      ],
+      "reasoning": "기술적으로 모든 이동평균선 하방, MACD 하락 확대, 시장 구조 LH-LL 반복으로 명확한 하락 추세. 매크로 환경도 주식시장 약세 + DXY 강세 + 금 급등으로 위험자산 회피 심리 강화. Fear & Greed 극단적 공포(9)는 역발상 매수 근거가 될 수 있으나, 추세 반전 확인 시그널(다이버전스, 구조 전환) 부재. 펀딩레이트 음수와 높은 L/S 비율은 단기 반등 가능성을 시사하나, 거시적 약세 압력이 우세하여 하방 지속 가능성이 높음.",
+      "position_pct": 0.6,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "1237a4c4-0ea9-438e-aea5-899df2bc7b7c",
       "time": "2026-03-28T20:01:43.565284+00:00",
       "target_open": "2026-03-28T20:00:00+00:00",
@@ -17,11 +40,11 @@
       ],
       "reasoning": "하락 추세가 구조적으로 유효하며(모든 SMA 하회, MACD 확대, 구조 이탈), 거시경제 환경이 전면적 리스크오프 상태. 극단적 공포 지수와 펀딩비 개선은 반등 가능성을 시사하지만, 거래량 감소와 전통시장 약세가 즉각적 반전을 제한. 다음 4H에서 $65,555 지지선 테스트 가능성이 반등보다 높다고 판단. 다만 공포 극단에서의 역추세 가능성이 있어 높은 확신도는 부여하지 않음.\"",
       "position_pct": 0.4,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -0.8048091157866359,
+      "predicted_return": 0.604809115786636,
+      "evaluated_at": "2026-03-29T00:00:17.377643+00:00"
     },
     {
       "id": "30e447db-ba46-42b9-b1ca-3e25e45b971f",
