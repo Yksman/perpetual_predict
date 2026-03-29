@@ -15,10 +15,9 @@ fi
 
 cd "$REPO_DIR"
 
-# Prevent concurrent pushes via flock
-LOCK="$REPO_DIR/.git/push_dashboard.lock"
-exec 9>"$LOCK"
-if ! flock -n 9; then
+# Prevent concurrent pushes via mkdir (portable, works on macOS and Linux)
+LOCKDIR="$REPO_DIR/.git/push_dashboard.lockdir"
+if ! mkdir "$LOCKDIR" 2>/dev/null; then
     echo "Another push is in progress, skipping."
     exit 0
 fi
@@ -33,12 +32,13 @@ if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; th
     STASHED=true
 fi
 
-# Guarantee branch restoration and stash pop on ANY exit (success or failure)
+# Guarantee branch restoration, stash pop, and lock removal on ANY exit
 cleanup() {
     git checkout "$CURRENT" --quiet 2>/dev/null || true
     if [ "$STASHED" = true ]; then
         git stash pop --quiet 2>/dev/null || true
     fi
+    rmdir "$LOCKDIR" 2>/dev/null || true
 }
 trap cleanup EXIT
 
