@@ -39,6 +39,15 @@ def setup_parser(subparsers) -> None:
         ),
     )
     create_p.add_argument(
+        "--exclude", action="append", default=[],
+        help=(
+            "Modules to REMOVE from baseline for variant. "
+            "Each --exclude creates one arm with that module removed. "
+            "Use comma for multiple removals in one arm. "
+            "Example: --exclude trend --exclude trend,market_structure"
+        ),
+    )
+    create_p.add_argument(
         "--add", nargs="*", default=[],
         help="[DEPRECATED: use --variant] Modules to add to a single variant",
     )
@@ -117,6 +126,20 @@ async def _create(args) -> int:
                 m for m in modules_to_add if m not in DEFAULT_MODULES
             ]
             variants[variant_name] = variant_modules
+    elif args.exclude:
+        for exclude_spec in args.exclude:
+            modules_to_remove = [m.strip() for m in exclude_spec.split(",") if m.strip()]
+            for mod in modules_to_remove:
+                if mod not in SEED_MODULES:
+                    print(f"Unknown module: {mod}")
+                    print(f"Available: {', '.join(SEED_MODULES)}")
+                    return 1
+                if mod not in DEFAULT_MODULES:
+                    print(f"Module '{mod}' is not in baseline (already experimental/removed)")
+                    return 1
+            variant_name = "no_" + "_no_".join(modules_to_remove)
+            variant_modules = [m for m in DEFAULT_MODULES if m not in modules_to_remove]
+            variants[variant_name] = variant_modules
     elif args.add:
         variant_modules = list(DEFAULT_MODULES)
         for mod in args.add:
@@ -162,7 +185,13 @@ async def _create(args) -> int:
     print(f"  Variants ({len(variants)}):")
     for vname, vmods in variants.items():
         added = set(vmods) - set(control_modules)
-        print(f"    {vname}: +{', '.join(added)}")
+        removed = set(control_modules) - set(vmods)
+        if removed:
+            print(f"    {vname}: -{', '.join(removed)}")
+        elif added:
+            print(f"    {vname}: +{', '.join(added)}")
+        else:
+            print(f"    {vname}: (same as control)")
     print(f"  Min samples: {experiment.min_samples}")
     print(f"  Metric: {experiment.primary_metric}")
 
