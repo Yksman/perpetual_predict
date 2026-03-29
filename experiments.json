@@ -1,6 +1,103 @@
 {
   "experiments": [
     {
+      "experiment_id": "exp_30225719",
+      "name": "no_trend_test",
+      "description": "",
+      "status": "active",
+      "control_modules": [
+        "price_action",
+        "candle_structure",
+        "trend",
+        "momentum",
+        "volatility",
+        "cvd",
+        "liquidation",
+        "sentiment_market",
+        "fear_greed",
+        "market_structure",
+        "divergences",
+        "support_resistance",
+        "recent_candles",
+        "macro"
+      ],
+      "variants": {
+        "no_trend": [
+          "price_action",
+          "candle_structure",
+          "momentum",
+          "volatility",
+          "cvd",
+          "liquidation",
+          "sentiment_market",
+          "fear_greed",
+          "market_structure",
+          "divergences",
+          "support_resistance",
+          "recent_candles",
+          "macro"
+        ]
+      },
+      "variant_diffs": {
+        "no_trend": {
+          "added": [],
+          "removed": [
+            "trend"
+          ]
+        }
+      },
+      "min_samples": 30,
+      "significance_level": 0.05,
+      "primary_metric": "net_return",
+      "created_at": "2026-03-29T06:00:57.616522+00:00",
+      "completed_at": null,
+      "winner": null,
+      "sample_size": 0,
+      "progress_pct": 0.0,
+      "result": {
+        "control_accuracy": 0,
+        "control_return": 0,
+        "control_sharpe": 0.0,
+        "control_sample_size": 0,
+        "variant_results": [
+          {
+            "variant_name": "no_trend",
+            "sample_size": 0,
+            "accuracy": 0,
+            "net_return": 0,
+            "sharpe": 0.0,
+            "p_value": null,
+            "is_significant": false
+          }
+        ]
+      },
+      "accounts": {
+        "control": {
+          "initial_balance": 1000.0,
+          "current_balance": 1000.0
+        },
+        "variant_no_trend": {
+          "initial_balance": 1000.0,
+          "current_balance": 1000.0
+        }
+      },
+      "equity_curves": {
+        "control": [
+          {
+            "time": "2026-03-29T04:00:00+00:00",
+            "balance": 1000.0
+          }
+        ],
+        "variant_no_trend": [
+          {
+            "time": "2026-03-29T04:00:00+00:00",
+            "balance": 1000.0
+          }
+        ]
+      },
+      "prediction_comparisons": []
+    },
+    {
       "experiment_id": "exp_a75cc1fc",
       "name": "news_and_fear_greed_test",
       "description": "Test news module addition and fear_greed removal",
