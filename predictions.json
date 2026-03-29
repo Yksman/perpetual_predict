@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "c35253c1-54f1-4115-a5e9-867c794325b7",
+      "time": "2026-03-29T12:01:24.760069+00:00",
+      "target_open": "2026-03-29T12:00:00+00:00",
+      "target_close": "2026-03-29T16:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.55,
+      "key_factors": [
+        "모든 주요 이평선(SMA20/50/200) 하회 — 명확한 하락 추세",
+        "시장 구조 LH(67,284) → LL(65,501) 하락 패턴 지속",
+        "Fear & Greed 9 극단적 공포 — 매도 심리 극심",
+        "S&P -1.67%, NASDAQ -2.15%, 금 +3.40% — 리스크오프 환경",
+        "24H 거래량 극히 저조하여 반등 신뢰도 낮음",
+        "MACD 히스토그램 양전환(83.57)으로 하락 모멘텀 둔화 중"
+      ],
+      "reasoning": "기술적으로 모든 이평선 하회 + 하락 시장 구조(LH-LL 패턴)가 지배적. MACD 히스토그램 양전환과 CVD 매수 우위는 단기 반등 가능성을 시사하나, 거시환경(주식시장 약세, DXY 강세, 금 급등)이 리스크오프를 강하게 지지. 극단적 공포(F&G 9)는 역발상 매수 신호일 수 있으나, 거래량 부재와 도지 캔들로 반등 확신 부족. 볼린저 밴드 중간선에서의 횡보는 방향성 결정 직전 상태이며, 하방 압력이 우세한 환경에서 하락 돌파 확률이 소폭 높다고 판단.\"",
+      "position_pct": 0.3,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "209ff5fc-ad35-4b3e-b03f-c37ef946ec40",
       "time": "2026-03-29T08:01:28.692968+00:00",
       "target_open": "2026-03-29T08:00:00+00:00",
@@ -16,11 +39,11 @@
       ],
       "reasoning": "기술적으로 모든 이평선 하회 + 하락 구조(연속 LL) + 매도 CVD 우세가 하락 방향을 지지. 매크로 환경도 미국 증시 급락, 금 급등, DXY 강세로 위험자산 회피 국면. Fear & Greed 극단적 공포(9)는 역발상 반등 가능성을 시사하나, 구조적 하락 추세가 우선. MACD 히스토그램 양전환과 펀딩레이트 회복은 단기 반등 시도 가능성을 열어두지만, 주요 저항($67,366 SMA20)을 돌파하기엔 모멘텀 부족. 종합적으로 하락 편향이나 극단적 공포 구간에서의 불확실성으로 높은 확신도는 부여하기 어려움.",
       "position_pct": 0.5,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 0.2227144752402866,
+      "predicted_return": -0.4227144752402866,
+      "evaluated_at": "2026-03-29T12:00:15.674386+00:00"
     },
     {
       "id": "121fe2d6-7d7f-4614-aeac-b92798380c99",
