@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "b502721c-881a-4d27-9fbc-e8814fbc31e7",
+      "time": "2026-03-30T04:01:27.848718+00:00",
+      "target_open": "2026-03-30T04:00:00+00:00",
+      "target_close": "2026-03-30T08:00:00+00:00",
+      "direction": "UP",
+      "confidence": 0.55,
+      "key_factors": [
+        "Fear & Greed 8 극단적 공포 — 역발상 매수 시그널",
+        "직전 4H +1.76% 강반등, 1H 4연속 양봉으로 매수세 연속성 확인",
+        "MACD 히스토그램 양전환 중 (+159.84), 모멘텀 회복 초기",
+        "SMA50/200 데스크로스 구조 — 중기 하락 추세 미해소",
+        "거래량 극히 낮아 반등 지속성 불확실",
+        "BB 스퀴즈 상태 — 변동성 확대 임박, 방향 결정 중요 구간"
+      ],
+      "reasoning": "단기적으로 극단적 공포(F&G 8) 속 강한 반등 캔들(+1.76%)과 MACD 양전환 시도가 추가 상승 여력을 시사. 그러나 중장기 이동평균선이 모두 위에 위치하고 거래량이 빈약하여 $68,200-68,600 저항대 돌파는 어려울 것으로 판단. 다음 4H 캔들은 반등 모멘텀의 연장선에서 소폭 상승하되, 저항대 접근 시 매도 압력 증가 예상. BB 스퀴즈 해소 방향이 관건이며, 펀딩레이트 극저 + 극단적 공포는 숏스퀴즈 트리거 가능성을 높임.",
+      "position_pct": 0.4,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "9ec438f0-78a9-495e-be0a-e845f5c9b940",
       "time": "2026-03-30T00:01:39.002956+00:00",
       "target_open": "2026-03-30T00:00:00+00:00",
@@ -17,11 +40,11 @@
       ],
       "reasoning": "기술적으로 모든 이평선 하회 + ADX 33.9 하락 추세 확인 + 시장 구조 5회 이탈이 핵심 하락 근거. 극단적 공포(F&G 8)와 BB 스퀴즈는 단기 반등 가능성을 시사하나, 매크로 환경(미국 증시 약세, 국채 수익률 급등)이 반등을 제한. 최근 4H 분해에서 22시 -1.29% 급락 후 23시 미약한 반등(+0.24%)은 매도세 우위를 재확인. 다만 과매도 영역 접근과 극단적 공포로 숏 진입 확신도는 중간 수준.",
       "position_pct": 0.6,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 1.7608899936342464,
+      "predicted_return": -1.9608899936342463,
+      "evaluated_at": "2026-03-30T04:00:13.071538+00:00"
     },
     {
       "id": "274a782e-c145-4d86-9961-4efb67df6b30",
