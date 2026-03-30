@@ -23,18 +23,18 @@
     "2026-03": -1.05
   },
   "prediction_accuracy": {
-    "total": 41,
-    "correct": 20,
-    "accuracy": 0.49,
-    "avg_confidence": 0.56,
+    "total": 42,
+    "correct": 21,
+    "accuracy": 0.5,
+    "avg_confidence": 0.57,
     "by_direction": {
       "UP": {
         "total": 3,
         "correct": 1
       },
       "DOWN": {
-        "total": 38,
-        "correct": 19
+        "total": 39,
+        "correct": 20
       },
       "NEUTRAL": {
         "total": 0,

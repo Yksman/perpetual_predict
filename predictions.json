@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "9ec438f0-78a9-495e-be0a-e845f5c9b940",
+      "time": "2026-03-30T00:01:39.002956+00:00",
+      "target_open": "2026-03-30T00:00:00+00:00",
+      "target_close": "2026-03-30T04:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.65,
+      "key_factors": [
+        "전 이평선(SMA20/50/200) 하회 — 명확한 하락 추세 구조",
+        "ADX 33.9 + 시장 구조 5회 이탈로 추세 강도 확인",
+        "Fear & Greed 8(극단적 공포) — 역발상 반등 가능성이 하방 리스크를 일부 상쇄",
+        "S&P500 -1.67%, NASDAQ -2.15% 매크로 위험자산 약세 동조",
+        "BB 스퀴즈 + ATR 수축으로 변동성 확대 임박, 추세 방향(하락)으로 확대 가능성 높음",
+        "10Y 국채 수익률 +3.294% 급등 — 유동성 긴축 환경"
+      ],
+      "reasoning": "기술적으로 모든 이평선 하회 + ADX 33.9 하락 추세 확인 + 시장 구조 5회 이탈이 핵심 하락 근거. 극단적 공포(F&G 8)와 BB 스퀴즈는 단기 반등 가능성을 시사하나, 매크로 환경(미국 증시 약세, 국채 수익률 급등)이 반등을 제한. 최근 4H 분해에서 22시 -1.29% 급락 후 23시 미약한 반등(+0.24%)은 매도세 우위를 재확인. 다만 과매도 영역 접근과 극단적 공포로 숏 진입 확신도는 중간 수준.",
+      "position_pct": 0.6,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "274a782e-c145-4d86-9961-4efb67df6b30",
       "time": "2026-03-29T20:01:28.779992+00:00",
       "target_open": "2026-03-29T20:00:00+00:00",
@@ -17,11 +40,11 @@
       ],
       "reasoning": "기술적으로 모든 이평선 하회 + 하락 시장 구조(LH-LL) + CVD 음수가 명확한 약세 신호. 매크로 환경도 미국 증시 하락, DXY 강세, 금 급등으로 위험자산 회피 국면. Fear & Greed 9의 극단적 공포는 역발상 매수 신호가 될 수 있으나, 추세 반전 확인 없이는 낙관하기 어려움. StochRSI 과매수는 단기 반등 후 재하락 가능성을 시사. 볼륨 감소와 함께 하락이 진행 중이어서 급락보다는 점진적 하락 예상. $65,555 지지선 테스트 가능성 높음.",
       "position_pct": 0.6,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -0.5162823449230608,
+      "predicted_return": 0.3162823449230608,
+      "evaluated_at": "2026-03-30T00:00:32.939547+00:00"
     },
     {
       "id": "78fdc245-cb9c-4878-abf3-6dc17d58bac7",
