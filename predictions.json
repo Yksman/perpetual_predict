@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "8c2343cc-3374-4fb7-8053-eacff6b22cf6",
+      "time": "2026-03-30T20:01:09.239750+00:00",
+      "target_open": "2026-03-30T20:00:00+00:00",
+      "target_close": "2026-03-31T00:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.55,
+      "key_factors": [
+        "RSI + MACD 동시 정규 강세 다이버전스 — 추세 전환 가능성",
+        "전 이평선(SMA 20/50/200) 하회 + ADX 30.9 — 하락추세 지속",
+        "Fear & Greed 8 극단적 공포 — 역발상 매수 시그널이나 추세 반전 보장 아님",
+        "S&P -1.67%, NASDAQ -2.15% 거시환경 리스크오프",
+        "BB 스퀴즈 + 변동성 확대 임박 — 방향 불확실",
+        "OI -2.10% 디레버리징 — 추가 매도 또는 바닥 다지기 양면 해석"
+      ],
+      "reasoning": "하락추세와 강세 다이버전스가 충돌하는 전형적인 추세 전환 모호 구간. 가격은 모든 주요 이평선 하회 + 시장구조 하락 + 거시환경 리스크오프로 베어 우위이나, RSI·MACD 동시 정규 다이버전스 + 극단적 공포(8) + 하방꼬리 매수세는 단기 바닥 가능성을 시사. BB 스퀴즈 상태로 방향성 결정이 임박했으나 어느 쪽으로 터질지 확신하기 어려움. 확률 차이가 10%p로 좁아 방향성 베팅보다 관망이 적절.",
+      "position_pct": 0.0,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "f77e70c8-fa03-4872-8346-804e55a11b3c",
       "time": "2026-03-30T12:01:16.836536+00:00",
       "target_open": "2026-03-30T12:00:00+00:00",
@@ -17,11 +40,11 @@
       ],
       "reasoning": "RSI·MACD 이중 불리시 다이버전스가 이번 분석의 가장 신뢰할 수 있는 신호다. 가격이 더 낮은 저점을 찍었지만 모멘텀 지표는 더 높은 저점을 형성 — 매도 압력이 구조적으로 약해지고 있다. Fear & Greed 8(Extreme Fear)과 결합하면 과매도 반등의 전형적 세팅이다. 다만 SMA50/200 아래에서의 반등이므로 추세 전환이 아닌 기술적 반등(dead cat bounce)일 가능성을 경계해야 한다. BB Squeeze + 낮은 ATR은 변동성 폭발 임박을 시사하며, 다이버전스 방향인 상방으로 터질 확률이 높다. 매크로 역풍(주식시장 약세, 달러 강세)이 상승폭을 제한하는 요인이므로 확신도를 0.6으로 제한한다.",
       "position_pct": 0.5,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "NEUTRAL",
+      "actual_price_change": -0.09061144246617282,
+      "predicted_return": -0.2906114424661728,
+      "evaluated_at": "2026-03-30T16:00:14.460188+00:00"
     },
     {
       "id": "2d9b39c9-d858-43ea-bb03-5e8d47adf840",
