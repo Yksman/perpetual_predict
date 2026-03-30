@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "f77e70c8-fa03-4872-8346-804e55a11b3c",
+      "time": "2026-03-30T12:01:16.836536+00:00",
+      "target_open": "2026-03-30T12:00:00+00:00",
+      "target_close": "2026-03-30T16:00:00+00:00",
+      "direction": "UP",
+      "confidence": 0.6,
+      "key_factors": [
+        "RSI·MACD 이중 불리시 다이버전스 — 하방 모멘텀 소진 확인",
+        "Fear & Greed 8 (Extreme Fear) — 역발상 매수 신호",
+        "BB Squeeze + ATR 최저 — 변동성 확장 임박, 다이버전스 방향(상방) 유리",
+        "$64,918 저점에서 4연속 양봉 반등 — 단기 바닥 형성 징후",
+        "SMA50/200 아래 + 매크로 악화(SPX -1.67%, NASDAQ -2.15%) — 상승폭 제한 요인",
+        "Stochastic RSI 과매수 극단(K=100) — 단기 되돌림 후 재상승 가능성"
+      ],
+      "reasoning": "RSI·MACD 이중 불리시 다이버전스가 이번 분석의 가장 신뢰할 수 있는 신호다. 가격이 더 낮은 저점을 찍었지만 모멘텀 지표는 더 높은 저점을 형성 — 매도 압력이 구조적으로 약해지고 있다. Fear & Greed 8(Extreme Fear)과 결합하면 과매도 반등의 전형적 세팅이다. 다만 SMA50/200 아래에서의 반등이므로 추세 전환이 아닌 기술적 반등(dead cat bounce)일 가능성을 경계해야 한다. BB Squeeze + 낮은 ATR은 변동성 폭발 임박을 시사하며, 다이버전스 방향인 상방으로 터질 확률이 높다. 매크로 역풍(주식시장 약세, 달러 강세)이 상승폭을 제한하는 요인이므로 확신도를 0.6으로 제한한다.",
+      "position_pct": 0.5,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "2d9b39c9-d858-43ea-bb03-5e8d47adf840",
       "time": "2026-03-30T08:01:27.976222+00:00",
       "target_open": "2026-03-30T08:00:00+00:00",
@@ -17,11 +40,11 @@
       ],
       "reasoning": "단기 반등 모멘텀과 중기 하락 구조가 충돌하는 구간이다. 최근 $64,918에서 강한 반등(+4.1%)이 나왔고 MACD 히스토그램 양전환, CVD 매수 우위 등 단기 상승 신호가 우세하다. 그러나 주요 이평선(50/200) 아래에 있고 시장 구조는 하락세이며, 극단적 공포 지수와 매크로 약세가 상방을 제한한다. 볼린저 스퀴즈 상태에서 다음 4H 캔들은 소폭 상승 후 $68,271 저항 테스트를 시도할 가능성이 약간 더 높다고 판단한다.",
       "position_pct": 0.3,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "NEUTRAL",
+      "actual_price_change": 0.08225350945842251,
+      "predicted_return": -0.1177464905415775,
+      "evaluated_at": "2026-03-30T12:00:23.366332+00:00"
     },
     {
       "id": "b502721c-881a-4d27-9fbc-e8814fbc31e7",
