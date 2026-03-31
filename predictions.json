@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "f3f93d74-c09a-455c-b523-7c7ae3f92d8a",
+      "time": "2026-03-31T04:01:33.456022+00:00",
+      "target_open": "2026-03-31T04:00:00+00:00",
+      "target_close": "2026-03-31T08:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.6,
+      "key_factors": [
+        "SMA 50 저항대($68,455) 근접 — 반등 상한 제한",
+        "1H 모멘텀 급속 약화 (+1.08%→-0.35%) — 반등 피로 확인",
+        "시장 구조 LH-LL 패턴 4회 브레이크 — 약세 구조 유지",
+        "RSI/MACD 상승 다이버전스 — 급락 제한, 하방 지지 역할",
+        "Extreme Fear(11) + 펀딩레이트 하락 — 과매도이나 즉각 반전 근거 부족",
+        "DXY 강세 + 미국 주식 약세 — 매크로 역풍"
+      ],
+      "reasoning": "하락 추세 내 기술적 반등이 SMA 50 저항대($68,455)에 근접하며 모멘텀이 빠르게 약화되고 있다. 1H 캔들에서 01시 +1.08% 급등 후 02~03시 모멘텀 소멸(-0.35%)은 전형적인 반등 실패 패턴. 다이버전스 시그널이 하방 지지를 제공하지만, 매크로 구조(SMA 50/200 아래, LH-LL 패턴)와 위험자산 비우호 환경(DXY 강세, 주식 약세)이 우세. BB 스퀴즈 해소 시 하방 확장 가능성이 더 높다고 판단.\"",
+      "position_pct": 0.3,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "6734fc06-ea9b-4493-b190-fb09e1360af9",
       "time": "2026-03-31T00:11:06.686144+00:00",
       "target_open": "2026-03-31T00:00:00+00:00",
@@ -16,11 +39,11 @@
       ],
       "reasoning": "RSI+MACD 이중 강세 다이버전스가 가장 강력한 시그널. 극단적 공포(11)와 펀딩레이트 급락(-0.0006%)은 숏 과밀→숏스퀴즈 가능성을 높임. 볼린저밴드 스퀴즈는 방향성 돌파 임박을 의미하며, 다이버전스 방향(상승)으로 확대될 확률이 높음. 다만 모든 MA 아래 거래, 약한 볼륨, 매크로 역풍(DXY 강세)이 상승 확신을 제한. 단기 반등은 예상되나 $68,000+ 돌파는 불확실.",
       "position_pct": 0.4,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "UP",
+      "actual_price_change": 1.3489224796448496,
+      "predicted_return": 1.1489224796448496,
+      "evaluated_at": "2026-03-31T04:00:12.014122+00:00"
     },
     {
       "id": "8c2343cc-3374-4fb7-8053-eacff6b22cf6",
