@@ -1,6 +1,28 @@
 {
   "predictions": [
     {
+      "id": "6734fc06-ea9b-4493-b190-fb09e1360af9",
+      "time": "2026-03-31T00:11:06.686144+00:00",
+      "target_open": "2026-03-31T00:00:00+00:00",
+      "target_close": "2026-03-31T04:00:00+00:00",
+      "direction": "UP",
+      "confidence": 0.55,
+      "key_factors": [
+        "RSI+MACD 이중 정규 강세 다이버전스 — 단기 반등 확률 높음",
+        "Fear & Greed 11 극단적 공포 + 펀딩레이트 급락 → 숏스퀴즈 조건 형성",
+        "볼린저밴드 스퀴즈 → 변동성 확대 임박, 다이버전스 방향으로 확대 예상",
+        "모든 MA 아래 거래 + CVD 음수 → 중기 하락 추세 유지, 상승폭 제한",
+        "DXY 강세 + 주식시장 약세 → 매크로 환경 비우호적"
+      ],
+      "reasoning": "RSI+MACD 이중 강세 다이버전스가 가장 강력한 시그널. 극단적 공포(11)와 펀딩레이트 급락(-0.0006%)은 숏 과밀→숏스퀴즈 가능성을 높임. 볼린저밴드 스퀴즈는 방향성 돌파 임박을 의미하며, 다이버전스 방향(상승)으로 확대될 확률이 높음. 다만 모든 MA 아래 거래, 약한 볼륨, 매크로 역풍(DXY 강세)이 상승 확신을 제한. 단기 반등은 예상되나 $68,000+ 돌파는 불확실.",
+      "position_pct": 0.4,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "8c2343cc-3374-4fb7-8053-eacff6b22cf6",
       "time": "2026-03-30T20:01:09.239750+00:00",
       "target_open": "2026-03-30T20:00:00+00:00",
@@ -17,11 +39,11 @@
       ],
       "reasoning": "하락추세와 강세 다이버전스가 충돌하는 전형적인 추세 전환 모호 구간. 가격은 모든 주요 이평선 하회 + 시장구조 하락 + 거시환경 리스크오프로 베어 우위이나, RSI·MACD 동시 정규 다이버전스 + 극단적 공포(8) + 하방꼬리 매수세는 단기 바닥 가능성을 시사. BB 스퀴즈 상태로 방향성 결정이 임박했으나 어느 쪽으로 터질지 확신하기 어려움. 확률 차이가 10%p로 좁아 방향성 베팅보다 관망이 적절.",
       "position_pct": 0.0,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 0.3735948848320477,
+      "predicted_return": -0.5735948848320478,
+      "evaluated_at": "2026-03-31T00:01:05.344226+00:00"
     },
     {
       "id": "f77e70c8-fa03-4872-8346-804e55a11b3c",
