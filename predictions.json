@@ -1,6 +1,29 @@
 {
   "predictions": [
     {
+      "id": "7051042f-373e-4a07-b3e4-15cd2b34d23f",
+      "time": "2026-03-31T16:47:57.798015+00:00",
+      "target_open": "2026-03-31T16:00:00+00:00",
+      "target_close": "2026-03-31T20:00:00+00:00",
+      "direction": "DOWN",
+      "confidence": 0.58,
+      "key_factors": [
+        "모든 주요 이평선(SMA20/50/200) 하방 — 하락 추세 확인",
+        "BB Squeeze 활성 — 변동성 확대 임박, 하락 추세에서 하방 해소 우세",
+        "Fear & Greed 11 극단적 공포 — 역발상 반등 가능성이나 추세 전환 확인 부재",
+        "거래량 0.01x로 극도로 낮음 — 매수세 부재, 반등 확신 없음",
+        "DXY 강세 + 주식시장 약세 — 위험자산 비우호적 매크로",
+        "OI -1.71% 디레버리징 + 펀딩비 음수 심화 — 시장 약세 심리"
+      ],
+      "reasoning": "가격이 모든 주요 이평선 하방에서 거래되는 하락 추세가 지속 중이며, BB Squeeze 상태에서 변동성 확대가 임박. 하락 추세 맥락에서 Squeeze 하방 해소 확률이 높음. 극단적 공포(11)와 음수 펀딩비는 역발상 반등 가능성을 시사하나, 매크로 환경(DXY 강세, 주식시장 약세)과 극도로 낮은 거래량이 반등 시나리오를 약화시킴. OI 감소와 디레버리징이 진행 중이어서 추가 하방 압력 예상. 다만 확신도가 낮은 만큼 포지션 사이즈를 보수적으로 유지.",
+      "position_pct": 0.3,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "2ab13c67-c6f5-4cc5-aa14-f75f49da0945",
       "time": "2026-03-31T12:01:30.328943+00:00",
       "target_open": "2026-03-31T12:00:00+00:00",
@@ -17,11 +40,11 @@
       ],
       "reasoning": "기술적으로 강세 다이버전스와 MACD 양전환이 긍정적이나, 모든 주요 이평선 하회 + 거시환경 악화(DXY 강세, 주식시장 약세, 극단적 공포)가 단기 하방 압력을 유지. 볼린저밴드 스퀴즈 상태에서 기존 하락 추세 방향으로 확장 가능성이 더 높다고 판단. 다만 다이버전스와 음펀딩레이트로 인해 하락 확신도는 제한적.",
       "position_pct": 0.3,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "NEUTRAL",
+      "actual_price_change": 0.07141528287054304,
+      "predicted_return": -0.27141528287054306,
+      "evaluated_at": "2026-03-31T16:02:53.268334+00:00"
     },
     {
       "id": "d9ccb256-3053-4cc4-a107-7b52338de442",
