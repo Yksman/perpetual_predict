@@ -1,31 +1,31 @@
 {
   "account": {
     "initial_balance": 1000.0,
-    "current_balance": 982.0053608879018
+    "current_balance": 976.5444099364694
   },
   "performance": {
-    "total_trades": 42,
+    "total_trades": 43,
     "winning_trades": 20,
-    "losing_trades": 22,
-    "win_rate": 47.62,
-    "profit_factor": 0.49,
-    "cumulative_pnl": -17.99,
-    "total_return_pct": -1.8,
+    "losing_trades": 23,
+    "win_rate": 46.51,
+    "profit_factor": 0.43,
+    "cumulative_pnl": -23.46,
+    "total_return_pct": -2.35,
     "avg_win": 1.02,
-    "avg_loss": 1.91,
-    "max_drawdown_pct": -2.28,
-    "current_drawdown_pct": -2.22,
-    "sharpe_ratio": -9.28,
+    "avg_loss": 2.06,
+    "max_drawdown_pct": -2.77,
+    "current_drawdown_pct": -2.77,
+    "sharpe_ratio": -11.05,
     "max_consecutive_wins": 5,
     "max_consecutive_losses": 4
   },
   "monthly_returns": {
-    "2026-03": -2.16
+    "2026-03": -2.71
   },
   "prediction_accuracy": {
-    "total": 51,
+    "total": 52,
     "correct": 24,
-    "accuracy": 0.47,
+    "accuracy": 0.46,
     "avg_confidence": 0.57,
     "by_direction": {
       "UP": {
@@ -33,7 +33,7 @@
         "correct": 3
       },
       "DOWN": {
-        "total": 43,
+        "total": 44,
         "correct": 21
       },
       "NEUTRAL": {
@@ -214,6 +214,10 @@
     {
       "time": "2026-03-31T16:02:53.320493+00:00",
       "balance": 982.0053608879018
+    },
+    {
+      "time": "2026-03-31T20:11:41.242987+00:00",
+      "balance": 976.5444099364694
     }
   ]
 }
