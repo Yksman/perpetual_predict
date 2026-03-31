@@ -1,6 +1,28 @@
 {
   "predictions": [
     {
+      "id": "d9ccb256-3053-4cc4-a107-7b52338de442",
+      "time": "2026-03-31T08:01:41.708899+00:00",
+      "target_open": "2026-03-31T08:00:00+00:00",
+      "target_close": "2026-03-31T12:00:00+00:00",
+      "direction": "UP",
+      "confidence": 0.55,
+      "key_factors": [
+        "RSI·MACD 이중 정규 강세 다이버전스 — 단기 반등 모멘텀의 가장 강한 근거",
+        "볼린저 밴드 스퀴즈 + MACD 히스토그램 양전환 — 변동성 확장 시 상방 우위",
+        "SMA 50·200 하회 및 4회 구조 이탈 — 중기 하락 추세 유효",
+        "Extreme Fear(11) + 음의 펀딩레이트 — 역발상 매수 시그널이나 추가 하락 가능성도 내포",
+        "DXY 강세 및 나스닥 약세 — 매크로 환경이 위험자산에 비우호적"
+      ],
+      "reasoning": "RSI·MACD 이중 강세 다이버전스와 시장 구조의 HL 형성이 단기 반등 가능성을 시사하나, 중장기 이동평균선 하회와 매크로 역풍(DXY 강세, 주식시장 약세)이 상승 확신을 제한한다. BB 스퀴즈 상태에서 다이버전스 방향(상방)으로 브레이크아웃 확률이 약간 높다고 판단하지만, 확신도는 낮다.",
+      "position_pct": 0.3,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "f3f93d74-c09a-455c-b523-7c7ae3f92d8a",
       "time": "2026-03-31T04:01:33.456022+00:00",
       "target_open": "2026-03-31T04:00:00+00:00",
@@ -17,11 +39,11 @@
       ],
       "reasoning": "하락 추세 내 기술적 반등이 SMA 50 저항대($68,455)에 근접하며 모멘텀이 빠르게 약화되고 있다. 1H 캔들에서 01시 +1.08% 급등 후 02~03시 모멘텀 소멸(-0.35%)은 전형적인 반등 실패 패턴. 다이버전스 시그널이 하방 지지를 제공하지만, 매크로 구조(SMA 50/200 아래, LH-LL 패턴)와 위험자산 비우호 환경(DXY 강세, 주식 약세)이 우세. BB 스퀴즈 해소 시 하방 확장 가능성이 더 높다고 판단.\"",
       "position_pct": 0.3,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 1,
+      "actual_direction": "DOWN",
+      "actual_price_change": -0.4832217145356638,
+      "predicted_return": 0.2832217145356638,
+      "evaluated_at": "2026-03-31T08:00:22.510442+00:00"
     },
     {
       "id": "6734fc06-ea9b-4493-b190-fb09e1360af9",

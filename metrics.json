@@ -23,9 +23,9 @@
     "2026-03": -1.72
   },
   "prediction_accuracy": {
-    "total": 48,
-    "correct": 23,
-    "accuracy": 0.48,
+    "total": 49,
+    "correct": 24,
+    "accuracy": 0.49,
     "avg_confidence": 0.57,
     "by_direction": {
       "UP": {
@@ -33,8 +33,8 @@
         "correct": 3
       },
       "DOWN": {
-        "total": 41,
-        "correct": 20
+        "total": 42,
+        "correct": 21
       },
       "NEUTRAL": {
         "total": 0,
