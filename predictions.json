@@ -1,6 +1,22 @@
 {
   "predictions": [
     {
+      "id": "998dbde4-7e51-45bd-8fdd-4ba4f612eaae",
+      "time": "2026-04-01T04:01:21.597085+00:00",
+      "target_open": "2026-04-01T04:00:00+00:00",
+      "target_close": "2026-04-01T08:00:00+00:00",
+      "direction": "NEUTRAL",
+      "confidence": 0.5,
+      "key_factors": [],
+      "reasoning": "Unable to parse prediction",
+      "position_pct": 0.0,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "718f27b3-9f36-45fe-a469-f06b8596d9f9",
       "time": "2026-04-01T00:01:14.358493+00:00",
       "target_open": "2026-04-01T00:00:00+00:00",
@@ -17,11 +33,11 @@
       ],
       "reasoning": "RSI 강세 다이버전스와 극단적 공포(8) 환경에서의 연속 양봉 반등이 핵심 근거. MACD 히스토그램 양전환과 매크로 리스크온(미 증시 강세, 달러 약세)이 상승 시나리오를 지지한다. 그러나 거래량 급감(0.27x)과 스토캐스틱 RSI 과매수(85.4), SMA50 저항 근접이 상승 폭을 제한할 가능성이 높다. 중장기 이평선(SMA200) 하방 위치로 강한 추세 전환보다는 제한적 상승 후 횡보 가능성도 있어 신뢰도는 보통 수준.\"",
       "position_pct": 0.55,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "NEUTRAL",
+      "actual_price_change": -0.157382468706671,
+      "predicted_return": -0.357382468706671,
+      "evaluated_at": "2026-04-01T04:00:14.152653+00:00"
     },
     {
       "id": "a1166864-62d9-440c-8e7e-5205873e666a",

@@ -24,13 +24,13 @@
     "2026-04": 0.17
   },
   "prediction_accuracy": {
-    "total": 53,
+    "total": 54,
     "correct": 25,
-    "accuracy": 0.47,
+    "accuracy": 0.46,
     "avg_confidence": 0.57,
     "by_direction": {
       "UP": {
-        "total": 9,
+        "total": 10,
         "correct": 4
       },
       "DOWN": {
