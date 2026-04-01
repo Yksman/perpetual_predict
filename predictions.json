@@ -1,6 +1,28 @@
 {
   "predictions": [
     {
+      "id": "cb77c847-4f4d-43d3-a5ad-afa9f19b9c00",
+      "time": "2026-04-01T08:01:14.396910+00:00",
+      "target_open": "2026-04-01T08:00:00+00:00",
+      "target_close": "2026-04-01T12:00:00+00:00",
+      "direction": "UP",
+      "confidence": 0.58,
+      "key_factors": [
+        "StochRSI 98.5 극단적 과매수 vs MACD 골든크로스 충돌 — 단기 조정 후 재상승 가능성",
+        "200 SMA($69,343) 저항 돌파 여부가 다음 4H 방향 결정",
+        "Fear & Greed 8 + 마이너스 펀딩비 = 역발상 매수 신호",
+        "DXY 약세(-0.55%)와 주식시장 강세가 BTC 상방 지지",
+        "CVD 마이너스로 실질 매수 압력 부족 — 상승 지속성에 의문"
+      ],
+      "reasoning": "단기 모멘텀(MACD 크로스, 이평선 정배열 시작)과 극단적 공포 센티먼트가 상승 편향을 지지한다. 그러나 StochRSI 극단적 과매수와 200 SMA 저항($69,343)이 상방을 제한하여 상승폭은 제한적일 전망. 직전 캔들에서 $69,288 고점 후 하락 반전이 나왔지만, 펀딩비 마이너스 + OI 증가 조합은 숏 스퀴즈 가능성을 시사. 매크로 환경(DXY 약세, 주식시장 강세)이 추가 지지 요인. 종합적으로 다음 4H 캔들은 소폭 상승 편향이나 200 SMA 돌파 여부가 핵심 변수.",
+      "position_pct": 0.4,
+      "is_correct": null,
+      "actual_direction": null,
+      "actual_price_change": null,
+      "predicted_return": null,
+      "evaluated_at": null
+    },
+    {
       "id": "998dbde4-7e51-45bd-8fdd-4ba4f612eaae",
       "time": "2026-04-01T04:01:21.597085+00:00",
       "target_open": "2026-04-01T04:00:00+00:00",
@@ -10,11 +32,11 @@
       "key_factors": [],
       "reasoning": "Unable to parse prediction",
       "position_pct": 0.0,
-      "is_correct": null,
-      "actual_direction": null,
-      "actual_price_change": null,
-      "predicted_return": null,
-      "evaluated_at": null
+      "is_correct": 0,
+      "actual_direction": "UP",
+      "actual_price_change": 0.7601197639944729,
+      "predicted_return": 0.0,
+      "evaluated_at": "2026-04-01T08:00:18.657239+00:00"
     },
     {
       "id": "718f27b3-9f36-45fe-a469-f06b8596d9f9",
